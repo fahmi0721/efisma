@@ -58,3 +58,28 @@ Aplikasi ini dirancang untuk perusahaan yang membutuhkan proses pembukuan yang c
 ## 📦 Instalasi
 
 ### 1. Clone repository
+git clone https://github.com/fahmi0721/efisma.git
+
+cd efisma
+### 2. Install dependency
+composer install
+npm install
+npm run build
+### 3. Copy environment file
+cp .env.example .env
+### 4. Generate key
+php artisan key:generate
+### 5. Migrasi database
+php artisan migrate
+### 6. Jalankan server
+php artisan serve
+---
+
+## 📁 Struktur Direktori Penting
+app/
+Http/Controllers/ → Logika aplikasi
+Models/ → Model database
+resources/views/ → Blade template (frontend)
+routes/web.php → Route aplikasi
+database/migrations/ → Struktur tabel database
+public/ → Assets frontend
