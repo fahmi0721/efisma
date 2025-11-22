@@ -1,85 +1,100 @@
-# EFISMA  
-Sistem Informasi Akuntansi & Keuangan Berbasis Web – Laravel 11
+# 📊 E‑FISMA — Sistem Informasi Keuangan & Manajemen Akuntansi
 
-EFISMA adalah aplikasi sistem informasi akuntansi (E-Accounting) yang dibangun menggunakan **Laravel**, digunakan untuk mengelola transaksi jurnal, buku besar, laporan keuangan, neraca, laba rugi, dan manajemen periode akuntansi secara otomatis.
-
-Aplikasi ini dirancang untuk perusahaan yang membutuhkan proses pembukuan yang cepat, akurat, dan terintegrasi.
+E‑FISMA adalah aplikasi berbasis web yang dirancang untuk membantu perusahaan dalam mengelola proses akuntansi, pencatatan transaksi, laporan keuangan, dan manajemen periode akuntansi secara efisien.
 
 ---
 
-## ✨ Fitur Utama
+## 🚀 Fitur Utama
 
-### 📌 1. Manajemen Jurnal
-- Input jurnal umum (general journal)
-- Jurnal otomatis laba rugi bulanan (LRB)
-- Jurnal penutup (closing entries)
-- Posting jurnal ke buku besar
+### 📌 Manajemen Akun & Saldo Awal
+- Pengaturan COA (Chart of Accounts)
+- Saldo awal per akun & per entitas
+- Otomatis bergulir ke periode berikutnya saat closing
 
-### 📌 2. Buku Besar (General Ledger)
-- Ringkasan transaksi berdasarkan akun
-- Filter berdasarkan periode & entitas
-- Export Excel
+### 🧾 Transaksi Jurnal  
+- Pencatatan jurnal harian  
+- Jurnal otomatis laba rugi bulanan  
+- Jurnal penutup akhir tahun  
+- Kontrol status (draft, posted, void)
 
-### 📌 3. Saldo Awal
-- Import & input saldo awal akun neraca
-- Perhitungan otomatis saldo awal periode berikut
+### 📘 Buku Besar  
+- Rekap mutasi debit/kredit  
+- Filter per akun, entitas, dan periode  
+- Export ke Excel
 
-### 📌 4. Periode Akuntansi
-- Open & close periode
-- Validasi draft/void journal sebelum closing
-- Generate saldo awal otomatis
-- Closing akhir tahun (laba rugi ditutup → laba ditahan)
+### 📈 Laporan Keuangan  
+- Neraca  
+- Laba Rugi  
+- Arus Kas  
+- Komposisi Aset & Liabilitas (Pie/Donut Chart)  
+- Dashboard analitik real‑time  
 
-### 📌 5. Laporan Keuangan
-- Laporan Laba Rugi
-- Neraca
-- Trail Balance (neraca saldo)
-- Export Excel / PDF
+### 🗓️ Manajemen Periode Akuntansi  
+- Open/Close Periode  
+- Validasi jurnal sebelum closing  
+- Generate saldo awal otomatis  
 
-### 📌 6. Master Data
-- Akun Perkiraan (Chart of Accounts)
-- Entitas / Unit Bisnis
-- Partner / Relasi Transaksi
+### 👥 Manajemen Partner  
+- Customer & Vendor  
+- Integrasi dengan transaksi piutang & hutang  
+
+---
+
+## 📸 Screenshot Aplikasi (Placeholder)
+
+> Tambahkan screenshot di sini  
+> Contoh:
+> - Dashboard  
+> - Buku Besar  
+> - Laporan Neraca  
+> - Periode Akuntansi  
+> - Jurnal Laba Rugi  
+
+---
+
+## 📚 Panduan Penggunaan (Tutorial Singkat)
+
+### 1️⃣ Setup Awal  
+1. Tambahkan entitas  
+2. Konfigurasi akun COA  
+3. Input saldo awal awal tahun  
+
+### 2️⃣ Input Transaksi  
+1. Masuk menu **Jurnal Umum**  
+2. Pilih entitas  
+3. Isi debit/kredit  
+4. Posting jurnal  
+
+### 3️⃣ Closing Bulanan  
+1. Pastikan semua jurnal sudah *posted*  
+2. Buka menu **Periode Akuntansi**  
+3. Klik **Close**  
+4. Sistem akan:  
+   - Menghitung saldo akhir  
+   - Membuat jurnal laba rugi bulanan  
+   - Meneruskan saldo awal ke bulan berikutnya  
+
+### 4️⃣ Closing Akhir Tahun  
+- Sistem otomatis membuat jurnal penutup (CLS)  
+- Laba rugi tahun berjalan dipindahkan ke akun laba ditahan  
 
 ---
 
 ## 🛠️ Teknologi yang Digunakan
-
-- **Laravel 11**
-- **MySQL / MariaDB**
-- **Blade View**
-- **Yajra Datatables (Server-side)**
-- **Maatwebsite/Laravel-Excel**
-- **Bootstrap 5 / Admintle Template**
-- **jQuery & Ajax**
+- Laravel  
+- Blade Template + Admintle UI  
+- jQuery + DataTables  
+- Chart.js  
+- MySQL  
+- GeoIP  
+- Excel Export (.xlsx)  
 
 ---
 
-## 📦 Instalasi
+## 👨‍💻 Developer  
+**Fahmi Idrus** — Fullstack Web Developer (Laravel)
 
-### 1. Clone repository
-git clone https://github.com/fahmi0721/efisma.git
-
-cd efisma
-### 2. Install dependency
-composer install
-npm install
-npm run build
-### 3. Copy environment file
-cp .env.example .env
-### 4. Generate key
-php artisan key:generate
-### 5. Migrasi database
-php artisan migrate
-### 6. Jalankan server
-php artisan serve
 ---
 
-## 📁 Struktur Direktori Penting
-app/
-Http/Controllers/ → Logika aplikasi
-Models/ → Model database
-resources/views/ → Blade template (frontend)
-routes/web.php → Route aplikasi
-database/migrations/ → Struktur tabel database
-public/ → Assets frontend
+## 📄 Lisensi  
+Aplikasi ini dirilis menggunakan **MIT License** — Anda bebas menggunakan, memodifikasi, dan mendistribusikan.
