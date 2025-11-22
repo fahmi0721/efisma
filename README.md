@@ -79,7 +79,6 @@ E‑FISMA adalah aplikasi berbasis web yang dirancang untuk membantu perusahaan 
 - jQuery + DataTables  
 - Chart.js  
 - MySQL  
-- GeoIP  
 - Excel Export (.xlsx)  
 
 ---
