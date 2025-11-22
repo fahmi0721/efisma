@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /.phpunit.cache
 /node_modules
 /public/build
@@ -16,3 +17,10 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+=======
+# Object file
+*.o
+
+# Ada Library Information
+*.ali
+>>>>>>> b46c7a24c035c601970795f7327b6bfe459688a8
