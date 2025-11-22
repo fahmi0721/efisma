@@ -41,14 +41,7 @@ E‑FISMA adalah aplikasi berbasis web yang dirancang untuk membantu perusahaan 
 ---
 
 ## 📸 Screenshot Aplikasi (Placeholder)
-
-> Tambahkan screenshot di sini  
-> Contoh:
-> - Dashboard  
-> - Buku Besar  
-> - Laporan Neraca  
-> - Periode Akuntansi  
-> - Jurnal Laba Rugi  
+![Dashboard](file:///mnt/data/cfb00bf2-dea9-4862-a17e-04c061d84b68.png)
 
 ---
 
