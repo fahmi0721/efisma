@@ -1,0 +1,142 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
+use Carbon\Carbon;
+use Validator;
+class M_EntitasController extends Controller
+{
+    public function index(Request $request)
+    {
+        if($request->ajax()){
+            $query = DB::table("m_entitas")->select('id',"nama","deskripsi")->orderBy("id","desc")->get();
+            return  Datatables::of($query)
+                ->addIndexColumn()
+                ->addColumn('aksi', function ($row) {
+                    $url = route('entitas.edit')."?id=".$row->id;
+                return '
+                    <a title="Update Data" data-bs-toggle="tooltip" class="btn btn-sm btn-primary btn-edit" href="'.$url.'"><i class="fa fa-edit"></i></a>
+                    <button title="Hapus Data" data-bs-toggle="tooltip" class="btn btn-sm btn-danger btn-delete" onclick="hapusData('.$row->id.')"><i class="fa fa-trash"></i></button>
+                ';
+            })
+            ->rawColumns(['aksi'])
+            
+            ->make(true);
+        }else{
+            return view("page.m_entitas.index");
+        }
+    }
+
+    public function entitas_select(Request $request)
+    {
+        $query = $request->get('q');
+        $m_akun = DB::table("m_entitas")->where('nama','like','%'.$query.'%')->orderBy('nama','asc')->get();
+        $m_akun->prepend((object)[
+            'id' => '',
+            'nama' => 'Semua Entitas'
+        ]);
+        return response()->json($m_akun);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view("page.m_entitas.tambah");
+    }
+
+   
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validates 	= [
+            "nama_entitas"  => "required",
+            
+        ];
+
+        $validation = Validator::make($request->all(), $validates);
+        if($validation->fails()) {
+            return response()->json([
+                "status"    => "warning",
+                "messages"   => $validation->errors()->first()
+            ], 401);
+        }
+        DB::beginTransaction();
+        try {
+            $data['nama'] = $request->nama_entitas;
+            $data['deskripsi'] = $request->deskripsi;
+            $data['created_at'] = Carbon::now();
+            $id = DB::table("m_entitas")->insert($data);
+            DB::commit();
+            return response()->json(['status'=>'success', 'messages'=>"Data berhasil disimpan."], 200);
+        } catch(QueryException $e) { 
+            DB::rollback();
+            return response()->json(['status'=>'error','messages'=> $e->errorInfo ], 500);
+        }  
+        
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Request $request)
+    {
+        $id = $request->id;
+        $data = DB::table("m_entitas")->where("id",$id)->first();
+        return view("page.m_entitas.edit",compact("data","id"));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request)
+    {
+        $validates 	= [
+            "nama_entitas"  => "required",
+        ];
+        $validation = Validator::make($request->all(), $validates);
+        if($validation->fails()) {
+            return response()->json([
+                "status"    => "warning",
+                "messages"   => $validation->errors()->first()
+            ], 401);
+        }
+        DB::beginTransaction();
+        try {
+            $data['nama'] = $request->nama_entitas;
+            $data['deskripsi'] = $request->deskripsi;
+            $data['updated_at'] = Carbon::now();
+            $id = DB::table("m_entitas")->where("id",$request->id)->update($data);
+            DB::commit();
+            return response()->json(['status'=>'success', 'messages'=>"Data berhasil disimpan."], 200);
+        } catch(QueryException $e) { 
+            DB::rollback();
+            return response()->json(['status'=>'error','messages'=> $e->errorInfo ], 500);
+        }  
+    }
+
+    
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Request $request)
+    {
+        $id = $request->id;
+        DB::beginTransaction();
+        try {
+            DB::table("m_entitas")->where("id",$id)->delete();
+            DB::commit();
+            return response()->json(['status'=>'success', 'messages'=>"Data berhasil dihapus."], 200);
+        } catch(QueryException $e) { 
+            DB::rollback();
+            return response()->json(['status'=>'error','messages'=> $e->errorInfo ], 500);
+        }
+    }
+}
