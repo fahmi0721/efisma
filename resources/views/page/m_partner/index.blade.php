@@ -36,11 +36,11 @@
                             <tr>
                                 <th width='5%'>No</th>
                                 <th>Nama Partner</th>
-                                <th>Alamat</th>
                                 <th>No Telepon</th>
                                 <th>Entitas</th>
                                 <th>Vendor</th>
                                 <th>Customer</th>
+                                <th>Alamat</th>
                                 <th width='5%'>Aksi</th>
                             </tr>
                         </thead>
@@ -104,11 +104,11 @@ load_data = function(){
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex' },
             { data: 'nama', name: 'nama' },
-            { data: 'alamat', name: 'alamat',orderable: false },
             { data: 'no_telpon', name: 'no_telpon' },
             { data: 'entitas', name: 'entitas' },
             { data: 'is_vendor', name: 'is_vendor',orderable: false },
             { data: 'is_customer', name: 'is_customer',orderable: false },
+            { data: 'alamat', name: 'alamat',orderable: false },
             { data: 'aksi', name: 'aksi', orderable: false, searchable: false },
         ]
     });
