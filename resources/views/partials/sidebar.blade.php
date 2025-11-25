@@ -54,6 +54,12 @@
                     </a>
                     </li>
                     <li class="nav-item">
+                    <a href="{{ route('cabang') }}" class="nav-link {{  setActive(['cabang', 'cabang.create', 'cabang.edit'], 'active')  }}">
+                        <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
+                        <p>Cabang</p>
+                    </a>
+                    </li>
+                    <li class="nav-item">
                     <a href="{{ route('partner') }}" class="nav-link {{  setActive(['partner', 'partner.create', 'partner.edit'], 'active')  }}">
                         <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
                         <p>Partner</p>

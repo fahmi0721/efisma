@@ -56,6 +56,20 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/m_entitas/delete/{id}', [M_EntitasController::class, 'destroy'])->name('entitas.destroy');
 });
 
+/**
+ * Route Master Data Cabang
+ */
+use App\Http\Controllers\M_CabangController;
+Route::group(['middleware' => 'auth'], function () {
+    Route::get('/m_cabang', [M_CabangController::class, 'index'])->name('cabang');
+    Route::get('/m_cabang/select', [M_CabangController::class, 'cabang_select'])->name('cabang.select');
+    Route::get('/m_cabang/add', [M_CabangController::class, 'create'])->name('cabang.create');
+    Route::post('/m_cabang/save', [M_CabangController::class, 'store'])->name('cabang.save');
+    Route::get('/m_cabang/edit', [M_CabangController::class, 'edit'])->name('cabang.edit');
+    Route::put('/m_cabang/update/{id}', [M_CabangController::class, 'update'])->name('cabang.update');
+    Route::delete('/m_cabang/delete/{id}', [M_CabangController::class, 'destroy'])->name('cabang.destroy');
+});
+
 
 /**
  * Route Master Data PeriodeAkutansiController

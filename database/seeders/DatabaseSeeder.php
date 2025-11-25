@@ -15,11 +15,11 @@ class DatabaseSeeder extends Seeder
         // \App\Models\User::factory(10)->create();
 
         \App\Models\User::create([
-            'nama' => "Fahmi Idrus",
-            'jabatan' => "IT",
-            'username' => "fahmi07",
-            'email' => "fahmiidrus131@gmail.com",
-            'password' => Hash::make("Fahmi07"),
+            'nama' => "Admin",
+            'jabatan' => "Admin",
+            'username' => "user",
+            'email' => "user@mail.com",
+            'password' => Hash::make("12345678"),
             'level' => 'admin', // atau otomatis 'pusat' / 'admin'
         ]);
     }
