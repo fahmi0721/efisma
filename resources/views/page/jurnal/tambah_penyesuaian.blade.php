@@ -57,6 +57,16 @@
                         </div>
 
                         <div class="row mb-3">
+                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <select name="cabang_id" id="cabang_id" class="form-control cabang">
+                                    <option value="">-- Pilih Cabang --</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+
+                        <div class="row mb-3">
                             <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
                                 <select name="partner_id" id="partner_id" class="form-control partner">
@@ -225,7 +235,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text:  q.nama};
                     })
                 };
             },
@@ -246,7 +256,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text:  q.nama};
                     })
                 };
             },
@@ -255,6 +265,26 @@ $(document).ready(function() {
         theme: 'bootstrap4',
         width: '100%',
         placeholder: "-- Pilih Entitas --",
+        allowClear: true
+    });
+
+    $('.cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:  q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: "-- Pilih Cabang --",
         allowClear: true
     });
 
@@ -267,7 +297,7 @@ $(document).ready(function() {
             data: function (params) {
                 return {
                     q: params.term, // teks yang diketik user
-                    jenis: 'customer', // teks yang diketik user
+                    jenis: 'all', // teks yang diketik user
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
                 };
             },
@@ -282,7 +312,7 @@ $(document).ready(function() {
         },
         theme: 'bootstrap4',
         width: '100%',
-        placeholder: "-- Pilih Customer --",
+        placeholder: "-- Pilih Partner --",
         allowClear: true
     });
 
@@ -425,6 +455,10 @@ $(document).on('click', '.btn-pilih-invoice', function() {
     }
 
     $("#jurnal_id_jp").val(data.id);
+    var option = new Option(data.cabang, data.cabang_id, true, true);
+    $(".cabang").append(option).trigger('change');
+    $(".cabang").prop("disabled",true);
+
     $("#no_invoice").val(data.no_invoice);
     $("#no_invoice_t").val(data.no_invoice);
     $("#no_invoice_t").prop("disabled",true);
@@ -492,6 +526,7 @@ function reIndexRows() {
 }
 
 function proses_data(){
+    $(".cabang").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     $.ajax({
         type: "POST",

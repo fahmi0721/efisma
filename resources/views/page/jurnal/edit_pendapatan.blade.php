@@ -60,6 +60,15 @@
                         </div>
 
                         <div class="row mb-3">
+                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <select name="cabang_id" id="cabang_id" class="form-control cabang">
+                                    <option value="">-- Pilih Partner --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <label for="no_invoice" class="col-sm-3 col-form-label">No Invoice <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
                                 <input type="text" value="{{ $data->no_invoice }}"  class="form-control" id="no_invoice" name="no_invoice" placeholder="No Invoice" />
@@ -67,7 +76,14 @@
                         </div>
 
                         <div class="row mb-3">
-                            <label for="keterangan" class="col-sm-3 col-form-label">Keterangan <b class='text-danger'>*</b></label>
+                            <label for="tanggal_invoice" class="col-sm-3 col-form-label">No Invoice <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <input type="text" value="{{ $data->tanggal_invoice }}"  class="form-control" id="tanggal_invoice" name="tanggal_invoice" placeholder="Tanggal Invoice" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label for="keterangan" class="col-sm-3 col-form-label">Keterangan </label>
                             <div class="col-sm-9">
                                 <input type="text" value="{{ $data->keterangan }}"  class="form-control" id="keterangan" name="keterangan" placeholder="Keterangan" />
                             </div>
@@ -171,6 +187,14 @@ $(document).ready(function() {
         locale: "id"
     });
 
+    flatpickr("#tanggal_invoice", {
+        altInput: true,
+        altFormat: "d F Y",   // tampilan di input: 10 Juli 2025
+        dateFormat: "Y-m-d",  // format yang dikirim ke backend: 2025-07-10
+        allowInput: false,
+        locale: "id"
+    });
+
     // 🔽 Select2 Akun GL
     $('.akun-selectok').select2({
         ajax: {
@@ -180,7 +204,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text: q.no_akun + " - " + q.nama};
                     })
                 };
             },
@@ -201,7 +225,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text: q.nama};
                     })
                 };
             },
@@ -210,6 +234,27 @@ $(document).ready(function() {
         theme: 'bootstrap4',
         width: '100%',
         placeholder: "-- Pilih Entitas --",
+        allowClear: true
+    });
+
+    // 🔽 Select2 Cabang
+    $('.cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text: q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: "-- Pilih Cabang --",
         allowClear: true
     });
 
@@ -247,8 +292,14 @@ $(document).ready(function() {
 
     @if(!empty($entitas_id))
         var entitas_id = "{{ $entitas_id->id }}";
-        var option = new Option("{{ $entitas_id->id }} - {{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
+        var option = new Option("{{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
         $(".entitas").append(option).trigger('change');    
+    @endif
+
+    @if(!empty($cabang_id))
+        var cabang_id = "{{ $cabang_id->id }}";
+        var option = new Option("{{ $cabang_id->nama }}", {{ $cabang_id->id }}, true, true);
+        $(".cabang").append(option).trigger('change');    
     @endif
 
     @if(!empty($partner_id))

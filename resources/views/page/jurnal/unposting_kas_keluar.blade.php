@@ -55,6 +55,7 @@
                             <th>Tanggal</th>
                             <th>Entitas</th>
                             <th>Partner</th>
+                            <th>Cabang</th>
                             <th>Total</th>
                             <th>Status</th>
                             <th width="5%">Aksi</th>
@@ -245,6 +246,7 @@ function load_data(){
             { data: 'tanggal', name: 'tanggal' },
             { data: 'entitas', name: 'entitas', orderable:false },
             { data: 'partner', name: 'partner', orderable:false },
+            { data: 'cabang', name: 'cabang', orderable:false },
             { 
                 data: 'total_debit', 
                 name: 'total_debit',

@@ -53,6 +53,16 @@
         .brand-text {
             font-weight: bold;
         }
+        /* Perbaiki tombol clear yang tertimpa segitiga */
+        .select2-selection__clear {
+            position: absolute !important;
+            right: 15px !important; /* geser dari arrow */
+            top: 0px !important;
+            z-index: 10 !important;
+            opacity: 1 !important;
+            color: #000 !important;
+            font-size: 16px !important;
+        }
     </style>
 
     @stack('styles')

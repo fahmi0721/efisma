@@ -68,14 +68,15 @@
                         <thead>
                             <tr class="text-center">
                                 <th width="5%">No</th>
+                                <th width="5%">Aksi</th>
                                 <th>Kode</th>
-                                <th>Keterangan</th>
                                 <th>Tanggal</th>
                                 <th>Entitas</th>
                                 <th>Partner</th>
+                                <th>Cabang</th>
                                 <th>Total</th>
                                 <th>Status</th>
-                                <th width="5%">Aksi</th>
+                                <th>Keterangan</th>
                             </tr>
                         </thead>
                     </table>
@@ -310,11 +311,12 @@ function load_data() {
         },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
+            { data: 'aksi', name: 'aksi', orderable:false, searchable:false },
             { data: 'kode_jurnal', name: 'kode_jurnal' },
-            { data: 'keterangan', name: 'keterangan',orderable:false, },
             { data: 'tanggal', name: 'tanggal' },
             { data: 'entitas', name: 'entitas',orderable:false, },
             { data: 'partner', name: 'partner',orderable:false, },
+            { data: 'cabang', name: 'cabang',orderable:false, },
             { 
                 data: 'total_debit', 
                 name: 'total_debit',
@@ -325,7 +327,8 @@ function load_data() {
                 },orderable:false, 
             },
             { data: 'status', name: 'status',orderable:false,  },
-            { data: 'aksi', name: 'aksi', orderable:false, searchable:false }
+            { data: 'keterangan', name: 'keterangan',orderable:false, }
+            
         ],
         // order: [[2, 'desc']],
     });

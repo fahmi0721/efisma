@@ -38,8 +38,8 @@
             </a>
             </li>
             
-            <li class="nav-item {{ setActive(['entitas', 'entitas.create', 'entitas.edit','partner', 'partner.create', 'partner.edit','m_akun', 'm_akun.create', 'm_akun.edit','m_akun.map','m_akun.transaksi'], 'menu-open')  }}">
-                <a href="#" class="nav-link {{ setActive(['entitas', 'entitas.create', 'entitas.edit','partner', 'partner.create', 'partner.edit','m_akun', 'm_akun.create', 'm_akun.edit','m_akun.map','m_akun.transaksi'], 'active')  }}">
+            <li class="nav-item {{ setActive(['entitas', 'entitas.create', 'entitas.edit','partner', 'partner.create', 'partner.edit','m_akun', 'm_akun.create', 'm_akun.edit','m_akun.map','m_akun.transaksi','cabang', 'cabang.create', 'cabang.edit'], 'menu-open')  }}">
+                <a href="#" class="nav-link {{ setActive(['entitas', 'entitas.create', 'entitas.edit','partner', 'partner.create', 'partner.edit','m_akun', 'm_akun.create', 'm_akun.edit','m_akun.map','m_akun.transaksi','cabang', 'cabang.create', 'cabang.edit'], 'active')  }}">
                     <i class="nav-icon bi bi-clipboard-fill"></i>
                     <p>
                     Master Data

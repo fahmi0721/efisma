@@ -67,6 +67,15 @@
                             </div>
                         </div>
                         <div class="row mb-3">
+                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <select name="cabang_id" id="cabang_id" class="form-control cabang">
+                                    <option value="">-- Pilih Cabang --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <label for="no_invoice" class="col-sm-3 col-form-label">No Invoice </label>
                             <div class="col-sm-9">
                                 <input type="text" disabled  class="form-control no_invoice"  value="{{ $data->no_invoice }}" id="no_invoice_t" placeholder="No Invoice" />
@@ -83,7 +92,7 @@
                             @endif
 
                         <div class="row mb-3">
-                            <label for="keterangan" class="col-sm-3 col-form-label">Keterangan <b class='text-danger'>*</b></label>
+                            <label for="keterangan" class="col-sm-3 col-form-label">Keterangan </label>
                             <div class="col-sm-9">
                                 <input type="text" value="{{ $data->keterangan }}"  class="form-control" id="keterangan" name="keterangan" placeholder="Keterangan" />
                             </div>
@@ -211,6 +220,7 @@
 <script>
 var detailData = @json($detail);
 $(document).ready(function() {
+    $(".cabang").prop("disabled",false);
     $('#btnCariInvoice').click(function() {
         const partner = $('#partner_id').val();
         if (!partner) {
@@ -239,7 +249,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text: q.nama};
                     })
                 };
             },
@@ -251,7 +261,7 @@ $(document).ready(function() {
         allowClear: true
     });
 
-    // 🔽 Select2 Akun GL
+    // 🔽 Select2 Entitas
     $('.entitas').select2({
         ajax: {
             url: '{{ route("entitas.select") }}',
@@ -260,7 +270,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text: q.nama};
                     })
                 };
             },
@@ -300,10 +310,43 @@ $(document).ready(function() {
         allowClear: true
     });
 
+    // 🔽 Select2 Customer
+    $('.cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+             data: function (params) {
+                return {
+                    q: params.term, // teks yang diketik user
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text: q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: "-- Pilih Cabang --",
+        allowClear: true
+    });
+
     @if(!empty($entitas_id))
         var entitas_id = "{{ $entitas_id->id }}";
         var option = new Option("{{ $entitas_id->id }} - {{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
         $(".entitas").append(option).trigger('change');    
+    @endif
+
+    @if(!empty($cabang_id))
+        var cabang_id = "{{ $cabang_id->id }}";
+        var option = new Option("{{ $cabang_id->nama }}", {{ $cabang_id->id }}, true, true);
+        $(".cabang").append(option).trigger('change');   
+        @if(!empty($pelunasan)) $(".cabang").prop("disabled",true); @else $(".cabang").prop("disabled",false); @endif
     @endif
 
      // 🔁 Saat entitas diubah → reset & reload partner
@@ -432,6 +475,7 @@ $(document).on('click', '.btn-hapus', function() {
     if (isPiutang) {
         $('#btnCariInvoice').prop('disabled', false);
         $("#alert-info").hide();
+        $(".cabang").prop('disabled',false);
         $('.no_invoice').val('');
         $("#jurnal_piutang_id").val('');
     }
@@ -525,6 +569,10 @@ $(document).on('click', '.btn-pilih-invoice', function() {
     }
 
     $("#jurnal_piutang_id").val(data.id);
+    var option = new Option(data.cabang, data.cabang_id, true, true);
+    $(".cabang").append(option).trigger('change');
+    $(".cabang").prop("disabled",true);
+
     $("#no_invoice").val(data.no_invoice);
     $("#no_invoice_t").val(data.no_invoice);
     $("#no_invoice_t").prop("disabled",true);
@@ -585,6 +633,7 @@ function insertDetailJurnal(data) {
  * @param {boolean} confirmSave - true jika user sudah konfirmasi peringatan
  */
 function proses_data(confirmSave = false) {
+    $(".cabang").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
     var id = $("#id").val();

@@ -55,7 +55,7 @@
                                 </select>
                             </div>
                         </div>
-
+                       
                         <div class="row mb-3">
                             <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
@@ -64,6 +64,17 @@
                                 </select>
                             </div>
                         </div>
+
+                         <div class="row mb-3">
+                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <select name="cabang_id" id="cabang_id" class="form-control cabang">
+                                    <option value="">-- Pilih Cabang --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        
 
                         <div class="row mb-3">
                             <label for="no_invoice" class="col-sm-3 col-form-label">No Invoice </label>
@@ -74,7 +85,7 @@
                         </div>
 
                         <div class="row mb-3">
-                            <label for="keterangan" class="col-sm-3 col-form-label">Keterangan <b class='text-danger'>*</b></label>
+                            <label for="keterangan" class="col-sm-3 col-form-label">Keterangan </label>
                             <div class="col-sm-9">
                                 <input type="text"  class="form-control" id="keterangan" name="keterangan" placeholder="Keterangan" />
                             </div>
@@ -198,6 +209,7 @@
 
 <script>
 $(document).ready(function() {
+    $(".cabang").prop("disabled",false);
     $('#btnCariInvoice').click(function() {
         const partner = $('#partner_id').val();
         if (!partner) {
@@ -226,13 +238,36 @@ $(document).ready(function() {
             dataType: 'json',
             delay: 250,
             processResults: data => ({
-                results: data.map(q => ({ id: q.id, text: `${q.id} - ${q.nama}` }))
+                results: data.map(q => ({ id: q.id, text: `${q.nama}` }))
             }),
             cache: true
         },
         theme: 'bootstrap4',
         width: '100%',
         placeholder: "-- Pilih Entitas --",
+        allowClear: true
+    });
+
+    // === Jika entitas dipilih, reset partner ===
+    $('.entitas').on('change', function () {
+        // kosongkan partner
+        $('.partner').val(null).trigger('change');
+    });
+
+    // 🔹 Select2 Cabang
+    $('.cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: data => ({
+                results: data.map(q => ({ id: q.id, text: `${q.nama}` }))
+            }),
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: "-- Pilih Cabang --",
         allowClear: true
     });
 
@@ -406,6 +441,11 @@ $(document).on('click', '.btn-pilih-invoice', function() {
     }
 
     $("#jurnal_id_jp").val(data.id);
+    var option = new Option(data.cabang, data.cabang_id, true, true);
+    $(".cabang").append(option).trigger('change');
+    $(".cabang").prop("disabled",true);
+
+
     $("#no_invoice").val(data.no_invoice);
     $("#no_invoice_t").val(data.no_invoice);
     $("#no_invoice_t").prop("disabled",true);
@@ -477,6 +517,7 @@ function reIndexRows() {
  * @param {boolean} confirmSave - true jika user sudah konfirmasi peringatan
  */
 function proses_data(confirmSave = false) {
+    $(".cabang").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
 

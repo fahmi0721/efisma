@@ -37,7 +37,7 @@
                             <label for="tanggal" class="col-sm-3 col-form-label">Tanggal <b class="text-danger">*</b></label>
                             <div class="col-sm-9">
                                 <input type="text" id="tanggal" name="tanggal" class="form-control" 
-                                       placeholder="Pilih periode (YYYY-MM-DD)" value="{{ $data->tanggal }}" readonly required>
+                                       placeholder="Pilih Tanggal (YYYY-MM-DD)" value="{{ $data->tanggal }}" readonly required>
                             </div>
                         </div>
 
@@ -46,6 +46,15 @@
                             <div class="col-sm-9">
                                 <select name="entitas_id" id="entitas_id" class="form-control entitas">
                                     <option value="">-- Pilih Entitas --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <select name="cabang_id" id="cabang_id" class="form-control cabang">
+                                    <option value="">-- Pilih Cabang --</option>
                                 </select>
                             </div>
                         </div>
@@ -173,7 +182,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text: q.no_akun + " - " + q.nama};
                     })
                 };
             },
@@ -194,7 +203,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text: q.nama};
                     })
                 };
             },
@@ -203,6 +212,26 @@ $(document).ready(function() {
         theme: 'bootstrap4',
         width: '100%',
         placeholder: "-- Pilih Entitas --",
+        allowClear: true
+    });
+
+    $('.cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text: q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: "-- Pilih Cabang --",
         allowClear: true
     });
 
@@ -244,6 +273,12 @@ $(document).ready(function() {
         var partner_id = "{{ $partner_id->id }}";
         var option = new Option("{{ $partner_id->nama }}", {{ $partner_id->id }}, true, true);
         $(".partner").append(option).trigger('change');    
+    @endif
+
+    @if(!empty($cabang_id))
+        var cabang_id = "{{ $cabang_id->id }}";
+        var option = new Option("{{ $cabang_id->nama }}", {{ $cabang_id->id }}, true, true);
+        $(".cabang").append(option).trigger('change');    
     @endif
 
     $('.entitas').on('change', function () {

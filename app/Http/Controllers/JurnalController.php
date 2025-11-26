@@ -20,6 +20,7 @@ class JurnalController extends Controller
             $query = DB::table('jurnal_header as j')
                 ->leftJoin('m_entitas as e', 'j.entitas_id', '=', 'e.id')
                 ->leftJoin('m_partner as p', 'j.partner_id', '=', 'p.id')
+                ->leftJoin('m_cabang as c', 'j.cabang_id', '=', 'c.id') // join cabang
                 ->select(
                     'j.id',
                     'j.kode_jurnal',
@@ -29,6 +30,7 @@ class JurnalController extends Controller
                     'j.no_invoice',
                     'e.nama as entitas',
                     'p.nama as partner',
+                    'c.nama as cabang',       // ambil nama cabang
                     'j.total_debit',
                     'j.total_kredit',
                     'j.status'
@@ -57,6 +59,9 @@ class JurnalController extends Controller
                 })
                 ->filterColumn('partner', function ($query, $keyword) {
                     $query->where('p.nama', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('cabang', function ($query, $keyword) {
+                    $query->where('c.nama', 'like', "%{$keyword}%");
                 })
                 ->filterColumn('kode_jurnal', function ($query, $keyword) {
                     $query->whereRaw("CONCAT(j.kode_jurnal, ' ', COALESCE(j.no_invoice, '')) LIKE ?", ["%{$keyword}%"]);
@@ -153,6 +158,7 @@ class JurnalController extends Controller
         $data = DB::table("jurnal_header")->where("id", $id)->first();
         $entitas_id = DB::table('m_entitas')->where("id", $data->entitas_id)->first();
         $partner_id = DB::table('m_partner')->where("id", $data->partner_id)->first();
+        $cabang_id = DB::table('m_cabang')->where("id", $data->cabang_id)->first();
 
         $detail = DB::table('jurnal_detail as d')
             ->join('m_akun_gl as a', 'd.akun_id', '=', 'a.id')
@@ -187,6 +193,7 @@ class JurnalController extends Controller
             "data",
             "id",
             "entitas_id",
+            "cabang_id",
             "partner_id",
             "detail",
             "pelunasan"
@@ -224,9 +231,11 @@ class JurnalController extends Controller
                     ->where('a.kategori', '=', 'piutang'); // hanya akun kategori piutang
             })
             ->leftJoin('pelunasan_piutang as pp', 'pp.jurnal_piutang_id', '=', 'j.id')
+            ->leftJoin('m_cabang as c', 'c.id', '=', 'j.cabang_id')
             ->select(
                 'j.id',
                 'j.kode_jurnal',
+                'j.cabang_id',
                 'j.no_invoice',
                 DB::raw('DATE_FORMAT(j.tanggal, "%d %M %Y") as tanggal'),
                 DB::raw('j.total_debit as total_tagihan'),
@@ -234,6 +243,7 @@ class JurnalController extends Controller
                 DB::raw('(j.total_debit - COALESCE(SUM(pp.jumlah),0)) as sisa_piutang'),
                 'a.id as akun_piutang_id',
                 'a.nama as akun_piutang_nama',
+                'c.nama as cabang',
                 'j.jenis as jenis'
             )
             ->where('j.partner_id', $partner_id)
@@ -241,12 +251,14 @@ class JurnalController extends Controller
             ->whereNotNull('a.id') // hanya jika benar-benar ada akun piutang
             ->groupBy(
                 'j.id',
+                'j.cabang_id',
                 'j.kode_jurnal',
                 'j.no_invoice',
                 'j.tanggal',
                 'j.total_debit',
                 'a.id',
                 'a.nama',
+                'c.nama',
                 'j.jenis'
             )
             ->havingRaw('(j.total_debit - COALESCE(SUM(pp.jumlah),0)) > 0')
@@ -264,6 +276,8 @@ class JurnalController extends Controller
                             data-id='{$row->id}'
                             data-no_invoice='{$row->no_invoice}'
                             data-kode='{$row->kode_jurnal}'
+                            data-cabang_id='{$row->cabang_id}'
+                            data-cabang='{$row->cabang}'
                             data-tanggal='{$row->tanggal}'
                             data-total='{$row->total_tagihan}'
                             data-akun_piutang_id='{$row->akun_piutang_id}'
@@ -292,47 +306,92 @@ class JurnalController extends Controller
             ], 422);
         }
 
-        // 🔹 Validasi field umum
+        // 🔹 Rules awal
         $rules = [
-            'tanggal' => 'required|date',
-            'entitas_id' => 'required|integer',
-            'partner_id' => 'required|integer',
-            'keterangan' => 'nullable|string',
-            'detail' => 'required|array|min:2',
-            'detail.*.akun_id' => 'required|integer',
-            'detail.*.debit' => 'nullable',
-            'detail.*.kredit' => 'nullable',
-            'detail.*.deskripsi' => 'nullable|string'
+            'tanggal'            => 'required|date',
+            'entitas_id'         => 'required|integer',
+            'cabang_id'          => 'required|integer',
+            'keterangan'         => 'nullable|string',
+
+            // Detail
+            'detail'             => 'required|array|min:2',
+            'detail.*.akun_id'   => 'required|integer',
+            'detail.*.debit'     => 'nullable',
+            'detail.*.kredit'    => 'nullable',
+            'detail.*.deskripsi' => 'nullable|string',
         ];
 
+        // 🔹 Messages awal
         $messages = [
-            'tanggal.required'   => 'Tanggal wajib dipilih.',
-            'tanggal.date'       => 'Format tanggal tidak valid.',
-            'entitas_id.required' => 'Entitas wajib dipilih.',
-            'entitas_id.integer'  => 'Entitas tidak valid.',
-            'partner_id.required'  => 'Partner wajib dipilih.',
-            'partner_id.integer'  => 'Partner tidak valid.',
-            'keterangan.string'   => 'Keterangan harus berupa teks.',
-            'detail.required' => 'Detail transaksi wajib diisi.',
-            'detail.array'    => 'Format detail transaksi tidak valid.',
-            'detail.min'      => 'Minimal harus ada 2 baris transaksi (debit dan kredit).',
+            'tanggal.required'        => 'Tanggal wajib dipilih.',
+            'tanggal.date'            => 'Format tanggal tidak valid.',
+
+            'entitas_id.required'     => 'Entitas wajib dipilih.',
+            'entitas_id.integer'      => 'Entitas tidak valid.',
+
+            'cabang_id.required'      => 'Cabang wajib dipilih.',
+            'cabang_id.integer'       => 'Cabang tidak valid.',
+
+            'keterangan.string'       => 'Keterangan harus berupa teks.',
+
+            'detail.required'         => 'Detail transaksi wajib diisi.',
+            'detail.array'            => 'Format detail transaksi tidak valid.',
+            'detail.min'              => 'Detail transaksi minimal harus berisi 2 baris (debit dan kredit).',
+
             'detail.*.akun_id.required' => 'Akun wajib dipilih di setiap baris.',
             'detail.*.akun_id.integer'  => 'Akun tidak valid.',
             'detail.*.deskripsi.string' => 'Deskripsi harus berupa teks.',
         ];
 
-        if(in_array($jenis,array("JP"))){
-            $rules += ['no_invoice' => 'required|string'];
-            $messages += ['no_invoice.string'  => 'No Invoice tidak valid.','no_invoice.required'  => 'No Invoice wajib dipilih.'];
+        // 🔹 Tambahan rule berdasarkan jenis jurnal
+        switch ($jenis) {
+            case 'JN':
+                // tidak ada tambahan
+                break;
+
+            case 'JP':
+                // Invoice
+                $rules['no_invoice'] = 'required|string';
+                $messages += [
+                    'no_invoice.required' => 'No Invoice wajib diisi.',
+                    'no_invoice.string'   => 'No Invoice tidak valid.',
+                ];
+
+                // Tanggal Invoice
+                $rules['tanggal_invoice'] = 'required|date';
+                $messages += [
+                    'tanggal_invoice.required' => 'Tanggal Invoice wajib diisi.',
+                    'tanggal_invoice.date'     => 'Tanggal Invoice tidak valid.',
+                ];
+                
+                // JP butuh partner
+                $rules['partner_id'] = 'required|integer';
+                $messages += [
+                    'partner_id.required' => 'Partner wajib dipilih.',
+                    'partner_id.integer'  => 'Partner tidak valid.',
+                ];
+                break;
+
+            default: // JKM, JKK
+                $rules['partner_id'] = 'required|integer';
+                $messages += [
+                    'partner_id.required' => 'Partner wajib dipilih.',
+                    'partner_id.integer'  => 'Partner tidak valid.',
+                ];
+                break;
         }
 
+        // 🔹 Jalankan validasi
         $validation = Validator::make($request->all(), $rules, $messages);
+
         if ($validation->fails()) {
             return response()->json([
                 'status' => 'warning',
                 'message' => $validation->errors()->first(),
             ], 422);
         }
+
+
 
         // 💡 Flag untuk peringatan himbauan
         $warningMessages = [];
@@ -452,6 +511,7 @@ class JurnalController extends Controller
                 'tanggal' => $request->tanggal,
                 'entitas_id' => $request->entitas_id,
                 'partner_id' => $request->partner_id,
+                'cabang_id' => $request->cabang_id,
                 'keterangan' => $request->keterangan,
                 'total_debit' => $totalDebit,
                 'total_kredit' => $totalKredit,
@@ -462,6 +522,9 @@ class JurnalController extends Controller
             );
             if ($request->filled('no_invoice')) {
                 $data += array("no_invoice" => $request->no_invoice);
+            }
+            if ($request->filled('tanggal_invoice')) {
+                $data += array("tanggal_invoice" => $request->tanggal_invoice);
             }
             $jurnalId = DB::table('jurnal_header')->insertGetId($data);
 
@@ -510,41 +573,92 @@ class JurnalController extends Controller
     {
         $id = $request->id;
 
-        // 🔹 Validasi input
+        $allowedJenis = ['JP', 'JKM', 'JKK', 'JN'];
+        if (!in_array($jenis, $allowedJenis)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Jenis jurnal tidak valid. Hanya diperbolehkan: JP, JKM, JKK, dan JN.'
+            ], 422);
+        }
+
+        // 🔹 Rules awal
         $rules = [
-            'tanggal' => 'required|date',
-            'entitas_id' => 'required|integer',
-            'partner_id' => 'required|integer',
-            'keterangan' => 'nullable|string',
-            'detail' => 'required|array|min:2',
-            'detail.*.akun_id' => 'required|integer',
-            'detail.*.debit' => 'nullable',
-            'detail.*.kredit' => 'nullable',
-            'detail.*.deskripsi' => 'nullable|string'
+            'tanggal'            => 'required|date',
+            'entitas_id'         => 'required|integer',
+            'cabang_id'          => 'required|integer',
+            'keterangan'         => 'nullable|string',
+
+            // Detail
+            'detail'             => 'required|array|min:2',
+            'detail.*.akun_id'   => 'required|integer',
+            'detail.*.debit'     => 'nullable',
+            'detail.*.kredit'    => 'nullable',
+            'detail.*.deskripsi' => 'nullable|string',
         ];
 
+        // 🔹 Messages awal
         $messages = [
-            'tanggal.required'   => 'Tanggal wajib dipilih.',
-            'tanggal.date'       => 'Format tanggal tidak valid.',
-            'entitas_id.required' => 'Entitas wajib dipilih.',
-            'entitas_id.integer'  => 'Entitas tidak valid.',
-            'partner_id.required'  => 'Partner wajib dipilih.',
-            'partner_id.integer'  => 'Partner tidak valid.',
-            'keterangan.string'   => 'Keterangan harus berupa teks.',
-            'detail.required' => 'Detail transaksi wajib diisi.',
-            'detail.array'    => 'Format detail transaksi tidak valid.',
-            'detail.min'      => 'Minimal harus ada 2 baris transaksi (debit dan kredit).',
+            'tanggal.required'        => 'Tanggal wajib dipilih.',
+            'tanggal.date'            => 'Format tanggal tidak valid.',
+
+            'entitas_id.required'     => 'Entitas wajib dipilih.',
+            'entitas_id.integer'      => 'Entitas tidak valid.',
+
+            'cabang_id.required'      => 'Cabang wajib dipilih.',
+            'cabang_id.integer'       => 'Cabang tidak valid.',
+
+            'keterangan.string'       => 'Keterangan harus berupa teks.',
+
+            'detail.required'         => 'Detail transaksi wajib diisi.',
+            'detail.array'            => 'Format detail transaksi tidak valid.',
+            'detail.min'              => 'Detail transaksi minimal harus berisi 2 baris (debit dan kredit).',
+
             'detail.*.akun_id.required' => 'Akun wajib dipilih di setiap baris.',
             'detail.*.akun_id.integer'  => 'Akun tidak valid.',
             'detail.*.deskripsi.string' => 'Deskripsi harus berupa teks.',
         ];
 
-        if (($jenis == "JP") || ($jenis == "JKM" && !empty($request->jurnal_piutang_id))) {
-            $rules += ['no_invoice' => 'required|string'];
-            $messages += ['no_invoice.string' => 'No Invoice tidak valid.', 'no_invoice.required' => 'No Invoice wajib dipilih.'];
+        // 🔹 Tambahan rule berdasarkan jenis jurnal
+        switch ($jenis) {
+            case 'JN':
+                // tidak ada tambahan
+                break;
+
+            case 'JP':
+                // Invoice
+                $rules['no_invoice'] = 'required|string';
+                $messages += [
+                    'no_invoice.required' => 'No Invoice wajib diisi.',
+                    'no_invoice.string'   => 'No Invoice tidak valid.',
+                ];
+
+                // Tanggal Invoice
+                $rules['tanggal_invoice'] = 'required|date';
+                $messages += [
+                    'tanggal_invoice.required' => 'Tanggal Invoice wajib diisi.',
+                    'tanggal_invoice.date'     => 'Tanggal Invoice tidak valid.',
+                ];
+                
+                // JP butuh partner
+                $rules['partner_id'] = 'required|integer';
+                $messages += [
+                    'partner_id.required' => 'Partner wajib dipilih.',
+                    'partner_id.integer'  => 'Partner tidak valid.',
+                ];
+                break;
+
+            default: // JKM, JKK
+                $rules['partner_id'] = 'required|integer';
+                $messages += [
+                    'partner_id.required' => 'Partner wajib dipilih.',
+                    'partner_id.integer'  => 'Partner tidak valid.',
+                ];
+                break;
         }
 
+        // 🔹 Jalankan validasi
         $validation = Validator::make($request->all(), $rules, $messages);
+
         if ($validation->fails()) {
             return response()->json([
                 'status' => 'warning',
@@ -623,6 +737,7 @@ class JurnalController extends Controller
             $data = [
                 'tanggal' => $request->tanggal,
                 'entitas_id' => $request->entitas_id,
+                'cabang_id' => $request->cabang_id,
                 'partner_id' => $request->partner_id,
                 'keterangan' => $request->keterangan,
                 'total_debit' => $totalDebit,
@@ -632,6 +747,16 @@ class JurnalController extends Controller
 
             if ($request->filled('no_invoice')) {
                 $data['no_invoice'] = $request->no_invoice;
+            }
+
+            if ($request->filled('tanggal_invoice')) {
+                $data['tanggal_invoice'] = $request->tanggal_invoice;
+            }
+
+            if($jenis == "JKM" && !empty($request->jurnal_piutang_id)){
+                $get_data_invoice = DB::table("jurnal_header")->where('id', $request->jurnal_piutang_id)->first();
+                $data['no_invoice'] = $get_data_invoice->no_invoice;
+                $data['tanggal_invoice'] = $get_data_invoice->tanggal_invoice;
             }
 
             DB::table('jurnal_header')->where('id', $id)->update($data);
@@ -800,7 +925,7 @@ class JurnalController extends Controller
             // Posting Ke Buku Besar
             $details = DB::table('jurnal_detail as d')
                 ->join('jurnal_header as h', 'd.jurnal_id', '=', 'h.id')
-                ->select('h.id as jurnal_id', 'h.kode_jurnal', 'h.tanggal', 'd.deskripsi', 'h.jenis', 'h.entitas_id', 'h.partner_id', 'd.akun_id', 'd.debit', 'd.kredit')
+                ->select('h.id as jurnal_id', 'h.kode_jurnal', 'h.tanggal', 'd.deskripsi', 'h.jenis', 'h.entitas_id', 'h.partner_id', 'd.akun_id', 'd.debit', 'd.kredit','h.cabang_id')
                 ->where('h.id', $id)
                 ->get();
 
@@ -815,6 +940,7 @@ class JurnalController extends Controller
                     'kredit' => $row->kredit,
                     'entitas_id' => $row->entitas_id,
                     'partner_id' => $row->partner_id,
+                    'cabang_id' => $row->cabang_id,
                     'jenis' => $row->jenis,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -888,6 +1014,7 @@ class JurnalController extends Controller
             $query = DB::table('jurnal_header as j')
                 ->leftJoin('m_entitas as e', 'j.entitas_id', '=', 'e.id')
                 ->leftJoin('m_partner as p', 'j.partner_id', '=', 'p.id')
+                ->leftJoin('m_cabang as c', 'j.cabang_id', '=', 'c.id')
                 ->select(
                     'j.id',
                     'j.kode_jurnal',
@@ -895,6 +1022,7 @@ class JurnalController extends Controller
                     'j.tanggal',
                     'e.nama as entitas',
                     'p.nama as partner',
+                    'c.nama as cabang',
                     'j.total_debit',
                     'j.status'
                 )
@@ -911,6 +1039,22 @@ class JurnalController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
+                 // 🔍 Perbaiki pencarian global agar kolom alias ikut terdeteksi
+                ->filterColumn('entitas', function ($query, $keyword) {
+                    $query->where('e.nama', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('partner', function ($query, $keyword) {
+                    $query->where('p.nama', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('cabang', function ($query, $keyword) {
+                    $query->where('c.nama', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('kode_jurnal', function ($query, $keyword) {
+                    $query->whereRaw("CONCAT(j.kode_jurnal, ' ', COALESCE(j.no_invoice, '')) LIKE ?", ["%{$keyword}%"]);
+                })
+                ->filterColumn('keterangan', function ($query, $keyword) {
+                    $query->where('j.keterangan', 'like', "%{$keyword}%");
+                })
                 ->editColumn('tanggal', function ($row) {
                     return Carbon::parse($row->tanggal)->translatedFormat('d F Y');
                 })
@@ -944,6 +1088,7 @@ class JurnalController extends Controller
             $query = DB::table('jurnal_header as j')
                 ->leftJoin('m_entitas as e', 'j.entitas_id', '=', 'e.id')
                 ->leftJoin('m_partner as p', 'j.partner_id', '=', 'p.id')
+                ->leftJoin('m_cabang as c', 'j.cabang_id', '=', 'c.id')
                 ->select(
                     'j.id',
                     'j.kode_jurnal',
@@ -951,6 +1096,7 @@ class JurnalController extends Controller
                     'j.tanggal',
                     'e.nama as entitas',
                     'p.nama as partner',
+                    'c.nama as cabang',
                     'j.total_debit',
                     'j.status'
                 )
@@ -967,6 +1113,22 @@ class JurnalController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
+                 // 🔍 Perbaiki pencarian global agar kolom alias ikut terdeteksi
+                ->filterColumn('entitas', function ($query, $keyword) {
+                    $query->where('e.nama', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('partner', function ($query, $keyword) {
+                    $query->where('p.nama', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('cabang', function ($query, $keyword) {
+                    $query->where('c.nama', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('kode_jurnal', function ($query, $keyword) {
+                    $query->whereRaw("CONCAT(j.kode_jurnal, ' ', COALESCE(j.no_invoice, '')) LIKE ?", ["%{$keyword}%"]);
+                })
+                ->filterColumn('keterangan', function ($query, $keyword) {
+                    $query->where('j.keterangan', 'like', "%{$keyword}%");
+                })
                 ->editColumn('tanggal', function ($row) {
                     return Carbon::parse($row->tanggal)->translatedFormat('d F Y');
                 })
@@ -1079,6 +1241,7 @@ class JurnalController extends Controller
                         'kredit' => $d->kredit,
                         'entitas_id' => $jurnal->entitas_id,
                         'partner_id' => $jurnal->partner_id,
+                        'cabang_id' => $jurnal->cabang_id,
                         'jenis' => $jurnal->jenis,
                         'created_at' => now(),
                         'updated_at' => now(),
