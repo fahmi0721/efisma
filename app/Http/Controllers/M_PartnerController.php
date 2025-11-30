@@ -21,11 +21,19 @@ class M_PartnerController extends Controller
             return  Datatables::of($query)
                 ->addIndexColumn()
                 ->addColumn('aksi', function ($row) {
-                    $url = route('partner.edit')."?id=".$row->id;
-                return '
-                    <a title="Update Data" data-bs-toggle="tooltip" class="btn btn-sm btn-primary btn-edit" href="'.$url.'"><i class="fa fa-edit"></i></a>
-                    <button title="Hapus Data" data-bs-toggle="tooltip" class="btn btn-sm btn-danger btn-delete" onclick="hapusData('.$row->id.')"><i class="fa fa-trash"></i></button>
-                ';
+                    $html = '<div class="btn-group btn-group-sm">';
+                    if(canAccess('partner.edit')){
+                        $url = route('partner.edit')."?id=".$row->id;
+                        $html .= '<a title="Update Data" data-bs-toggle="tooltip" class="btn btn-sm btn-primary btn-edit" href="'.$url.'"><i class="fa fa-edit"></i></a>';
+                    }
+
+                    if(canAccess('partner.delete')){
+                        $url = route('entitas.edit')."?id=".$row->id;
+                        $html .= '<button title="Hapus Data" data-bs-toggle="tooltip" class="btn btn-sm btn-danger btn-delete" onclick="hapusData('.$row->id.')"><i class="fa fa-trash"></i></button>';
+                    }
+                    $html .= "</div>";
+                return $html;
+                
             })
             ->rawColumns(['aksi'])
             

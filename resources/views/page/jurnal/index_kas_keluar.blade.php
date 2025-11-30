@@ -26,15 +26,21 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Jurnal Kas Keluar</h5>
                     <div class="ms-auto">
+                        @canAccess('kas_keluar.unposting')
                         <a href="{{ route('jurnal.kaskeluar.unposting') }}" class="btn btn-danger btn-sm">
                             <i class="fas fa-bolt"></i> Unposting
                         </a>
+                        @endcanAccess
+                        @canAccess('kas_keluar.posting')
                         <a href="{{ route('jurnal.kaskeluar.posting') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-bolt"></i> Posting
                         </a>
+                        @endcanAccess
+                        @canAccess('kas_keluar.create')
                         <a href="{{ route('jurnal.kaskeluar.create') }}" class="btn btn-success btn-sm">
                             <i class="fas fa-plus-square"></i> Create New
                         </a>
+                        @endcanAccess
                     </div>
                 </div>
 
@@ -67,7 +73,9 @@
                     <table id="tb_data" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">
                         <thead>
                             <tr class="text-center">
+                                @canAccess('kas_keluar.unposting|kas_keluar.view|kas_keluar.posting|kas_keluar.edit|kas_keluar.delete')
                                 <th width="5%">Aksi</th>
+                                @endcanAccess
                                 <th width="5%">No</th>
                                 <th>Kode</th>
                                 <th>Tanggal</th>
@@ -145,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#tb_data').DataTable().ajax.reload();
     });
 });
-
+@canAccess('kas_keluar.view')
 function detail_transaksi(id){
     $.ajax({
         url: "{{ route('jurnal.detail_transaksi') }}?id="+id,
@@ -216,12 +224,10 @@ function detail_transaksi(id){
             console.error(err);
             alert('Gagal mengambil data jurnal.');
         }
-    });
-
-
-    
+    }); 
 }
-
+@endcanAccess
+@canAccess('kas_keluar.delete')
 function hapusData(id) {
     Swal.fire({
         title: 'Apakah Anda yakin?',
@@ -252,7 +258,8 @@ function hapusData(id) {
         }
     });
 }
-
+@endcanAccess
+@canAccess('kas_keluar.posting')
 function posting(id){
     Swal.fire({
         title: 'Posting Jurnal?',
@@ -274,7 +281,8 @@ function posting(id){
         }
     });
 }
-
+@endcanAccess
+@canAccess('kas_keluar.unposting')
 function unposting(id){
     Swal.fire({
         title: 'Batalkan Posting?',
@@ -296,7 +304,8 @@ function unposting(id){
         }
     });
 }
-
+@endcanAccess
+@canAccess('kas_keluar.view')
 // DataTables
 function load_data() {
     $('#tb_data').DataTable({
@@ -312,7 +321,9 @@ function load_data() {
         },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
+            @canAccess('kas_keluar.posting|kas_keluar.unposting|kas_keluar.edit|kas_keluar.delete|kas_keluar.view')
             { data: 'aksi', name: 'aksi', orderable:false, searchable:false },
+            @endcanAccess
             { data: 'kode_jurnal', name: 'kode_jurnal' },
             { data: 'tanggal', name: 'tanggal' },
             { data: 'entitas', name: 'entitas',orderable:false, },
@@ -341,5 +352,6 @@ function load_data() {
     // Init pertama kali
     $('[data-toggle="tooltip"]').tooltip();
 }
+@endcanAccess
 </script>
 @endsection

@@ -63,11 +63,12 @@
                     <option value="customer">Customer</option>
                     <option value="vendor">Vendor</option>
                 </select>
-
+                @canAccess('piutang.aging.export')
                 {{-- 📤 Tombol Export Excel --}}
                 <button id="btnExportExcel" class="btn btn-success">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </button>
+                @endcanAccess
             </div>
         </div>
         <div class="card-body">
@@ -117,6 +118,7 @@ $(document).ready(function() {
         // placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
+    @canAccess('piutang.aging.view')
     const tb = $('#tb_data').DataTable({
         processing: true,
         serverSide: true,
@@ -147,13 +149,15 @@ $(document).ready(function() {
     $('#filter_tipe, #filter_entitas').on('change', function() {
         tb.ajax.reload();
     });
-
+    @endcanAccess
+    @canAccess('piutang.aging.export')
     // 📤 Export Excel
     $('#btnExportExcel').click(function() {
         const tipe = $('#filter_tipe').val();
         const entitas = $('#filter_entitas').val();
         window.location.href = "{{ route('piutang.aging.export') }}?filter=" + tipe + "&entitas_id=" + (entitas ?? '');
     });
+    @endcanAccess
 });
 </script>
 @endsection

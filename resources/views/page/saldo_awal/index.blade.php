@@ -26,12 +26,16 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Data Saldo Awal Akun GL</h5>
                     <div class="ms-auto">
+                        @canAccess('m_saldo_awal.import')
                         <a href="{{ route('saldo_awal.form_import') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-upload"></i> Import Excel
                         </a>
+                        @endcanAccess
+                        @canAccess('m_saldo_awal.create')
                         <a href="{{ route('saldo_awal.create') }}" class="btn btn-success btn-sm">
                             <i class="fas fa-plus-square"></i> Create New
                         </a>
+                        @endcanAccess
                     </div>
                 </div>
 
@@ -67,7 +71,9 @@
                                 <th>Periode</th>
                                 <th>Entitas</th>
                                 <th>Saldo</th>
+                                @canAccess('m_saldo_awal.edit|m_akun.delete')
                                 <th width="5%">Aksi</th>
+                                @endcanAccess
                             </tr>
                         </thead>
                     </table>
@@ -176,7 +182,9 @@ function load_data() {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0 }).format(data);
                 }
             },
+            @canAccess('m_saldo_awal.edit|m_akun.delete')
             { data: 'aksi', name: 'aksi', orderable:false, searchable:false, className:'text-center' },
+            @endcanAccess
         ],
         order: [[2, 'desc']],
     });

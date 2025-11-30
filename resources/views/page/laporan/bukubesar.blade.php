@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Buku Besar')
+@section('title', 'Laporan Buku Besar')
 @section('css')
 <style>
 
@@ -39,10 +39,14 @@
 
         <div class="col-md-3">
             <div class='btn-group'>
+            @canAccess('buku_besar.index')
             <button id='btn-filter' class="btn btn-primary">Tampilkan</button>
+            @endcanAccess
+            @canAccess('buku_besar.export')
             <button id='btnExportExcel' data-toggle='tooltip' title='Export Excel' class="btn btn-success">
                 <i class="fas fa-file-excel"></i> 
             </button>
+            @endcanAccess
             </div>
         </div>
     </div>
@@ -123,26 +127,27 @@ $(function() {
         escapeMarkup: markup => markup
     });
 });
-
+@canAccess('buku_besar.index')
 $('#filter_entitas').val('').trigger('change');
 
  // Reload saat filter berubah
 $('#btn-filter').on('click', function() {
     table.ajax.reload();
 });
-
+@endcanAccess
+@canAccess('buku_besar.export')
  // Export Excel
 $('#btnExportExcel').click(function() {
     let entitas = $('#filter_entitas').val();
     let periode = $('#periode').val();
     window.location.href = "{{ route('laporan.bukubesar.export') }}?entitas_id=" + entitas + "&periode=" + periode;
 });
-    
+@endcanAccess
 function rupiah(x) {
     return 'Rp ' + Number(x).toLocaleString('id-ID');
 }
 
-
+@canAccess('buku_besar.index')
  const table =    $('#t_data').DataTable({
         processing: true,
         serverSide: true,
@@ -183,7 +188,7 @@ function rupiah(x) {
         ],
         // order: [[2, 'desc']],
     });
-</script>
+@endcanAccess
 
 
 

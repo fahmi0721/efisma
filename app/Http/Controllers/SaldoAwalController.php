@@ -58,11 +58,17 @@ class SaldoAwalController extends Controller
                     return $formatted;
                 })
                 ->addColumn('aksi', function ($row) {
-                    $urlEdit = route('saldo_awal.edit')."?id=".$row->id;
-                    return '
-                        <a href="' . $urlEdit . '" class="btn btn-sm btn-primary"><i class="fa fa-edit"></i></a>
-                        <button class="btn btn-sm btn-danger" onclick="hapusData(' . $row->id . ')"><i class="fa fa-trash"></i></button>
-                    ';
+                    $html = '<div class="btn-group btn-group-sm">';
+                    if(canAccess('m_saldo_awal.edit')){
+                        $url = route('m_akun.edit')."?id=".$row->id;
+                        $html .= '<a href="' . $url . '" title="Update Data" data-bs-toggle="tooltip" class="btn btn-sm btn-primary"><i class="fa fa-edit"></i></a>';
+                    }
+
+                    if(canAccess('m_saldo_awal.delete')){
+                        $html .= '<button title="Hapus Data" data-bs-toggle="tooltip" class="btn btn-sm btn-danger btn-delete" onclick="hapusData('.$row->id.')"><i class="fa fa-trash"></i></button>';
+                    }
+                    $html .= "</div>";
+                    return $html;
                 })
                 ->rawColumns(['aksi'])
                 ->make(true);

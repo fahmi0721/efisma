@@ -41,4 +41,33 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_roles');
+    }
+    public function getAllPermissionSlugs()
+    {
+        // ambil permission slug lewat role -> role_permission -> permissions
+        return $this->roles()
+            ->join('role_permissions', 'roles.id', '=', 'role_permissions.role_id')
+            ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
+            ->pluck('permissions.slug')
+            ->unique()
+            ->toArray();
+    }
+    public function permissions()
+    {
+        return $this->roles()
+            ->with('permissions')
+            ->get()
+            ->pluck('permissions')
+            ->flatten()
+            ->unique('id');
+    }
+
+    public function hasPermission($permissionSlug)
+    {
+        $perms = $this->getAllPermissionSlugs();
+        return in_array($permissionSlug, $perms);
+    }
 }

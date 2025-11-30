@@ -22,6 +22,15 @@ if (!function_exists('getLogoAplikasi')) {
         return $path."avatar.png"; // fallback default
     }
 }
+if (!function_exists('canAccess')) {
+    function canAccess($slugs) {
+        $need = explode("|",$slugs);
+        foreach($need as $p){
+            if(auth()->check() && auth()->user()->hasPermission($p)) return true;
+        }
+        return false;
+    }
+}
 
 if (!function_exists('getFaviconAplikasi')) {
     function getFaviconAplikasi()

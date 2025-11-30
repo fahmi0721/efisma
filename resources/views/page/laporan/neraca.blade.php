@@ -28,17 +28,17 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
             <h5 class="mb-0">Neraca</h5>
             <div class="d-flex align-items-center gap-2 ms-auto">
+                <input type="text" id="periode" class="form-control form-control flatpickr-input" placeholder="Pilih Periode" style="width: 200px;" />
                 {{-- 🔽 Filter Entitas --}}
                 <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:250px">
                     <option value="">Semua Entitas</option>
                 </select>
-
-                <input type="text" id="periode" class="form-control form-control flatpickr-input" placeholder="Pilih Periode" style="width: 200px;" />
-
+                @canAccess('neraca.export')
                 {{-- 📤 Tombol Export Excel --}}
                 <button id="btnExportExcel" class="btn btn-success">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </button>
+                @endcanAccess
             </div>
         </div>
 
@@ -109,6 +109,7 @@ $(function() {
         allowInput: false,
         locale: "id"
     });
+    @canAccess('neraca.view')
     const table = $('#tb_data').DataTable({
         processing: true,
         serverSide: false,
@@ -153,13 +154,15 @@ $(function() {
     $('#filter_entitas, #periode').on('change', function() {
         table.ajax.reload();
     });
-
+    @endcanAccess
+    @canAccess('neraca.export')
     // Export Excel
     $('#btnExportExcel').click(function() {
         let entitas = $('#filter_entitas').val();
         let periode = $('#periode').val();
         window.location.href = "{{ route('laporan.neraca.export') }}?entitas_id=" + entitas + "&periode=" + periode;
     });
+    @endcanAccess
 });
 </script>
 @endsection

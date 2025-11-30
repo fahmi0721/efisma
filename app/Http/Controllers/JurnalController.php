@@ -93,8 +93,9 @@ class JurnalController extends Controller
 
                     $url = route('jurnal.' . $pg[$jenis] . '.edit') . "?id=" . $row->id;
                     $html = '<div class="btn-group btn-group-sm">';
-                    $html .= '<button title="Detail Transaksi" data-toggle="tooltip" class="btn btn-info btn-view" onclick="detail_transaksi(' . $row->id . ')"><i class="fas fa-eye"></i></button>';
-
+                    if(canAccess('pendapatan.view|kas_masuk.view|kas_keluar.view|penyesuaian.view')){
+                        $html .= '<button title="Detail Transaksi" data-toggle="tooltip" class="btn btn-info btn-view" onclick="detail_transaksi(' . $row->id . ')"><i class="fas fa-eye"></i></button>';
+                    }
                     // 🔒 Cek status periode akuntansi
                     $periodeStatus = DB::table('periode_akuntansi')
                         ->whereRaw("? BETWEEN tanggal_mulai AND tanggal_selesai", [$row->tanggal])
@@ -103,14 +104,53 @@ class JurnalController extends Controller
                     $isClosed = $periodeStatus === 'closed';
 
                     if ($row->status === "draft" && !$isClosed) {
-                        $html .= '<a title="Edit" data-toggle="tooltip" href="' . $url . '" class="btn btn-warning btn-edit"><i class="fas fa-edit"></i></a>';
-                        $html .= '<button title="Delete" data-toggle="tooltip" class="btn btn-danger btn-delete" onclick="hapusData(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
-                        $html .= '<button title="Posting" data-toggle="tooltip" class="btn btn-success btn-posting" onclick="posting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                        /** tombol edit */
+                        if(canAccess('pendapatan.edit') && $jenis == "JP"){
+                            $html .= '<a title="Edit" data-toggle="tooltip" href="' . $url . '" class="btn btn-warning btn-edit"><i class="fas fa-edit"></i></a>';
+                        }elseif(canAccess('kas_masuk.edit') && $jenis == "JKM"){
+                            $html .= '<a title="Edit" data-toggle="tooltip" href="' . $url . '" class="btn btn-warning btn-edit"><i class="fas fa-edit"></i></a>';
+                        }elseif(canAccess('kas_keluar.edit') && $jenis == "JKK"){
+                            $html .= '<a title="Edit" data-toggle="tooltip" href="' . $url . '" class="btn btn-warning btn-edit"><i class="fas fa-edit"></i></a>';
+                        }elseif(canAccess('penyesuaian.edit') && $jenis == "JN"){
+                            $html .= '<a title="Edit" data-toggle="tooltip" href="' . $url . '" class="btn btn-warning btn-edit"><i class="fas fa-edit"></i></a>';
+                        }
+
+                        /** tombol delete */
+                        if(canAccess('pendapatan.delete') && $jenis == "JP"){
+                            $html .= '<button title="Delete" data-toggle="tooltip" class="btn btn-danger btn-delete" onclick="hapusData(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
+                        }elseif(canAccess('kas_masuk.delete') && $jenis == "JKM"){
+                            $html .= '<button title="Delete" data-toggle="tooltip" class="btn btn-danger btn-delete" onclick="hapusData(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
+                        }elseif(canAccess('kas_keluar.delete') && $jenis == "JKK"){
+                            $html .= '<button title="Delete" data-toggle="tooltip" class="btn btn-danger btn-delete" onclick="hapusData(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
+                        }elseif(canAccess('penyesuaian.delete') && $jenis == "JN"){
+                            $html .= '<button title="Delete" data-toggle="tooltip" class="btn btn-danger btn-delete" onclick="hapusData(' . $row->id . ')"><i class="fas fa-trash"></i></button>';
+                        }
+
+                        /** tombol posting */
+                        if(canAccess('pendapatan.posting') && $jenis == "JP"){
+                            $html .= '<button title="Posting" data-toggle="tooltip" class="btn btn-success btn-posting" onclick="posting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                        }elseif(canAccess('kas_masuk.posting') && $jenis == "JKM"){
+                            $html .= '<button title="Posting" data-toggle="tooltip" class="btn btn-success btn-posting" onclick="posting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                        }elseif(canAccess('kas_keluar.posting') && $jenis == "JKK"){
+                            $html .= '<button title="Posting" data-toggle="tooltip" class="btn btn-success btn-posting" onclick="posting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                        }elseif(canAccess('penyesuaian.posting') && $jenis == "JN"){
+                            $html .= '<button title="Posting" data-toggle="tooltip" class="btn btn-success btn-posting" onclick="posting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                        }
+
                     } elseif ($row->status === "posted") {
                         if ($isClosed) {
                             $html .= '<button title="Periode Closed" data-toggle="tooltip" class="btn btn-secondary" disabled><i class="fas fa-lock"></i></button>';
                         } else {
-                            $html .= '<button title="Unposting" data-toggle="tooltip" class="btn btn-danger btn-posting" onclick="unposting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                            if(canAccess('pendapatan.unposting') && $jenis == "JP"){
+                                $html .= '<button title="Unposting" data-toggle="tooltip" class="btn btn-danger btn-posting" onclick="unposting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                            }elseif(canAccess('kas_masuk.unposting') && $jenis == "JKM"){
+                                $html .= '<button title="Unposting" data-toggle="tooltip" class="btn btn-danger btn-posting" onclick="unposting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                            }elseif(canAccess('kas_keluar.unposting') && $jenis == "JKK"){
+                                $html .= '<button title="Unposting" data-toggle="tooltip" class="btn btn-danger btn-posting" onclick="unposting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                            }elseif(canAccess('penyesuaian.unposting') && $jenis == "JN"){
+                                $html .= '<button title="Unposting" data-toggle="tooltip" class="btn btn-danger btn-posting" onclick="unposting(' . $row->id . ')"><i class="fas fa-bolt"></i></button>';
+                            }
+                            
                         }
                     }
 

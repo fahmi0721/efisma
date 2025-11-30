@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Arus Kas')
+@section('title', 'Laporan Arus Kas')
 @section('css')
 <style>
 
@@ -40,10 +40,14 @@
 
         <div class="col-md-3">
             <div class='btn-group'>
+            @canAccess('arus_kas.view')
             <button id='btn-filter' class="btn btn-primary">Tampilkan</button>
+            @endcanAccess
+            @canAccess('arus_kas.export')
             <button id='btn-export' data-toggle='tooltip' title='Export Excel' class="btn btn-success">
                 <i class="fas fa-file-excel"></i> 
             </button>
+            @endcanAccess
             </div>
         </div>
     </div>
@@ -147,23 +151,24 @@ $(function() {
 });
 
 $('#filter_entitas').val('').trigger('change');
-
+@canAccess('arus_kas.view')
  // Reload saat filter berubah
 $('#btn-filter').on('click', function() {
     table.ajax.reload();
 });
-
+@endcanAccess 
+@canAccess('arus_kas.export')
  // Export Excel
 $('#btnExportExcel').click(function() {
     let entitas = $('#filter_entitas').val();
     let periode = $('#periode').val();
     window.location.href = "{{ route('laporan.arus_kas.export') }}?entitas_id=" + entitas + "&periode=" + periode;
 });
-    
+@endcanAccess 
 function rupiah(x) {
     return 'Rp ' + Number(x).toLocaleString('id-ID');
 }
-
+@canAccess('arus_kas.view')
 const table = $('#tblCashflow').DataTable({
     processing: true,
     serverSide: false,
@@ -210,8 +215,7 @@ const table = $('#tblCashflow').DataTable({
     ],
     order: [[0, 'asc']]
 });
-</script>
-
+@endcanAccess
 
 
 </script>

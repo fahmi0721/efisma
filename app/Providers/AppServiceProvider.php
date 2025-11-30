@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Blade;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Blade::if('canAccess', function ($permissionSlug) {
+            $user = auth()->user();
+            if (! $user) return false;
+            // dukung multiple permission dipisah |
+            $need = explode('|', $permissionSlug);
+            foreach ($need as $p) {
+                if ($user->hasPermission(trim($p))) return true;
+            }
+            return false;
+        });
     }
 }

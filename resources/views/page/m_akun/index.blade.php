@@ -33,9 +33,11 @@
                         <a href="{{ route('m_akun.map') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-map"></i> Maping Akun
                         </a>
+                        @canAccess('m_akun.create')
                         <a href="{{ route('m_akun.create') }}" class="btn btn-success btn-sm">
                             <i class="fas fa-plus-square"></i> Create New
                         </a>
+                        @endcanAccess
                     </div>
                 </div>
                 <div class="card-body">
@@ -49,7 +51,9 @@
                                 <th>Tipe</th>
                                 <th>Kategori</th>
                                 <th>Saldo Normal</th>
+                                @canAccess('m_akun.edit|m_akun.delete')
                                 <th width='5%'>Aksi</th>
+                                @endcanAccess
                             </tr>
                         </thead>
                     </table>
@@ -117,7 +121,10 @@ load_data = function(){
             { data: 'tipe_akun', name: 'tipe_akun', orderable: false, },
             { data: 'kategori', name: 'kategori', orderable: false, },
             { data: 'saldo_normal', name: 'saldo_normal', orderable: false, },
+            @canAccess('m_akun.edit|m_akun.delete')
             { data: 'aksi', name: 'aksi', orderable: false, searchable: false },
+            @endcanAccess
+
         ]
     });
     // Init tooltip setiap setelah table redraw

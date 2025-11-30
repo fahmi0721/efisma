@@ -32,22 +32,30 @@ class PeriodeAkutansiController extends Controller
                     $html = '<div class="btn-group btn-group-sm">';
 
                     if ($row->status == "open") {
-                        $html .= '<a title="Update Data" data-bs-toggle="tooltip" href="' . $url . '" class="btn btn-warning btn-edit">
+                        if(canAccess('periode.edit')){
+                            $html .= '<a title="Update Data" data-bs-toggle="tooltip" href="' . $url . '" class="btn btn-warning btn-edit">
                                     <i class="fas fa-edit"></i>
                                 </a>';
-                        $html .= '<button title="Hapus Data" data-bs-toggle="tooltip" class="btn btn-danger btn-delete" 
+                        }
+                        if(canAccess('periode.delete')){
+                            $html .= '<button title="Hapus Data" data-bs-toggle="tooltip" class="btn btn-danger btn-delete" 
                                     onclick="hapusData(' . $row->id . ')">
                                     <i class="fas fa-trash"></i>
                                 </button>';
-                        $html .= '<button title="Close Periode" data-bs-toggle="tooltip" class="btn btn-primary btn-posting"
+                        }
+                        if(canAccess('periode.open_close')){
+                            $html .= '<button title="Close Periode" data-bs-toggle="tooltip" class="btn btn-primary btn-posting"
                                     onclick="update_status(' . $row->id . ', \'close\')">
                                     <i class="fas fa-lock"></i>
                                 </button>';
+                        }
                     } else {
-                        $html .= '<button title="Open Periode" data-bs-toggle="tooltip" class="btn btn-success btn-posting"
+                        if(canAccess('periode.open_close')){
+                            $html .= '<button title="Open Periode" data-bs-toggle="tooltip" class="btn btn-success btn-posting"
                                     onclick="update_status(' . $row->id . ', \'open\')">
                                     <i class="fas fa-unlock"></i>
                                 </button>';
+                        }
                     }
 
                     $html .= '</div>';

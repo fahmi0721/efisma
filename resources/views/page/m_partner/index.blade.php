@@ -26,9 +26,11 @@
             <div class="card card-success card-outline mb-4">
                 <div class="card-header d-flex  align-items-center">
                     <h5 class="mb-0">Data Partner</h5>
+                    @canAccess('partner.create')
                     <a href="{{ route('partner.create') }}" class="btn btn-success btn-sm ms-auto">
                         <i class="fas fa-plus-square"></i> Create New
                     </a>
+                    @endcanAccess
                 </div>
                 <div class="card-body">
                     <table id="tb_data" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">
@@ -41,7 +43,9 @@
                                 <th>Vendor</th>
                                 <th>Customer</th>
                                 <th>Alamat</th>
+                                @canAccess('partner.edit|partner.delete')
                                 <th width='5%'>Aksi</th>
+                                @endcanAccess
                             </tr>
                         </thead>
                     </table>
@@ -109,7 +113,9 @@ load_data = function(){
             { data: 'is_vendor', name: 'is_vendor',orderable: false },
             { data: 'is_customer', name: 'is_customer',orderable: false },
             { data: 'alamat', name: 'alamat',orderable: false },
+            @canAccess('partner.edit|partner.delete')
             { data: 'aksi', name: 'aksi', orderable: false, searchable: false },
+            @endcanAccess
         ]
     });
     // Init tooltip setiap setelah table redraw

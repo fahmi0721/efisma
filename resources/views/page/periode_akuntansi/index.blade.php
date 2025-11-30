@@ -26,9 +26,11 @@
             <div class="card card-success card-outline mb-4">
                 <div class="card-header d-flex  align-items-center">
                     <h5 class="mb-0">Data Periode Akutansi</h5>
+                    @canAccess('periode.create')
                     <a href="{{ route('periode_akuntansi.create') }}" class="btn btn-success btn-sm ms-auto">
                         <i class="fas fa-plus-square"></i> Create New
                     </a>
+                    @endcanAccess
                 </div>
                 <div class="card-body">
                     <table id="tb_data" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">
@@ -40,7 +42,9 @@
                                 <th>Tanggal Selesai</th>
                                 <th>Status</th>
                                 <th>Close By</th>
+                                @canAccess('periode.edit|periode.delete|periode.open_close')
                                 <th width='5%'>Aksi</th>
+                                @endcanAccess
                             </tr>
                         </thead>
                     </table>
@@ -55,6 +59,7 @@
 $(document).ready(function() {
     load_data();
 });
+@canAccess('periode.open_close')
 function update_status(id, status) {
     let textConfirm = status === 'close' 
         ? "Apakah kamu yakin ingin MENUTUP periode ini? Setelah ditutup, jurnal tidak bisa diubah." 
@@ -119,7 +124,8 @@ function update_status(id, status) {
         }
     });
 }
-
+@endcanAccess
+@canAccess('periode.delete')
 function hapusData(id) {
     Swal.fire({
         title: 'Apakah Anda yakin?',
@@ -166,6 +172,7 @@ function hapusData(id) {
         }
     });
 }
+@endcanAccess
 load_data = function(){
     $('#tb_data').DataTable({
         processing: true,
@@ -212,7 +219,9 @@ load_data = function(){
             },
             { data: 'status', name: 'status',orderable: false },
             { data: 'closed_by', name: 'closed_by',orderable: false },
+            @canAccess('periode.edit|periode.delete|periode.open_close')
             { data: 'aksi', name: 'aksi', orderable: false, searchable: false },
+            @endcanAccess
         ]
     });
     // Init tooltip setiap setelah table redraw

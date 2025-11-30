@@ -26,9 +26,11 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Jurnal Kas Masuk</h5>
                     <div class="ms-auto">
+                        @canAccess('kas_masuk.unposting')
                         <a href="{{ route('jurnal.kasmasuk.unposting') }}" class="btn btn-danger btn-sm">
                             <i class="fas fa-bolt"></i> Unposting
                         </a>
+                        @endcanAccess
                         <a href="{{ route('jurnal.kasmasuk.posting') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-bolt"></i> Posting
                         </a>

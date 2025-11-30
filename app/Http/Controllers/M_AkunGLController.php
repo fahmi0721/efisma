@@ -17,11 +17,17 @@ class M_AkunGLController extends Controller
             return  Datatables::of($query)
                 ->addIndexColumn()
                 ->addColumn('aksi', function ($row) {
-                    $url = route('m_akun.edit')."?id=".$row->id;
-                return '
-                    <a title="Update Data" data-bs-toggle="tooltip" class="btn btn-sm btn-primary btn-edit" href="'.$url.'"><i class="fa fa-edit"></i></a>
-                    <button title="Hapus Data" data-bs-toggle="tooltip" class="btn btn-sm btn-danger btn-delete" onclick="hapusData('.$row->id.')"><i class="fa fa-trash"></i></button>
-                ';
+                    $html = '<div class="btn-group btn-group-sm">';
+                    if(canAccess('m_akun.edit')){
+                        $url = route('m_akun.edit')."?id=".$row->id;
+                        $html .= '<a title="Update Data" data-bs-toggle="tooltip" class="btn btn-sm btn-primary btn-edit" href="'.$url.'"><i class="fa fa-edit"></i></a>';
+                    }
+
+                    if(canAccess('m_akun.delete')){
+                        $html .= '<button title="Hapus Data" data-bs-toggle="tooltip" class="btn btn-sm btn-danger btn-delete" onclick="hapusData('.$row->id.')"><i class="fa fa-trash"></i></button>';
+                    }
+                    $html .= "</div>";
+                return $html;
             })
             ->rawColumns(['aksi'])
             
