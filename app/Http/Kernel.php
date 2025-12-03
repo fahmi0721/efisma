@@ -27,6 +27,7 @@ class Kernel extends HttpKernel
 
     protected $routeMiddleware = [
         'permission' => \App\Http\Middleware\CheckPermission::class,
+        'entitas_scope' => \App\Http\Middleware\SetEntitasScope::class,
     ];
 
 

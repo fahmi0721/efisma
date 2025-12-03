@@ -40,7 +40,7 @@
                                 <input type="text" class="form-control" id="nama_partner" value="{{ $data->nama }}" name="nama_partner" placeholder="Nama Partner" />
                             </div>
                         </div>
-
+                        @if (auth()->user()->level != "entitas")
                         <div class="row mb-3">
                             <label for="entitas" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -49,6 +49,7 @@
                                 </select>
                             </div>
                         </div>
+                        @endif
 
                         <div class="row mb-3">
                             <label for="alamat" class="col-sm-3 col-form-label">Alamat</label>
@@ -95,6 +96,7 @@
 @section('js')
 <script>
     $(document).ready(function(){
+        @if (auth()->user()->level != "entitas")
         $('.entitas').select2({
             ajax: {
                 url: '{{ route("entitas.select") }}',
@@ -114,11 +116,14 @@
             placeholder: "-- Pilih Entitas --",
             allowClear: true
         });
+        @endif
     });
+    @if (auth()->user()->level != "entitas")
     @if(!empty($entitas_id))
         var entitas_id = "{{ $entitas_id->id }}";
         var option = new Option("{{ $entitas_id->id }} - {{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
         $(".entitas").append(option).trigger('change');    
+    @endif
     @endif
     proses_data = function(){
         let iData = $("#form_data").serialize();

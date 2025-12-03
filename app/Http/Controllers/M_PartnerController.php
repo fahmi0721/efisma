@@ -16,9 +16,19 @@ class M_PartnerController extends Controller
             $query = DB::table("m_partner")
                 ->join("m_entitas","m_entitas.id","m_partner.entitas_id")
                 ->select('m_partner.id',"m_partner.nama","m_partner.is_vendor","m_partner.is_customer","m_partner.alamat","m_partner.no_telpon","m_entitas.nama as entitas")
-                ->orderBy("id","desc")
-                ->get();
-            return  Datatables::of($query)
+                ->orderBy("id","desc");
+             /*
+            |--------------------------------------------------------------------------
+            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+            |--------------------------------------------------------------------------
+            */
+            if ($request->entitas_scope) {
+                $query->where('m_partner.entitas_id', $request->entitas_scope);
+            }
+
+            $data = $query->get();
+                
+            return  Datatables::of($data)
                 ->addIndexColumn()
                 ->addColumn('aksi', function ($row) {
                     $html = '<div class="btn-group btn-group-sm">';
@@ -94,9 +104,16 @@ class M_PartnerController extends Controller
     {
         $validates 	= [
             "nama_partner"  => "required",
-            "entitas"  => "required",
-            
         ];
+       
+        
+        // Hanya admin/pusat wajib memilih entitas
+        if (auth()->user()->level != 'entitas') {
+            $validates["entitas"] = "required";
+            $entitas_id = $request->entitas;
+        }else{
+            $entitas_id = $request->entitas_id;
+        }
         
         
         $validation = Validator::make($request->all(), $validates);
@@ -118,7 +135,7 @@ class M_PartnerController extends Controller
         try {
             $data['nama'] = $request->nama_partner;
             $data['alamat'] = $request->alamat;
-            $data['entitas_id'] = $request->entitas;
+            $data['entitas_id'] = $entitas_id;
             $data['no_telpon'] = $request->no_telepon;
             $data['is_vendor'] = $request->has('vendor') ? $request->vendor : "inactive";
             $data['is_customer'] = $request->has('customer') ? $request->customer : "inactive";
@@ -151,8 +168,15 @@ class M_PartnerController extends Controller
     {
         $validates 	= [
             "nama_partner"  => "required",
-            "entitas"  => "required",
         ];
+         // Hanya admin/pusat wajib memilih entitas
+        if (auth()->user()->level != 'entitas') {
+            $validates["entitas"] = "required";
+            $entitas_id = $request->entitas;
+        }else{
+            $entitas_id = $request->entitas_id;
+        }
+
         $validation = Validator::make($request->all(), $validates);
         if($validation->fails()) {
             return response()->json([
@@ -172,7 +196,7 @@ class M_PartnerController extends Controller
         try {
             $data['nama'] = $request->nama_partner;
             $data['alamat'] = $request->alamat;
-            $data['entitas_id'] = $request->entitas;
+            $data['entitas_id'] = $entitas_id;
             $data['no_telpon'] = $request->no_telepon;
             $data['is_vendor'] = $request->has('vendor') ? $request->vendor : "inactive";
             $data['is_customer'] = $request->has('customer') ? $request->customer : "inactive";

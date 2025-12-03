@@ -160,7 +160,7 @@ Route::group(['middleware' => 'auth'], function () {
  * Route Master Data Partner
  */
 use App\Http\Controllers\M_PartnerController;
-Route::group(['middleware' => 'auth'], function () {
+Route::group(['middleware' => ['auth', 'entitas_scope']], function () {
     Route::get('/m_partner/select', [M_PartnerController::class, 'partner_select'])->name('partner.select');
     Route::get('/m_partner', [M_PartnerController::class, 'index'])->name('partner')->middleware('permission:partner.view');
     Route::get('/m_partner/add', [M_PartnerController::class, 'create'])->name('partner.create')->middleware('permission:partner.create');

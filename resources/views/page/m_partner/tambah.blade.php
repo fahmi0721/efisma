@@ -39,16 +39,16 @@
                                 <input type="text" class="form-control" id="nama_partner" name="nama_partner" placeholder="Nama Partner" />
                             </div>
                         </div>
-
-                        <div class="row mb-3">
-                            <label for="entitas" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
-                            <div class="col-sm-9">
-                                <select name="entitas" id="entitas" class="form-control entitas">
-                                    <option value="">-- Pilih Entitas --</option>
-                                </select>
+                        @if (auth()->user()->level != "entitas")
+                            <div class="row mb-3">
+                                <label for="entitas" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
+                                <div class="col-sm-9">
+                                    <select name="entitas" id="entitas" class="form-control entitas">
+                                        <option value="">-- Pilih Entitas --</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-
+                        @endif
                         <div class="row mb-3">
                             <label for="alamat" class="col-sm-3 col-form-label">Alamat</label>
                             <div class="col-sm-9">
@@ -97,6 +97,7 @@
 <script>
     $(document).ready(function(){
         // 🔽 Select2 Akun GL
+        @if (auth()->user()->level != "entitas")
         $('.entitas').select2({
             ajax: {
                 url: '{{ route("entitas.select") }}',
@@ -116,6 +117,7 @@
             placeholder: "-- Pilih Entitas --",
             allowClear: true
         });
+        @endif
     });
     proses_data = function(){
         let iData = new FormData(document.getElementById("form_data"));
