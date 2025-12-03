@@ -28,10 +28,12 @@
             <h5 class="mb-0">Laporan Laba Rugi</h5>
             <div class="d-flex align-items-center gap-2 ms-auto">
                 <input type="text" id="periode" class="form-control form-control flatpickr-input" placeholder="Pilih Periode" style="width: 200px;" />
+                @if(auth()->user()->level != "entitas")
                 {{-- 🔽 Filter Entitas --}}
                 <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:250px">
                     <option value="">Semua Entitas</option>
                 </select>
+                @endif
 
                 @canAccess('pbl.export')
                 {{-- 📤 Tombol Export Excel --}}
@@ -79,6 +81,7 @@
 @section('js')
 <script>
 $(function() {
+    @if(auth()->user()->level != "entitas")
      $('#filter_entitas').select2({
         ajax: {
             url: '{{ route("entitas.select") }}',
@@ -100,7 +103,7 @@ $(function() {
         // placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
-
+    @endif
       // 🔹 Flatpickr Month Picker dengan default bulan ini
     const now = new Date();
     const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -183,7 +186,11 @@ $(function() {
     $('#btnExportExcel').click(function() {
         let entitas = $('#filter_entitas').val();
         let periode = $('#periode').val();
-        window.location.href = "{{ route('laporan.laba_rugi.export') }}?entitas_id=" + entitas + "&periode=" + periode;
+        @if(auth()->user()->level != "entitas")
+            window.location.href = "{{ route('laporan.laba_rugi.export') }}?entitas_id=" + entitas + "&periode=" + periode;
+        @else
+            window.location.href = "{{ route('laporan.laba_rugi.export') }}?periode=" + periode;
+        @endif
     });
     @endcanAccess
 });

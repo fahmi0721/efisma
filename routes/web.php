@@ -277,7 +277,7 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
  * Route Laporan Keuangan
  */
 use App\Http\Controllers\LaporanKeuanganController;
-Route::group(['middleware' => 'auth'], function () {
+Route::group(['middleware' => ['auth','entitas_scope']], function () {
    Route::prefix('laporan')->group(function () {
         Route::get('neraca', [LaporanKeuanganController::class, 'indexNeraca'])->name('laporan.neraca')->middleware('permission:neraca.view');
         Route::get('neraca/data', [LaporanKeuanganController::class, 'dataNeraca'])->name('laporan.neraca.data')->middleware('permission:neraca.view');
@@ -289,7 +289,7 @@ Route::group(['middleware' => 'auth'], function () {
 
         Route::get('cashflow', [LaporanKeuanganController::class, 'indexAruskas'])->name('laporan.arus_kas')->middleware('permission:arus_kas.view');
         Route::get('cashflow/data', [LaporanKeuanganController::class, 'dataArusKas'])->name('laporan.arus_kas.data')->middleware('permission:arus_kas.view');
-        Route::get('cashflow/export', [LaporanKeuanganController::class, 'exportArusKas'])->name('laporan.arus_kas.export')->middleware('permission:arusa_kas.export');
+        Route::get('cashflow/export', [LaporanKeuanganController::class, 'exportArusKas'])->name('laporan.arus_kas.export')->middleware('permission:arus_kas.export');
 
         Route::get('buku_besar', [LaporanKeuanganController::class, 'indexBukuBesar'])->name('laporan.bukubesar')->middleware('permission:buku_besar.index');
         Route::get('buku_besar/export', [LaporanKeuanganController::class, 'exportBukuBesar'])->name('laporan.bukubesar.export')->middleware('permission:buku_besar.export');

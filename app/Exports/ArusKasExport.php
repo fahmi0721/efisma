@@ -19,8 +19,8 @@ class ArusKasExport implements FromView
 
     public function view(): View
     {
-        $tglAwal = $periode . '-01';
-        $tglAkhir = date('Y-m-t', strtotime($periode));
+        $tglAwal = $this->periode . '-01';
+        $tglAkhir = date('Y-m-t', strtotime($this->periode));
        
 
         // 1️⃣ Saldo awal khusus kas/bank per entitas
@@ -28,8 +28,8 @@ class ArusKasExport implements FromView
             ->join('m_akun_gl as ak', 'ak.id', '=', 'sa.akun_gl_id')
             ->select('sa.entitas_id', DB::raw('SUM(sa.saldo) as saldo_awal'))
             ->where('ak.kategori', 'kas_bank')
-            ->where('sa.periode', $periode)
-            ->when($entitas, fn($q) => $q->where('sa.entitas_id', $entitas))
+            ->where('sa.periode', $this->periode)
+            ->when($this->entitas_id, fn($q) => $q->where('sa.entitas_id', $this->entitas_id))
             ->groupBy('sa.entitas_id')
             ->get()
             ->keyBy('entitas_id');
@@ -60,7 +60,7 @@ class ArusKasExport implements FromView
             DB::raw("SUM(kas.debit - kas.kredit) as total")
         )
         ->where('ak.kategori', 'kas_bank')
-        ->when($entitas, fn($q) => $q->where('kas.entitas_id', $entitas))
+        ->when($this->entitas_id, fn($q) => $q->where('kas.entitas_id', $this->entitas_id))
         ->whereBetween('kas.tanggal', [$tglAwal, $tglAkhir])
         ->groupBy('kas.entitas_id', 'e.nama', 'kelompok')
         ->orderBy('e.nama')
@@ -139,7 +139,8 @@ class ArusKasExport implements FromView
         }
 
         return view('exports.arus_kas',[
-            'per_entitas' => array_values($laporan),
+            'data' => array_values($laporan),
+            'periode' => $this->periode,
             'grand_total' => $grand
         ]);
       

@@ -23,7 +23,12 @@ class LaporanKeuanganController extends Controller
 
     public function dataNeraca(Request $request)
     {
-        $entitas_id = $request->entitas_id;
+        // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas_id = $request->entitas_scope; 
+        } else {
+            $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
+        }
         $periode = $request->periode ?? date('Y-m'); // contoh: "2025-11"
         $periode_awal = $periode . '-01';
         $periode_akhir = date('Y-m-t', strtotime($periode_awal));
@@ -115,7 +120,12 @@ class LaporanKeuanganController extends Controller
 
     public function exportNeraca(Request $request)
     {
-        $entitas_id = $request->entitas_id;
+        // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas_id = $request->entitas_scope; 
+        } else {
+            $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
+        }
         $periode = $request->periode ?? date('Y-m');
 
         $filename = 'Laporan_Neraca_' . $periode . '.xlsx';
@@ -132,7 +142,12 @@ class LaporanKeuanganController extends Controller
 
     public function dataLabaRugi(Request $request)
     {
-        $entitas_id = $request->entitas_id;
+        // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas_id = $request->entitas_scope; 
+        } else {
+            $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
+        }
         $periode = $request->periode ?? date('Y-m'); // contoh: "2025-11"
         $periode_awal = $periode . '-01';
         $periode_akhir = date('Y-m-t', strtotime($periode_awal));
@@ -233,7 +248,12 @@ class LaporanKeuanganController extends Controller
 
     public function exportLabaRugi(Request $request)
     {
-        $entitas_id = $request->entitas_id;
+        // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas_id = $request->entitas_scope; 
+        } else {
+            $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
+        }
         $periode = $request->periode ?? date('Y-m');
 
         $filename = 'Laporan_PBL_' . $periode . '.xlsx';
@@ -249,14 +269,19 @@ class LaporanKeuanganController extends Controller
     {
         $entitas_id = $request->entitas_id;
         $periode = $request->periode ?? date('Y-m');
-
+        
         $filename = 'Laporan_Arus_Kas_' . $periode . '.xlsx';
-        return Excel::download(new ArusKasxport($entitas_id, $periode), $filename);
+        return Excel::download(new ArusKasExport($entitas_id, $periode), $filename);
     }
 
     public function dataArusKas(Request $request)
     {
-        $entitas  = $request->entitas_id;
+         // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas = $request->entitas_scope; 
+        } else {
+            $entitas = $request->entitas_id; // filter dari dropdown jika admin/pusat
+        }
         $periode = $request->periode ?? date('Y-m'); // contoh: "2025-11"
         $tglAwal = $periode . '-01';
         $tglAkhir = date('Y-m-t', strtotime($periode));
@@ -386,7 +411,12 @@ class LaporanKeuanganController extends Controller
 
     public function indexBukuBesar(Request $request)
     {
-        $entitas  = $request->entitas_id;
+         // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas_id = $request->entitas_scope; 
+        } else {
+            $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
+        }
         $periode  = $request->periode ?? date('Y-m');
 
         $tglAwal  = $periode . '-01';
@@ -440,7 +470,12 @@ class LaporanKeuanganController extends Controller
 
     public function exportBukuBesar(Request $request)
     {
-        $entitas = $request->entitas_id;
+         // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas_id = $request->entitas_scope; 
+        } else {
+            $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
+        }
         $periode = $request->periode ?? date('Y-m');
 
         $tglAwal = $periode . '-01';

@@ -27,13 +27,13 @@
 
     <!-- FILTER -->
     <div class="row g-2 mb-4">
+        @if(auth()->user()->level != "entitas")
         <div class="col-md-3">
             <select id="filter_entitas" name="entitas" class="form-select">
                 <option value="">Semua Entitas</option>
-               
             </select>
         </div>
-
+        @endif
         <div class="col-md-2">
             <input type="text" id="periode" class="form-control form-control flatpickr-input" placeholder="Pilih Periode" style="width: 200px;" />
         </div>
@@ -43,7 +43,7 @@
             @canAccess('arus_kas.view')
             <button id='btn-filter' class="btn btn-primary">Tampilkan</button>
             @endcanAccess
-            @canAccess('arus_kas.export')
+            @canAccess('arus_kas.exports')
             <button id='btn-export' data-toggle='tooltip' title='Export Excel' class="btn btn-success">
                 <i class="fas fa-file-excel"></i> 
             </button>
@@ -159,10 +159,14 @@ $('#btn-filter').on('click', function() {
 @endcanAccess 
 @canAccess('arus_kas.export')
  // Export Excel
-$('#btnExportExcel').click(function() {
+$('#btn-export').click(function() {
     let entitas = $('#filter_entitas').val();
     let periode = $('#periode').val();
-    window.location.href = "{{ route('laporan.arus_kas.export') }}?entitas_id=" + entitas + "&periode=" + periode;
+    @if(auth()->user()->level != "entitas")
+        window.location.href = "{{ route('laporan.arus_kas.export') }}?entitas_id=" + entitas + "&periode=" + periode;
+    @else
+        window.location.href = "{{ route('laporan.arus_kas.export') }}?entitas_id=&periode=" + periode;
+    @endif
 });
 @endcanAccess 
 function rupiah(x) {
