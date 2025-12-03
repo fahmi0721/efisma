@@ -46,7 +46,7 @@
                                        placeholder="Pilih periode (YYYY-MM-DD)" readonly required>
                             </div>
                         </div>
-
+                        @if(auth()->user()->level != "entitas")
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -55,7 +55,15 @@
                                 </select>
                             </div>
                         </div>
-                       
+                        @endif
+                        <div class="row mb-3">
+                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <select name="cabang_id" id="cabang_id" class="form-control cabang">
+                                    <option value="">-- Pilih Cabang --</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="row mb-3">
                             <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
@@ -65,14 +73,7 @@
                             </div>
                         </div>
 
-                         <div class="row mb-3">
-                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
-                            <div class="col-sm-9">
-                                <select name="cabang_id" id="cabang_id" class="form-control cabang">
-                                    <option value="">-- Pilih Cabang --</option>
-                                </select>
-                            </div>
-                        </div>
+                         
 
                         
 
@@ -230,7 +231,7 @@ $(document).ready(function() {
         allowInput: false,
         locale: "id"
     });
-
+    @if(auth()->user()->level != "entitas")
     // 🔹 Select2 Entitas
     $('.entitas').select2({
         ajax: {
@@ -247,13 +248,13 @@ $(document).ready(function() {
         placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
-
+    
     // === Jika entitas dipilih, reset partner ===
     $('.entitas').on('change', function () {
         // kosongkan partner
         $('.partner').val(null).trigger('change');
     });
-
+    @endif
     // 🔹 Select2 Cabang
     $('.cabang').select2({
         ajax: {
@@ -281,7 +282,9 @@ $(document).ready(function() {
                 return {
                     q: params.term, // teks yang diketik user
                     jenis: 'all', // teks yang diketik user
+                    @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
+                    @endif
                 };
             },
             processResults: data => ({

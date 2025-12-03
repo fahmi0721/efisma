@@ -48,7 +48,7 @@
                                        placeholder="Pilih periode (YYYY-MM-DD)" value="{{ $data->tanggal }}" readonly required>
                             </div>
                         </div>
-
+                        @if(auth()->user()->level != "entitas")
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -57,15 +57,7 @@
                                 </select>
                             </div>
                         </div>
-
-                        <div class="row mb-3">
-                            <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
-                            <div class="col-sm-9">
-                                <select name="partner_id" id="partner_id" class="form-control partner">
-                                    <option value="">-- Pilih Partner --</option>
-                                </select>
-                            </div>
-                        </div>
+                        @endif
                         <div class="row mb-3">
                             <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -74,6 +66,15 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="row mb-3">
+                            <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
+                            <div class="col-sm-9">
+                                <select name="partner_id" id="partner_id" class="form-control partner">
+                                    <option value="">-- Pilih Partner --</option>
+                                </select>
+                            </div>
+                        </div>
+                        
 
                         <div class="row mb-3">
                             <label for="no_invoice" class="col-sm-3 col-form-label">No Invoice </label>
@@ -221,6 +222,7 @@
 var detailData = @json($detail);
 $(document).ready(function() {
     $(".cabang").prop("disabled",false);
+    
     $('#btnCariInvoice').click(function() {
         const partner = $('#partner_id').val();
         if (!partner) {
@@ -260,7 +262,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Akun GL --",
         allowClear: true
     });
-
+    @if(auth()->user()->level != "entitas")
     // 🔽 Select2 Entitas
     $('.entitas').select2({
         ajax: {
@@ -281,6 +283,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
+    @endif
 
     // 🔽 Select2 Customer
     $('.partner').select2({
@@ -292,7 +295,9 @@ $(document).ready(function() {
                 return {
                     q: params.term, // teks yang diketik user
                     jenis: 'all', // teks yang diketik user
+                    @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
+                    @endif
                 };
             },
             processResults: function (data) {
@@ -335,11 +340,12 @@ $(document).ready(function() {
         placeholder: "-- Pilih Cabang --",
         allowClear: true
     });
-
+    @if(auth()->user()->level != "entitas")
     @if(!empty($entitas_id))
         var entitas_id = "{{ $entitas_id->id }}";
         var option = new Option("{{ $entitas_id->id }} - {{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
         $(".entitas").append(option).trigger('change');    
+    @endif
     @endif
 
     @if(!empty($cabang_id))
@@ -358,6 +364,8 @@ $(document).ready(function() {
         var partner_id = "{{ $partner_id->id }}";
         var option = new Option("{{ $partner_id->nama }}", {{ $partner_id->id }}, true, true);
         $(".partner").append(option).trigger('change');    
+        @if(!empty($pelunasan)) $(".partner").prop("disabled",true); @else $(".partner").prop("disabled",false); @endif
+        
     @endif
     if (detailData.length > 0) {
         let tbody = $('#tableDetail tbody');
@@ -572,6 +580,7 @@ $(document).on('click', '.btn-pilih-invoice', function() {
     var option = new Option(data.cabang, data.cabang_id, true, true);
     $(".cabang").append(option).trigger('change');
     $(".cabang").prop("disabled",true);
+    $(".partner").prop("disabled",true);
 
     $("#no_invoice").val(data.no_invoice);
     $("#no_invoice_t").val(data.no_invoice);
@@ -634,6 +643,7 @@ function insertDetailJurnal(data) {
  */
 function proses_data(confirmSave = false) {
     $(".cabang").prop("disabled",false);
+    $(".partner").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
     var id = $("#id").val();

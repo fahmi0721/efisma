@@ -39,7 +39,7 @@
                                        placeholder="Pilih Tanggal (YYYY-MM-DD)" readonly required>
                             </div>
                         </div>
-
+                        @if(auth()->user()->level != "entitas")
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -48,6 +48,7 @@
                                 </select>
                             </div>
                         </div>
+                        @endif
 
                         <div class="row mb-3">
                             <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
@@ -191,7 +192,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Akun GL --",
         allowClear: true
     });
-
+    @if(auth()->user()->level != "entitas")
     // 🔽 Select2 Entitas
     $('.entitas').select2({
         ajax: {
@@ -212,7 +213,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
-
+    @endif
     // 🔽 Select2 Entitas
     $('.cabang').select2({
         ajax: {
@@ -244,7 +245,9 @@ $(document).ready(function() {
                 return {
                     q: params.term, // teks yang diketik user
                     jenis: 'vendor',
+                    @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
+                    @endif
                 };
             },
             processResults: function (data) {
@@ -263,10 +266,11 @@ $(document).ready(function() {
     });
 
 
-
+    @if(auth()->user()->level != "entitas")
     $('.entitas').on('change', function () {
         $('.partner').val(null).trigger('change'); // kosongkan value dulu
     });
+    @endif
     // 🧠 Submit Form
     $("#form_data").submit(function(e){
         e.preventDefault();

@@ -48,7 +48,7 @@
                                        placeholder="Pilih periode (YYYY-MM-DD)" value="{{ $data->tanggal }}" readonly required>
                             </div>
                         </div>
-
+                         @if(auth()->user()->level != "entitas")
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -57,6 +57,7 @@
                                 </select>
                             </div>
                         </div>
+                        @endif
 
                         <div class="row mb-3">
                             <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
@@ -252,7 +253,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Akun GL --",
         allowClear: true
     });
-
+     @if(auth()->user()->level != "entitas")
     // 🔽 Select2 Akun GL
     $('.entitas').select2({
         ajax: {
@@ -273,7 +274,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
-
+    @endif
     // 🔽 Select2 Customer
     $('.partner').select2({
         ajax: {
@@ -283,8 +284,10 @@ $(document).ready(function() {
             data: function (params) {
                 return {
                     q: params.term, // teks yang diketik user
-                    jenis: 'customer', // teks yang diketik user
+                    jenis: 'customer', // teks yang diketik user\
+                    @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
+                    @endif
                 };
             },
             processResults: function (data) {
@@ -326,27 +329,31 @@ $(document).ready(function() {
         placeholder: "-- Pilih Cabang --",
         allowClear: true
     });
+    @if(auth()->user()->level != "entitas")
     // 🔁 Saat entitas diubah → reset & reload partner
     $('.entitas').on('change', function () {
         $('.partner').val(null).trigger('change'); // kosongkan value dulu
     });
-
+    @endif
     @if(!empty($cabang_id))
         var cabang_id = "{{ $cabang_id->id }}";
         var option = new Option("{{ $cabang_id->nama }}", {{ $cabang_id->id }}, true, true);
         $(".cabang").append(option).trigger('change');   
         @if(!empty($pelunasan)) $(".cabang").prop("disabled",true); @else $(".cabang").prop("disabled",false); @endif
     @endif
+    @if(auth()->user()->level != "entitas")
     @if(!empty($entitas_id))
         var entitas_id = "{{ $entitas_id->id }}";
         var option = new Option("{{ $entitas_id->id }} - {{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
         $(".entitas").append(option).trigger('change');    
+    @endif
     @endif
 
     @if(!empty($partner_id))
         var partner_id = "{{ $partner_id->id }}";
         var option = new Option("{{ $partner_id->nama }}", {{ $partner_id->id }}, true, true);
         $(".partner").append(option).trigger('change');    
+        @if(!empty($pelunasan)) $(".partner").prop("disabled",true); @else $(".partner").prop("disabled",false); @endif
     @endif
 
     if (detailData.length > 0) {
@@ -621,6 +628,7 @@ function insertDetailJurnal(data) {
 
 function proses_data(){
     $(".cabang").prop("disabled",false);
+    $(".partner").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     var id = $("#id").val();
     $.ajax({

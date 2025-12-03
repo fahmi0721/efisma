@@ -216,7 +216,7 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
  * Route JURNAL
  */
 use App\Http\Controllers\JurnalController;
-Route::group(['middleware' => 'auth'], function () {
+Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::prefix('jurnal')->group(function() {
         Route::get('/partner/customer', [JurnalController::class, 'partner'])->name('jurnal.partner.customer')->defaults('jenis', 'customer');
         Route::get('/detail_transaksi', [JurnalController::class, 'detail_transaksi'])->name('jurnal.detail_transaksi')->middleware('permission:kas_keluar.view|kas_masuk.view|pendapatan.view|penyesuaian.view');

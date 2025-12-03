@@ -36,7 +36,14 @@ class JurnalController extends Controller
                     'j.status'
                 )
                 ->where('j.jenis', $jenis);
-
+            /*
+            |--------------------------------------------------------------------------
+            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+            |--------------------------------------------------------------------------
+            */
+            if ($request->entitas_scope) {
+                $query->where('j.entitas_id', $request->entitas_scope);
+            }
             // 🔹 Filter tanggal
             if ($request->filled('from') && $request->filled('to')) {
                 $query->whereBetween('j.tanggal', [$request->from, $request->to]);
@@ -304,7 +311,16 @@ class JurnalController extends Controller
             ->havingRaw('(j.total_debit - COALESCE(SUM(pp.jumlah),0)) > 0')
             ->orderBy('j.tanggal', 'asc');
 
+             /*
+            |--------------------------------------------------------------------------
+            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+            |--------------------------------------------------------------------------
+            */
+            if ($request->entitas_scope) {
+                $query->where('j.entitas_id', $request->entitas_scope);
+            }
 
+            
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -1068,6 +1084,14 @@ class JurnalController extends Controller
                 )
                 ->where('j.jenis', $jenis) // hanya pendapatan
                 ->where('j.status', 'posted');
+             /*
+            |--------------------------------------------------------------------------
+            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+            |--------------------------------------------------------------------------
+            */
+            if ($request->entitas_scope) {
+                $query->where('j.entitas_id', $request->entitas_scope);
+            }
 
             // filter tanggal
             if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
@@ -1142,7 +1166,14 @@ class JurnalController extends Controller
                 )
                 ->where('j.jenis', $jenis) // hanya pendapatan
                 ->where('j.status', 'draft');
-
+             /*
+            |--------------------------------------------------------------------------
+            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+            |--------------------------------------------------------------------------
+            */
+            if ($request->entitas_scope) {
+                $query->where('j.entitas_id', $request->entitas_scope);
+            }
             // filter tanggal
             if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
                 $query->whereBetween('j.tanggal', [
@@ -1199,11 +1230,25 @@ class JurnalController extends Controller
     public function prepareBatch(Request $request)
     {
         $request->validate([
-            'tanggal_awal' => 'required|date',
-            'tanggal_akhir' => 'required|date|after_or_equal:tanggal_awal',
-            'jenis' => 'required',
-            'status' => 'required',
+            'tanggal_awal'   => 'required|date',
+            'tanggal_akhir'  => 'required|date|after_or_equal:tanggal_awal',
+            'jenis'          => 'required',
+            'status'         => 'required',
+        ],[
+            // TANGGAL AWAL
+            'tanggal_awal.required' => 'Tanggal awal wajib diisi.',
+            'tanggal_awal.date'     => 'Format tanggal awal tidak valid.',
 
+            // TANGGAL AKHIR
+            'tanggal_akhir.required'        => 'Tanggal akhir wajib diisi.',
+            'tanggal_akhir.date'            => 'Format tanggal akhir tidak valid.',
+            'tanggal_akhir.after_or_equal'  => 'Tanggal akhir tidak boleh lebih kecil dari tanggal awal.',
+
+            // JENIS
+            'jenis.required' => 'Jenis jurnal wajib dipilih.',
+
+            // STATUS
+            'status.required' => 'Status jurnal wajib dipilih.',
         ]);
         $query = DB::table('jurnal_header')
             ->whereBetween('tanggal', [$request->tanggal_awal, $request->tanggal_akhir])

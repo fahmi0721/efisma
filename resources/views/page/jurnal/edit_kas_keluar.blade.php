@@ -40,7 +40,7 @@
                                        placeholder="Pilih Tanggal (YYYY-MM-DD)" value="{{ $data->tanggal }}" readonly required>
                             </div>
                         </div>
-
+                        @if(auth()->user()->level != "entitas")
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -49,7 +49,7 @@
                                 </select>
                             </div>
                         </div>
-
+                        @endif
                         <div class="row mb-3">
                             <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -193,7 +193,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Akun GL --",
         allowClear: true
     });
-
+    @if(auth()->user()->level != "entitas")
     // 🔽 Select2 Akun GL
     $('.entitas').select2({
         ajax: {
@@ -214,6 +214,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
+    @endif
 
     $('.cabang').select2({
         ajax: {
@@ -245,7 +246,9 @@ $(document).ready(function() {
                 return {
                     q: params.term, // teks yang diketik user
                     jenis: 'vendor', // teks yang diketik user
+                    @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
+                    @endif
                 };
             },
             processResults: function (data) {
@@ -262,11 +265,12 @@ $(document).ready(function() {
         placeholder: "-- Pilih Customer --",
         allowClear: true
     });
-
+    @if(auth()->user()->level != "entitas")
     @if(!empty($entitas_id))
         var entitas_id = "{{ $entitas_id->id }}";
         var option = new Option("{{ $entitas_id->id }} - {{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
         $(".entitas").append(option).trigger('change');    
+    @endif
     @endif
 
     @if(!empty($partner_id))
@@ -280,10 +284,11 @@ $(document).ready(function() {
         var option = new Option("{{ $cabang_id->nama }}", {{ $cabang_id->id }}, true, true);
         $(".cabang").append(option).trigger('change');    
     @endif
-
+    @if(auth()->user()->level != "entitas")
     $('.entitas').on('change', function () {
         $('.partner').val(null).trigger('change'); // kosongkan value dulu
     });
+    @endif
     if (detailData.length > 0) {
         let tbody = $('#tableDetail tbody');
         tbody.html('');
