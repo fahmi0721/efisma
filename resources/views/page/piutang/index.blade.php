@@ -52,11 +52,12 @@
             <h5 class="mb-0">Daftar Aging Piutang per Partner</h5>
 
             <div class="d-flex align-items-center gap-2 ms-auto">
+                @if(auth()->user()->level != "entitas")
                 {{-- 🔽 Filter Entitas --}}
                 <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:180px">
                     <option value="">Semua Entitas</option>
                 </select>
-
+                @endif
                 {{-- 🔽 Filter Tipe Partner --}}
                 <select id="filter_tipe" class="form-select " style="width:180px">
                     <option value="all">Semua Partner</option>
@@ -96,6 +97,7 @@
 @section('js')
 <script>
 $(document).ready(function() {
+    @if(auth()->user()->level != "entitas")
     $('.entitas').select2({
         ajax: {
             url: '{{ route("entitas.select") }}',
@@ -104,7 +106,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text: q.nama};
                     })
                 };
             },
@@ -118,6 +120,7 @@ $(document).ready(function() {
         // placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
+    @endif
     @canAccess('piutang.aging.view')
     const tb = $('#tb_data').DataTable({
         processing: true,
@@ -144,9 +147,13 @@ $(document).ready(function() {
             processing: '<i class="fa fa-spinner fa-spin"></i> Loading...'
         }
     });
-
+    @if(auth()->user()->level != "entitas")
     // 🔄 Reload ketika filter berubah
-    $('#filter_tipe, #filter_entitas').on('change', function() {
+    $('#filter_entitas').on('change', function() {
+        tb.ajax.reload();
+    });
+    @endif
+     $('#filter_tipe').on('change', function() {
         tb.ajax.reload();
     });
     @endcanAccess

@@ -52,10 +52,12 @@
             <h5 class="mb-0">Daftar Piutang</h5>
 
             <div class="d-flex align-items-center gap-2 ms-auto">
+                @if(auth()->user()->level != "entitas")
                 {{-- 🔽 Filter Entitas --}}
                 <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:180px">
                     <option value="">Semua Entitas</option>
                 </select>
+                @endif
 
                 {{-- 🔽 Filter Tipe Partner --}}
                 <select id="filter_tipe" class="form-select " style="width:180px">
@@ -106,6 +108,7 @@
 @section('js')
 <script>
 $(document).ready(function() {
+    @if(auth()->user()->level != "entitas")
     $('.entitas').select2({
         ajax: {
             url: '{{ route("entitas.select") }}',
@@ -128,6 +131,7 @@ $(document).ready(function() {
         // placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
+    @endif
     @canAccess('piutang.daftar.view')
     const tb = $('#tb_data').DataTable({
         processing: true,

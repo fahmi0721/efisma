@@ -265,7 +265,7 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
  * Route Piutang
  */
 use App\Http\Controllers\PiutangController;
-Route::group(['middleware' => 'auth'], function () {
+Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::get('/piutang/aging', [PiutangController::class, 'index'])->name('piutang.aging')->middleware('permission:piutang.aging.view');
     Route::get('/piutang/aging/export', [PiutangController::class, 'agingPiutangExport'])->name('piutang.aging.export')->middleware('permission:piutang.aging.export');
     Route::get('/piutang/daftar', [PiutangController::class, 'daftar'])->name('piutang.daftar')->middleware('permission:piutang.daftar.view');

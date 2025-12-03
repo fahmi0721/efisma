@@ -27,6 +27,14 @@ class PiutangController extends Controller
                     if (!empty($entitas_id)) {
                         $query->where('entitas_id', $entitas_id);
                     }
+                    /*
+                    |--------------------------------------------------------------------------
+                    | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+                    |--------------------------------------------------------------------------
+                    */
+                    if ($request->entitas_scope) {
+                        $query->where('entitas_id', $request->entitas_scope);
+                    }
             $data = $query->get();
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -45,7 +53,15 @@ class PiutangController extends Controller
     public function agingPiutangExport(Request $request)
     {
         $filter = $request->get('filter');
-        $entitas_id = $request->get('entitas_id');
+        $entitas_id = null;
+        // Jika user level entitas → paksa entitas user
+        if ($request->user()->level == 'entitas') {
+            $entitas_id = $request->entitas_scope;
+        }
+        // Jika admin/pusat → ambil dari dropdown entitas (boleh kosong)
+        else {
+            $entitas_id = $request->get('entitas_id');
+        }
         $query = DB::table('view_aging_piutang');
 
         if ($filter === 'customer') {
@@ -111,6 +127,15 @@ class PiutangController extends Controller
                 $query->where('entitas_id', $entitas_id);
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+            |--------------------------------------------------------------------------
+            */
+            if ($request->entitas_scope) {
+                $query->where('entitas_id', $request->entitas_scope);
+            }
+
             return DataTables::of($query)
                 ->addIndexColumn()
                 // Search untuk kode_jurnal
@@ -164,6 +189,14 @@ class PiutangController extends Controller
 
         if (!empty($entitas_id)) {
             $data->where('entitas_id', $entitas_id);
+        }
+        /*
+        |--------------------------------------------------------------------------
+        | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+        |--------------------------------------------------------------------------
+        */
+        if ($request->entitas_scope) {
+            $data->where('entitas_id', $request->entitas_scope);
         }
 
         $data = $data->get();
