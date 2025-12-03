@@ -49,7 +49,7 @@
                                 </select>
                             </div>
                         </div>
-
+                        @if(auth()->user()->level != "entitas")
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -57,7 +57,8 @@
                                     <option value="">-- Pilih Entitas --</option>
                                 </select>
                             </div>
-                        </div>
+                        </div>  
+                        @endif
 
                         <div class="row mb-3">
                             <label for="saldo" class="col-sm-3 col-form-label">Saldo <b class='text-danger'>*</b></label>
@@ -117,7 +118,7 @@
             placeholder: "-- Pilih Akun GL --",
             allowClear: true
         });
-
+        @if(auth()->user()->level != "entitas")
         $('.entitas').select2({
             ajax: {
                 url: '{{ route("saldo_awal.entitas") }}',
@@ -137,17 +138,19 @@
             placeholder: "-- Pilih Entitas --",
             allowClear: true
         });
+        @endif
         
         @if(!empty($akun_selected))
             var akun_selected = "{{ $akun_selected->id }}";
             var option = new Option("{{ $akun_selected->nama }}", {{ $akun_selected->id }}, true, true);
             $(".akun_gl").append(option).trigger('change');    
         @endif
-
+        @if(auth()->user()->level != "entitas")
         @if(!empty($entitas_selected))
             var entitas_selected = "{{ $entitas_selected->id }}";
             var option = new Option("{{ $entitas_selected->nama }}", {{ $entitas_selected->id }}, true, true);
             $(".entitas").append(option).trigger('change');    
+        @endif
         @endif
 
         

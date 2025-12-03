@@ -36,6 +36,14 @@ class SaldoAwalController extends Controller
                 if ($request->filled('periode')) {
                     $query->where('m_saldo_awal.periode', $request->periode);
                 }
+                /*
+                |--------------------------------------------------------------------------
+                | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
+                |--------------------------------------------------------------------------
+                */
+                if ($request->entitas_scope) {
+                    $query->where('m_saldo_awal.entitas_id', $request->entitas_scope);
+                }
 
             return DataTables::of($query)
                 // 🔥 FIX PENCARIAN
@@ -60,7 +68,7 @@ class SaldoAwalController extends Controller
                 ->addColumn('aksi', function ($row) {
                     $html = '<div class="btn-group btn-group-sm">';
                     if(canAccess('m_saldo_awal.edit')){
-                        $url = route('m_akun.edit')."?id=".$row->id;
+                        $url = route('saldo_awal.edit')."?id=".$row->id;
                         $html .= '<a href="' . $url . '" title="Update Data" data-bs-toggle="tooltip" class="btn btn-sm btn-primary"><i class="fa fa-edit"></i></a>';
                     }
 

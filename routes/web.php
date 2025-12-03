@@ -194,7 +194,7 @@ Route::group(['middleware' => 'auth'], function () {
  * Route Saldo Awal
  */
 use App\Http\Controllers\SaldoAwalController;
-Route::group(['middleware' => 'auth'], function () {
+Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::get('/saldo_awal/akun_gl', [SaldoAwalController::class, 'akun_gl'])->name('saldo_awal.akun_gl');
     Route::get('/saldo_awal/entitas', [SaldoAwalController::class, 'entitas'])->name('saldo_awal.entitas');
 

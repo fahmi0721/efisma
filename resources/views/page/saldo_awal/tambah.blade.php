@@ -48,7 +48,7 @@
                                 </select>
                             </div>
                         </div>
-
+                        @if(auth()->user()->level != "entitas")
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -57,7 +57,7 @@
                                 </select>
                             </div>
                         </div>
-
+                        @endif
                         <div class="row mb-3">
                             <label for="saldo" class="col-sm-3 col-form-label">Saldo <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
@@ -124,7 +124,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Akun GL --",
         allowClear: true
     });
-
+    @if(auth()->user()->level != "entitas")
     // 🔽 Select2 Entitas
     $('.entitas').select2({
         ajax: {
@@ -145,6 +145,7 @@ $(document).ready(function() {
         placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
+    @endif
 
     // 🧠 Submit Form
     $("#form_data").submit(function(e){
