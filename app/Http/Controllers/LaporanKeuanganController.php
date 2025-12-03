@@ -413,9 +413,9 @@ class LaporanKeuanganController extends Controller
     {
          // Tentukan entitas yang digunakan
         if (auth()->user()->level == 'entitas') {
-            $entitas_id = $request->entitas_scope; 
+            $entitas = $request->entitas_scope; 
         } else {
-            $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
+            $entitas = $request->entitas_id; // filter dari dropdown jika admin/pusat
         }
         $periode  = $request->periode ?? date('Y-m');
 
@@ -472,9 +472,9 @@ class LaporanKeuanganController extends Controller
     {
          // Tentukan entitas yang digunakan
         if (auth()->user()->level == 'entitas') {
-            $entitas_id = $request->entitas_scope; 
+            $entitas = $request->entitas_scope; 
         } else {
-            $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
+            $entitas = $request->entitas_id; // filter dari dropdown jika admin/pusat
         }
         $periode = $request->periode ?? date('Y-m');
 
@@ -484,7 +484,7 @@ class LaporanKeuanganController extends Controller
         $filename = "Buku-Besar-{$periode}.xlsx";
 
         return Excel::download(
-            new BukuBesarExport($entitas, $tglAwal, $tglAkhir),
+            new BukuBesarExport($entitas, $periode),
             $filename
         );
     }
