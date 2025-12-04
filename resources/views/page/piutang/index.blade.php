@@ -79,10 +79,11 @@
                         <tr>
                             <th width="5%">No</th>
                             <th>Partner</th>
-                            <th class="text-end">0–30 Hari</th>
-                            <th class="text-end">31–60 Hari</th>
-                            <th class="text-end">61–90 Hari</th>
-                            <th class="text-end">>90 Hari</th>
+                            <th class="text-end">0–14 Hari</th>
+                            <th class="text-end">15–30 Hari</th>
+                            <th class="text-end">31–45 Hari</th>
+                            <th class="text-end">46–60 Hari</th>
+                            <th class="text-end">>60 Hari</th>
                             <th class="text-end">Total</th>
                         </tr>
                     </thead>
@@ -135,10 +136,11 @@ $(document).ready(function() {
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
             { data: 'partner_nama', name: 'partner_nama' },
-            { data: 'aging_0_30', name: 'aging_0_30', className: 'text-end' },
-            { data: 'aging_31_60', name: 'aging_31_60', className: 'text-end' },
-            { data: 'aging_61_90', name: 'aging_61_90', className: 'text-end' },
-            { data: 'aging_90_plus', name: 'aging_90_plus', className: 'text-end' },
+            { data: 'aging_0_14', name: 'aging_0_14', className: 'text-end' },
+            { data: 'aging_15_30', name: 'aging_15_30', className: 'text-end' },
+            { data: 'aging_31_45', name: 'aging_31_45', className: 'text-end' },
+            { data: 'aging_46_60', name: 'aging_46_60', className: 'text-end' },
+            { data: 'aging_60_plus', name: 'aging_60_plus', className: 'text-end' },
             { data: 'total_piutang', name: 'total_piutang', className: 'text-end fw-bold' },
         ],
         order: [[1, 'asc']],

@@ -20,10 +20,11 @@ return new class extends Migration
                 is_customer,
                 entitas_id,
 
-                SUM(CASE WHEN umur_piutang <= 30 THEN sisa_piutang ELSE 0 END) AS aging_0_30,
-                SUM(CASE WHEN umur_piutang BETWEEN 31 AND 60 THEN sisa_piutang ELSE 0 END) AS aging_31_60,
-                SUM(CASE WHEN umur_piutang BETWEEN 61 AND 90 THEN sisa_piutang ELSE 0 END) AS aging_61_90,
-                SUM(CASE WHEN umur_piutang > 90 THEN sisa_piutang ELSE 0 END) AS aging_90_plus,
+                SUM(CASE WHEN umur_piutang BETWEEN 0  AND 14 THEN sisa_piutang ELSE 0 END) AS aging_0_14,
+                SUM(CASE WHEN umur_piutang BETWEEN 15 AND 30 THEN sisa_piutang ELSE 0 END) AS aging_15_30,
+                SUM(CASE WHEN umur_piutang BETWEEN 31 AND 45 THEN sisa_piutang ELSE 0 END) AS aging_31_45,
+                SUM(CASE WHEN umur_piutang BETWEEN 46 AND 60 THEN sisa_piutang ELSE 0 END) AS aging_46_60,
+                SUM(CASE WHEN umur_piutang > 60 THEN sisa_piutang ELSE 0 END) AS aging_60_plus,
 
                 SUM(sisa_piutang) AS total_piutang
 

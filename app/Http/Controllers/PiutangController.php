@@ -38,10 +38,11 @@ class PiutangController extends Controller
             $data = $query->get();
             return DataTables::of($data)
                 ->addIndexColumn()
-                ->editColumn('aging_0_30', fn($row) => number_format($row->aging_0_30, 0, ',', '.'))
-                ->editColumn('aging_31_60', fn($row) => number_format($row->aging_31_60, 0, ',', '.'))
-                ->editColumn('aging_61_90', fn($row) => number_format($row->aging_61_90, 0, ',', '.'))
-                ->editColumn('aging_90_plus', fn($row) => number_format($row->aging_90_plus, 0, ',', '.'))
+                ->editColumn('aging_0_14', fn($row) => number_format($row->aging_0_14, 0, ',', '.'))
+                ->editColumn('aging_15_30', fn($row) => number_format($row->aging_15_30, 0, ',', '.'))
+                ->editColumn('aging_31_45', fn($row) => number_format($row->aging_31_45, 0, ',', '.'))
+                ->editColumn('aging_46_60', fn($row) => number_format($row->aging_46_60, 0, ',', '.'))
+                ->editColumn('aging_60_plus', fn($row) => number_format($row->aging_60_plus, 0, ',', '.'))
                 ->editColumn('total_piutang', fn($row) => "<b>" . number_format($row->total_piutang, 0, ',', '.') . "</b>")
                 ->rawColumns(['total_piutang'])
                 ->make(true);
@@ -84,7 +85,7 @@ class PiutangController extends Controller
 
         // Header
         $sheet->fromArray([
-            ['No', 'Partner', '0–30 Hari', '31–60 Hari', '61–90 Hari', '>90 Hari', 'Total']
+            ['No', 'Partner', '0–14 Hari', '15–30 Hari', '31–45 Hari','46–60 Hari', '>90 Hari', 'Total']
         ]);
 
         // Data
@@ -92,7 +93,7 @@ class PiutangController extends Controller
         $no = 1;
         foreach ($data as $d) {
             $sheet->fromArray([
-                [$no++, $d->partner_nama, $d->aging_0_30, $d->aging_31_60, $d->aging_61_90, $d->aging_90_plus, $d->total_piutang]
+                [$no++, $d->partner_nama, $d->aging_0_14, $d->aging_15_30, $d->aging_31_45, $d->aging_46_60,$d->aging_60_plus, $d->total_piutang]
             ], null, "A{$row}");
             $row++;
         }
