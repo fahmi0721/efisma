@@ -43,7 +43,7 @@
             @canAccess('arus_kas.view')
             <button id='btn-filter' class="btn btn-primary">Tampilkan</button>
             @endcanAccess
-            @canAccess('arus_kas.exports')
+            @canAccess('arus_kas.export')
             <button id='btn-export' data-toggle='tooltip' title='Export Excel' class="btn btn-success">
                 <i class="fas fa-file-excel"></i> 
             </button>

@@ -1,46 +1,55 @@
-<table>
-    <thead>
-        <tr>
-            <th colspan="5" style="font-weight:bold; font-size:14px;">
-                Laporan Arus Kas
-            </th>
-        </tr>
-        <tr>
-            <th colspan="5">
-                Periode: {{ \Carbon\Carbon::parse($periode . '-01')->translatedFormat('F Y') }}
-            </th>
-        </tr>
-        <tr>
-            <th>No Akun</th>
-            <th>Nama Akun</th>
-            <th>Debit</th>
-            <th>Kredit</th>
-            <th>Saldo Akhir</th>
-        </tr>
-    </thead>
+<table id="tblCashflow" class="table table-bordered table-striped w-100">
+        <thead class="bg-light">
+            <tr>
+                <th>Entitas</th>
+                <th>Saldo Awal</th>
+                <th>OP Masuk</th>
+                <th>OP Keluar</th>
+                <th>Operasional</th>
+                <th>INV Masuk</th>
+                <th>INV Keluar</th>
+                <th>Investasi</th>
+                <th>PDN Masuk</th>
+                <th>PDN Keluar</th>
+                <th>Pendanaan</th>
+                <th>Kenaikan Kas</th>
+                <th>Saldo Akhir</th>
+            </tr>
+        </thead>
     <tbody>
         @foreach($data as $row)
             <tr>
-                <td>{{ $row->no_akun }}</td>
-                <td>{!! str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', max(0, $row->level - 1)) !!}{{ $row->akun_nama }}</td>
-                <td align="right">{{ $row->total_debit}}</td>
-                <td align="right">{{ $row->total_kredit }}</td>
-                <td align="right"><strong>{{ $row->saldo_akhir }}</strong></td>
+                <td>{{ $row['nama_entitas'] }}</td>
+                <td>{{ $row['saldo_awal'] }}</td>
+                <td>{{ $row['operasional_masuk'] }}</td>
+                <td>{{ $row['operasional_keluar'] }}</td>
+                <td>{{ $row['operasional'] }}</td>
+                <td>{{ $row['investasi_masuk'] }}</td>
+                <td>{{ $row['investasi_keluar'] }}</td>
+                <td>{{ $row['investasi'] }}</td>
+                <td>{{ $row['pendanaan_masuk'] }}</td>
+                <td>{{ $row['pendanaan_keluar'] }}</td>
+                <td>{{ $row['pendanaan'] }}</td>
+                <td>{{ $row['kenaikan_kas'] }}</td>
+                <td>{{ $row['saldo_akhir'] }}</td>
             </tr>
         @endforeach
     </tbody>
-     <tfoot>
-        <tr class="table-light fw-bold">
-            <td colspan="4"  style='text-align:right !important'>Total Pendapatan</td>
-            <td id="totalPendapatan" class="text-end">{{ $total_pendapatan }}</td>
-        </tr>
-        <tr class="table-light fw-bold">
-            <td colspan="4" class="text-end">Total Beban</td>
-            <td id="totalBeban" class="text-end">{{ $total_beban }}</td>
-        </tr>
-        <tr class="table-success fw-bold">
-            <td colspan="4" class="text-end">Laba / (Rugi) Bersih</td>
-            <td id="labaBersih" class="text-end">{{ $laba_bersih }}</td>
+     <tfoot class="bg-light fw-bold">
+        <tr>
+            <td class="text-center">GRAND TOTAL</td>
+            <td id="gt_saldo_awal"></td>
+            <td id="gt_op_masuk"></td>
+            <td id="gt_op_keluar"></td>
+            <td id="gt_operasional"></td>
+            <td id="gt_inv_masuk"></td>
+            <td id="gt_inv_keluar"></td>
+            <td id="gt_investasi"></td>
+            <td id="gt_pdn_masuk"></td>
+            <td id="gt_pdn_keluar"></td>
+            <td id="gt_pendanaan"></td>
+            <td id="gt_kenaikan"></td>
+            <td id="gt_saldo_akhir"></td>
         </tr>
     </tfoot>
 </table>

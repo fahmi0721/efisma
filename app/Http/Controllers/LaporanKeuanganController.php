@@ -267,11 +267,16 @@ class LaporanKeuanganController extends Controller
 
      public function exportArusKas(Request $request)
     {
-        $entitas_id = $request->entitas_id;
+         // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas = $request->entitas_scope; 
+        } else {
+            $entitas = $request->entitas_id; // filter dari dropdown jika admin/pusat
+        }
         $periode = $request->periode ?? date('Y-m');
         
         $filename = 'Laporan_Arus_Kas_' . $periode . '.xlsx';
-        return Excel::download(new ArusKasExport($entitas_id, $periode), $filename);
+        return Excel::download(new ArusKasExport($entitas, $periode), $filename);
     }
 
     public function dataArusKas(Request $request)
