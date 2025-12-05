@@ -23,6 +23,7 @@ class DashboardController extends Controller
     public function apiSummary(Request $request)
     {
         $entitasId = $request->entitas_id ?: null;
+        $cabang_id = $request->cabang_id ?: null;
 
         // === Ambil periode dari request, default bulan ini ===
         $periode = $request->periode ?: date('Y-m');
@@ -34,7 +35,8 @@ class DashboardController extends Controller
             ->join('m_akun_gl as a','a.id','b.akun_id')
             ->where('j.status','posted') 
             ->whereBetween('j.tanggal', [$start, $end])  // ★ FILTER PERIODE
-            ->when($entitasId, fn($q) => $q->where('j.entitas_id', $entitasId));
+            ->when($entitasId, fn($q) => $q->where('j.entitas_id', $entitasId))
+            ->when($cabang_id, fn($q) => $q->where('j.cabang_id', $cabang_id));
 
         // Aset (aktiva)
         $aset = (clone $baseQuery)
@@ -129,6 +131,7 @@ class DashboardController extends Controller
     public function apiCashflow(Request $request)
     {
         $entitasId = $request->entitas_id ?: null;
+        $cabang_id = $request->cabang_id ?: null;
         // periode default current month
         $periode = $request->periode ?? Carbon::now()->format('Y-m');
         $start = Carbon::parse($periode . '-01')->startOfMonth();
@@ -141,6 +144,7 @@ class DashboardController extends Controller
             ->where('j.status','posted')
             ->whereBetween('b.tanggal', [$start->toDateString(), $end->toDateString()])
             ->when($entitasId, fn($q) => $q->where('j.entitas_id', $entitasId))
+            ->when($cabang_id, fn($q) => $q->where('j.cabang_id', $cabang_id))
             ->where(function($q){
                 $q->where('a.kategori','kas_bank');
             })
@@ -168,6 +172,7 @@ class DashboardController extends Controller
     public function apiComposition(Request $request)
     {
         $entitasId = $request->entitas_id ?: null;
+        $cabang_id = $request->cabang_id ?: null;
         $limit = intval($request->limit ?: 10);
 
         // ► Ambil periode Y-m
@@ -182,6 +187,7 @@ class DashboardController extends Controller
             ->join('m_akun_gl as a','a.id','b.akun_id')
             ->where('j.status','posted')
             ->whereBetween('j.tanggal', [$start, $end]) // ★ FILTER PERIODE
+            ->when($cabang_id, fn($q) => $q->where('j.cabang_id', $cabang_id))
             ->when($entitasId, fn($q) => $q->where('j.entitas_id', $entitasId));
 
         // ASSETS
@@ -233,12 +239,17 @@ class DashboardController extends Controller
     public function apiAgingTop(Request $request)
     {
         $entitasId = $request->entitas_id ?: null;
+        $cabang_id = $request->cabang_id ?: null;
         $limit = intval($request->limit ?: 10);
 
-        $q = DB::table('view_aging_piutang')->select('partner_id','partner_nama','aging_0_30','aging_31_60','aging_61_90','aging_90_plus','total_piutang');
+        $q = DB::table('view_aging_piutang')->select('partner_id','partner_nama','aging_0_14','aging_15_30','aging_31_45','aging_46_60','aging_60_plus','total_piutang');
 
         if ($entitasId) {
             $q->where('entitas_id', $entitasId);
+        }
+
+        if ($cabang_id) {
+            $q->where('cabang_id', $cabang_id);
         }
 
         $data = $q->orderByDesc('total_piutang')->limit($limit)->get();
@@ -248,6 +259,7 @@ class DashboardController extends Controller
 
     function apiPendapatanBeban(Request $request)
     {
+        $cabang_id = $request->cabang_id ?: null;
         $entitasId = $request->entitas_id ?: null;
         $periode = $request->periode ?: date('Y-m');
 
@@ -269,6 +281,7 @@ class DashboardController extends Controller
                 ->where('a.tipe_akun','pendapatan')
                 ->where('j.status','posted')
                 ->whereDate('j.tanggal', $tanggal)
+                ->when($cabang_id, fn($q)=>$q->where('j.cabang_id',$cabang_id))
                 ->when($entitasId, fn($q)=>$q->where('j.entitas_id',$entitasId))
                 ->sum(DB::raw('b.kredit - b.debit'));
 
@@ -279,6 +292,7 @@ class DashboardController extends Controller
                 ->where('a.tipe_akun','beban')
                 ->where('j.status','posted')
                 ->whereDate('j.tanggal', $tanggal)
+                ->when($cabang_id, fn($q)=>$q->where('j.cabang_id',$cabang_id))
                 ->when($entitasId, fn($q)=>$q->where('j.entitas_id',$entitasId))
                 ->sum(DB::raw('b.debit - b.kredit'));
 
@@ -298,11 +312,13 @@ class DashboardController extends Controller
     public function apiLabaRugiHarian(Request $request)
     {
         $entitasId = $request->entitas_id;
+        $cabang_id = $request->cabang_id;
         $periode   = $request->periode;
 
         // Panggil fungsi sebelumnya
         $req = Request::create('/fake', 'GET', [
             'entitas_id' => $entitasId,
+            'cabang_id' => $cabang_id,
             'periode'    => $periode
         ]);
 

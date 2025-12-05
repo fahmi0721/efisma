@@ -18,8 +18,9 @@
             <option value="">Semua Entitas</option>
         </select>
 
-        
-
+        <select id="filter_cabang" class="form-select  w-auto">
+            <option value="">Semua Cabang</option>
+        </select>
         <!-- <button id="btnExport" class="btn btn-success btn-sm">
             <i class="fas fa-file-excel"></i> Export
         </button> -->
@@ -206,7 +207,27 @@ document.addEventListener('DOMContentLoaded', function () {
         theme: 'bootstrap4',
         minimumResultsForSearch: 10,
         // placeholder: 'Pilih Entitas',
-        allowClear: true
+        // allowClear: true
+    });
+
+    $('#filter_cabang').select2({
+        ajax: {
+            url: "{{ route('cabang.select') }}",
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:  q.nama};
+                    })
+                };
+            },
+        },
+        width: '200px',
+        theme: 'bootstrap4',
+        minimumResultsForSearch: 10,
+        // placeholder: 'Pilih Entitas',
+        // allowClear: true
     });
 
     function showLoading() {
@@ -244,12 +265,14 @@ document.addEventListener('DOMContentLoaded', function () {
     function currency(n){ return new Intl.NumberFormat('id-ID').format(Math.round(n)); }
     async function loadPendapatanBeban() {
         const entitas = $('#filter_entitas').val() || '';
+        const cabang_id = $('#filter_cabang').val() || '';
         const periode = document.getElementById('periode').value;
 
         const res = await fetch(
             "{{ route('dashboard.keuangan.pendapatan_beban') }}"
-            + "?entitas_id=" + entitas
+            + "?cabang_id=" + cabang_id
             + "&periode=" + periode
+            + "&entitas_id=" + entitas
         );
 
         const json = await res.json();
@@ -284,11 +307,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function loadLabaRugiHarian() {
         const entitas = $('#filter_entitas').val() || '';
+        const cabang_id = $('#filter_cabang').val() || '';
         const periode = document.getElementById('periode').value;
 
         const res = await fetch(
             "{{ route('dashboard.keuangan.labarugi_harian') }}"
-            + "?entitas_id=" + entitas
+            + "?cabang_id=" + cabang_id
+            + "&entitas_id=" + entitas
             + "&periode=" + periode
         );
 
@@ -315,10 +340,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function loadSummary() {
         const entitas = $('#filter_entitas').val() || '';
+        const cabang_id = $('#filter_cabang').val() || '';
         const periode = document.getElementById('periode').value;
         const res = await fetch(
             "{{ route('dashboard.keuangan.summary') }}" 
-            + "?entitas_id=" + entitas 
+            + "?cabang_id=" + cabang_id 
+            + "&entitas_id=" + entitas 
             + "&periode=" + periode
         );
 
@@ -331,9 +358,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function loadCashflow() {
         const entitas = $('#filter_entitas').val() || '';
+        const cabang_id = $('#filter_cabang').val() || '';
         const periode = document.getElementById('periode').value; // ⬅ nilai terbaru
-        const res = await fetch("{{ route('dashboard.keuangan.cashflow') }}?entitas_id=" 
-            + entitas + "&periode=" + periode);
+        const res = await fetch(
+            "{{ route('dashboard.keuangan.cashflow') }}"
+            +"?cabang_id=" + cabang_id 
+            +"&entitas_id=" + entitas 
+            + "&periode=" + periode);
 
         const json = await res.json();
 
@@ -361,11 +392,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function loadComposition() {
         const entitas = $('#filter_entitas').val() || '';
+        const cabang_id = $('#filter_cabang').val() || '';
         const periode = document.getElementById('periode').value;
 
         const res = await fetch(
             "{{ route('dashboard.keuangan.composition') }}" 
-            + "?entitas_id=" + entitas 
+            + "?cabang_id=" + cabang_id 
+            + "&entitas_id=" + entitas 
             + "&periode=" + periode
         );
         const json = await res.json();
@@ -395,7 +428,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function loadAgingTop() {
         const entitas = $('#filter_entitas').val() || '';
-        const res = await fetch("{{ route('dashboard.keuangan.aging_top') }}?entitas_id=" + entitas + "&limit=10");
+        const cabang_id = $('#filter_cabang').val() || '';
+        const res = await fetch(
+            "{{ route('dashboard.keuangan.aging_top') }}"
+            +"?cabang_id=" + cabang_id 
+            +"&entitas_id=" + entitas 
+            + "&limit=10");
         const json = await res.json();
         const container = document.getElementById('agingList');
         container.innerHTML = '';
@@ -408,11 +446,11 @@ document.addEventListener('DOMContentLoaded', function () {
             html += `<div class="list-group-item d-flex justify-content-between align-items-start">
                 <div>
                     <div class="fw-bold">${row.partner_nama}</div>
-                    <small class="text-muted">0-30: ${new Intl.NumberFormat('id-ID').format(row.aging_0_30)} • 31-60: ${new Intl.NumberFormat('id-ID').format(row.aging_31_60)}</small>
+                    <small class="text-muted">0-14: ${new Intl.NumberFormat('id-ID').format(row.aging_0_14)} • 15-30: ${new Intl.NumberFormat('id-ID').format(row.aging_15_30)}</small>
                 </div>
                 <div class="text-end">
                     <div class="fw-bold">Rp ${new Intl.NumberFormat('id-ID').format(row.total_piutang)}</div>
-                    <small class="text-muted">>90: ${new Intl.NumberFormat('id-ID').format(row.aging_90_plus)}</small>
+                    <small class="text-muted">>60: ${new Intl.NumberFormat('id-ID').format(row.aging_60_plus)}</small>
                 </div>
             </div>`;
         });
@@ -438,15 +476,11 @@ document.addEventListener('DOMContentLoaded', function () {
     reloadAll();
 
     // reload on filter change
-    $('#filter_entitas,#periode').on('change', function() {
+    $('#filter_entitas,#periode,#filter_cabang').on('change', function() {
         reloadAll();
     });
 
-    // Export button (simple redirect to a report route - implement endpoint export logic separately)
-    $('#btnExport').on('click', function() {
-        const entitas = $('#filter_entitas').val() || '';
-        window.location.href = '/laporan/keuangan/export?entitas_id=' + entitas + '&periode=' + periode;
-    });
+    
 });
 </script>
 @endsection
