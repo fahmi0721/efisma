@@ -10,11 +10,13 @@ class NeracaExport implements FromView
 {
     protected $entitas_id;
     protected $periode;
+    protected $cabang_id;
 
-    public function __construct($entitas_id = null, $periode = null)
+    public function __construct($entitas_id = null, $periode = null,$cabang_id = null)
     {
         $this->entitas_id = $entitas_id;
         $this->periode = $periode;
+        $this->cabang_id = $cabang_id;
     }
 
     public function view(): View
@@ -53,6 +55,7 @@ class NeracaExport implements FromView
             ->join('m_akun_gl as a', 'a.id', '=', 'b.akun_id')
             ->where('j.status', 'posted')
             ->when($this->entitas_id, fn($q) => $q->where('j.entitas_id', $this->entitas_id))
+            ->when($this->cabang_id, fn($q) => $q->where('j.cabang_id', $this->cabang_id))
             ->whereBetween('b.tanggal', [$periode_awal, $periode_akhir])
             ->select(
                 'b.akun_id',

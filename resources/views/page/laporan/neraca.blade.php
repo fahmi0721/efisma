@@ -35,6 +35,9 @@
                     <option value="">Semua Entitas</option>
                 </select>
                 @endif
+                <select id="filter_cabang" class="form-select form-select-sm cabang" style="width:250px">
+                    <option value="">Semua Cabang</option>
+                </select>
                 @canAccess('neraca.export')
                 {{-- 📤 Tombol Export Excel --}}
                 <button id="btnExportExcel" class="btn btn-success">
@@ -69,7 +72,7 @@
 <script>
 $(function() {
     @if(auth()->user()->level != "entitas")
-     $('#filter_entitas').select2({
+    $('#filter_entitas').select2({
         ajax: {
             url: '{{ route("entitas.select") }}',
             dataType: 'json',
@@ -85,10 +88,10 @@ $(function() {
         },
         theme: 'bootstrap4',
         width: 'resolve',
-        minimumResultsForSearch: Infinity, // sembunyikan search box kalau sedikit opsi
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
         dropdownParent: $('.card-header'),
         // placeholder: "-- Pilih Entitas --",
-        allowClear: true
+        // allowClear: true
     });
     @endif
 
@@ -113,6 +116,29 @@ $(function() {
         allowInput: false,
         locale: "id"
     });
+
+    $('#filter_cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:  q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
+        dropdownParent: $('.card-header'),
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true
+    });
+
     @canAccess('neraca.view')
     const table = $('#tb_data').DataTable({
         processing: true,
@@ -122,6 +148,7 @@ $(function() {
             data: function(d) {
                 d.entitas_id = $('#filter_entitas').val();
                 d.periode = $('#periode').val();
+                d.cabang_id = $('#filter_cabang').val();
             }
         },
         columns: [
@@ -155,7 +182,7 @@ $(function() {
     });
 
     // Reload saat filter berubah
-    $('#filter_entitas, #periode').on('change', function() {
+    $('#filter_entitas, #periode,#filter_cabang').on('change', function() {
         table.ajax.reload();
     });
     @endcanAccess
@@ -163,11 +190,12 @@ $(function() {
     // Export Excel
     $('#btnExportExcel').click(function() {
         let entitas = $('#filter_entitas').val();
+        let cabang_id = $('#filter_cabang').val();
         let periode = $('#periode').val();
         @if(auth()->user()->level != "entitas")
-            window.location.href = "{{ route('laporan.neraca.export') }}?entitas_id=" + entitas + "&periode=" + periode;
+            window.location.href = "{{ route('laporan.neraca.export') }}?entitas_id=" + entitas + "&periode=" + periode + "&cabang_id=" + cabang_id;
         @else
-            window.location.href = "{{ route('laporan.neraca.export') }}?entitas_id=&periode=" + periode;
+            window.location.href = "{{ route('laporan.neraca.export') }}?entitas_id=&periode=" + periode + "&cabang_id=" + cabang_id;
         @endif
     });
     @endcanAccess
