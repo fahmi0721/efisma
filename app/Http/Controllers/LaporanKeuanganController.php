@@ -280,9 +280,9 @@ class LaporanKeuanganController extends Controller
             $entitas = $request->entitas_id; // filter dari dropdown jika admin/pusat
         }
         $periode = $request->periode ?? date('Y-m');
-        
+        $cabang_id = $request->cabang_id;
         $filename = 'Laporan_Arus_Kas_' . $periode . '.xlsx';
-        return Excel::download(new ArusKasExport($entitas, $periode), $filename);
+        return Excel::download(new ArusKasExport($entitas, $periode,$cabang_id), $filename);
     }
 
     public function dataArusKas(Request $request)
@@ -296,6 +296,7 @@ class LaporanKeuanganController extends Controller
         $periode = $request->periode ?? date('Y-m'); // contoh: "2025-11"
         $tglAwal = $periode . '-01';
         $tglAkhir = date('Y-m-t', strtotime($periode));
+        $cabang_id = $request->cabang_id;
        
 
         // 1️⃣ Saldo awal khusus kas/bank per entitas
@@ -336,6 +337,7 @@ class LaporanKeuanganController extends Controller
         )
         ->where('ak.kategori', 'kas_bank')
         ->when($entitas, fn($q) => $q->where('kas.entitas_id', $entitas))
+        ->when($cabang_id, fn($q) => $q->where('kas.cabang_id', $cabang_id))
         ->whereBetween('kas.tanggal', [$tglAwal, $tglAkhir])
         ->groupBy('kas.entitas_id', 'e.nama', 'kelompok')
         ->orderBy('e.nama')

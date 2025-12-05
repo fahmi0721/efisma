@@ -34,6 +34,11 @@
             </select>
         </div>
         @endif
+        <div class="col-md-3">
+            <select id="filter_cabang" name="cabang" class="form-select">
+                <option value="">Semua Cabang</option>
+            </select>
+        </div>
         <div class="col-md-2">
             <input type="text" id="periode" class="form-control form-control flatpickr-input" placeholder="Pilih Periode" style="width: 200px;" />
         </div>
@@ -131,6 +136,24 @@ $(function() {
         allowInput: false,
         locale: "id"
     });
+    $('#filter_cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: data => ({
+                results: data.map(q => ({ id: q.id, text: q.nama }))
+            }),
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true,
+        minimumResultsForSearch: 0, // -1 = search box selalu disembunyikan
+        escapeMarkup: markup => markup
+    });
+    @if(auth()->user()->level != "entitas")
     $('#filter_entitas').select2({
         ajax: {
             url: '{{ route("entitas.select") }}',
@@ -144,10 +167,11 @@ $(function() {
         theme: 'bootstrap4',
         width: 'resolve',
         // placeholder: "-- Pilih Entitas --",
-        allowClear: true,
-        minimumResultsForSearch: -1, // -1 = search box selalu disembunyikan
+        // allowClear: true,
+        minimumResultsForSearch: 0, // -1 = search box selalu disembunyikan
         escapeMarkup: markup => markup
     });
+    @endif
 });
 
 $('#filter_entitas').val('').trigger('change');
@@ -161,11 +185,12 @@ $('#btn-filter').on('click', function() {
  // Export Excel
 $('#btn-export').click(function() {
     let entitas = $('#filter_entitas').val();
+    let cabang_id = $('#filter_cabang').val();
     let periode = $('#periode').val();
     @if(auth()->user()->level != "entitas")
-        window.location.href = "{{ route('laporan.arus_kas.export') }}?entitas_id=" + entitas + "&periode=" + periode;
+        window.location.href = "{{ route('laporan.arus_kas.export') }}?entitas_id=" + entitas + "&periode=" + periode + "&cabang_id=" + cabang_id;
     @else
-        window.location.href = "{{ route('laporan.arus_kas.export') }}?entitas_id=&periode=" + periode;
+        window.location.href = "{{ route('laporan.arus_kas.export') }}?entitas_id=&periode=" + periode + "&cabang_id=" + cabang_id;
     @endif
 });
 @endcanAccess 
@@ -182,6 +207,7 @@ const table = $('#tblCashflow').DataTable({
         data: function(d) {
             d.entitas_id = $('#filter_entitas').val();
             d.periode = $('#periode').val();
+            d.cabang_id = $('#filter_cabang').val();
         },
         dataSrc: function(json) {
 

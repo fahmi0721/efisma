@@ -10,11 +10,13 @@ class ArusKasExport implements FromView
 {
     protected $entitas_id;
     protected $periode;
+    protected $cabang_id;
 
-    public function __construct($entitas_id = null, $periode = null)
+    public function __construct($entitas_id = null, $periode = null,$cabang_id = null)
     {
         $this->entitas_id = $entitas_id;
         $this->periode = $periode;
+        $this->cabang_id = $cabang_id;
     }
 
     public function view(): View
@@ -61,6 +63,7 @@ class ArusKasExport implements FromView
         )
         ->where('ak.kategori', 'kas_bank')
         ->when($this->entitas_id, fn($q) => $q->where('kas.entitas_id', $this->entitas_id))
+        ->when($this->cabang_id, fn($q) => $q->where('kas.cabang_id', $this->cabang_id))
         ->whereBetween('kas.tanggal', [$tglAwal, $tglAkhir])
         ->groupBy('kas.entitas_id', 'e.nama', 'kelompok')
         ->orderBy('e.nama')
