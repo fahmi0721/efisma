@@ -94,7 +94,7 @@
                         </a>
                         </li>
                     @endcanAccess
-                    @canAccess('cabang.view')
+                    @canAccess('m_cabang.view')
                     <li class="nav-item">
                     <a href="{{ route('cabang') }}" class="nav-link {{  setActive(['cabang', 'cabang.create', 'cabang.edit'], 'active')  }}">
                         <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
