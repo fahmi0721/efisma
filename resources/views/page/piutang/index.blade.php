@@ -119,7 +119,7 @@ $(document).ready(function() {
         theme: 'bootstrap4',
         // width: '100%',
          width: 'resolve',
-        minimumResultsForSearch: Infinity, // sembunyikan search box kalau sedikit opsi
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
         dropdownParent: $('.card-header'), // pastikan dropdown tidak nyasar
         // placeholder: "-- Pilih Entitas --",
         allowClear: true
@@ -142,7 +142,7 @@ $(document).ready(function() {
         },
         theme: 'bootstrap4',
         width: 'resolve',
-        minimumResultsForSearch: Infinity, // sembunyikan search box kalau sedikit opsi
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
         dropdownParent: $('.card-header'), // pastikan dropdown tidak nyasar
         // placeholder: "-- Pilih Entitas --",
         // allowClear: true
