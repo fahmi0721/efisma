@@ -17,6 +17,7 @@ class PiutangController extends Controller
         // Jika permintaan AJAX (DataTables)
         $filter = $request->get('filter');
         $entitas_id = $request->get('entitas_id');
+        $cabang_id = $request->get('cabang_id');
         if ($request->ajax()) {
             $query  = DB::table('view_aging_piutang');
                     if ($filter === 'customer') {
@@ -26,6 +27,9 @@ class PiutangController extends Controller
                     }
                     if (!empty($entitas_id)) {
                         $query->where('entitas_id', $entitas_id);
+                    }
+                    if (!empty($cabang_id)) {
+                        $query->where('cabang_id', $cabang_id);
                     }
                     /*
                     |--------------------------------------------------------------------------
@@ -54,6 +58,7 @@ class PiutangController extends Controller
     public function agingPiutangExport(Request $request)
     {
         $filter = $request->get('filter');
+        $cabang_id = $request->get('cabang_id');
         $entitas_id = null;
         // Jika user level entitas → paksa entitas user
         if ($request->user()->level == 'entitas') {
@@ -73,6 +78,10 @@ class PiutangController extends Controller
 
         if (!empty($entitas_id)) {
             $query->where('entitas_id', $entitas_id);
+        }
+
+        if (!empty($cabang_id)) {
+            $query->where('cabang_id', $cabang_id);
         }
 
         $data = $query->get();
@@ -115,6 +124,7 @@ class PiutangController extends Controller
     {
         $filter = $request->input('filter', 'all');
         $entitas_id = $request->input('entitas_id');
+        $cabang_id = $request->input('cabang_id');
         if ($request->ajax()) {
             $query = DB::table('view_daftar_piutang');
 
@@ -126,6 +136,10 @@ class PiutangController extends Controller
 
             if (!empty($entitas_id)) {
                 $query->where('entitas_id', $entitas_id);
+            }
+
+            if (!empty($cabang_id)) {
+                $query->where('cabang_id', $cabang_id);
             }
 
             /*
@@ -179,6 +193,7 @@ class PiutangController extends Controller
     {
         $filter = $request->input('filter', 'all');
         $entitas_id = $request->input('entitas_id');
+        $cabang_id = $request->input('cabang_id');
 
         $data = DB::table('view_daftar_piutang');
 
@@ -190,6 +205,9 @@ class PiutangController extends Controller
 
         if (!empty($entitas_id)) {
             $data->where('entitas_id', $entitas_id);
+        }
+        if (!empty($cabang_id)) {
+            $data->where('cabang_id', $cabang_id);
         }
         /*
         |--------------------------------------------------------------------------

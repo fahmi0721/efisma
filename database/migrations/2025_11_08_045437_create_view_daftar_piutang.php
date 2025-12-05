@@ -19,6 +19,7 @@ return new class extends Migration
                 j.no_invoice,
                 j.tanggal,
                 j.entitas_id,
+                j.cabang_id,          -- ✅ ditambahkan
                 j.partner_id,
                 p.nama AS partner_nama,
                 p.is_vendor,
@@ -71,13 +72,12 @@ return new class extends Migration
 
             GROUP BY 
                 j.id, j.kode_jurnal, j.no_invoice, j.tanggal,
-                j.entitas_id, j.partner_id, p.nama, 
+                j.entitas_id, j.cabang_id, j.partner_id, p.nama, 
                 p.is_vendor, p.is_customer, j.total_debit
 
             HAVING sisa_piutang > 0
 
             ORDER BY j.tanggal DESC;
-
 
 
 

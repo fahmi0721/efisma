@@ -59,6 +59,10 @@
                 </select>
                 @endif
 
+                <select id="filter_cabang" class="form-select form-select-sm cabang" style="width:180px">
+                    <option value="">Semua Cabang</option>
+                </select>
+
                 {{-- 🔽 Filter Tipe Partner --}}
                 <select id="filter_tipe" class="form-select " style="width:180px">
                     <option value="all">Semua Partner</option>
@@ -117,7 +121,7 @@ $(document).ready(function() {
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
-                        return {id: q.id, text: q.id + " - " + q.nama};
+                        return {id: q.id, text:q.nama};
                     })
                 };
             },
@@ -129,10 +133,31 @@ $(document).ready(function() {
         minimumResultsForSearch: Infinity, // sembunyikan search box kalau sedikit opsi
         dropdownParent: $('.card-header'), // pastikan dropdown tidak nyasar
         // placeholder: "-- Pilih Entitas --",
-        allowClear: true
+        // allowClear: true
     });
     @endif
     @canAccess('piutang.daftar.view')
+    $('.cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        minimumResultsForSearch: Infinity, // sembunyikan search box kalau sedikit opsi
+        dropdownParent: $('.card-header'), // pastikan dropdown tidak nyasar
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true
+    });
     const tb = $('#tb_data').DataTable({
         processing: true,
         serverSide: true,
@@ -141,6 +166,7 @@ $(document).ready(function() {
             data: function (d) {
                 d.filter = $('#filter_tipe').val();
                 d.entitas_id = $('#filter_entitas').val();
+                d.cabang_id = $('#filter_cabang').val();
             }
         },
         columns: [
@@ -200,7 +226,7 @@ $(document).ready(function() {
     });
 
     // 🔄 Reload ketika filter berubah
-    $('#filter_tipe, #filter_entitas').on('change', function() {
+    $('#filter_tipe, #filter_entitas,#filter_cabang').on('change', function() {
         tb.ajax.reload();
     });
     @endcanAccess
@@ -209,7 +235,14 @@ $(document).ready(function() {
     $('#btnExportExcel').click(function() {
         const tipe = $('#filter_tipe').val();
         const entitas = $('#filter_entitas').val();
-        window.location.href = "{{ route('piutang.daftar.export') }}?filter=" + tipe + "&entitas_id=" + (entitas ?? '');
+        const cabang = $('#filter_cabang').val(); // ← ambil pilihan cabang
+
+        const url = "{{ route('piutang.daftar.export') }}"
+            + "?filter=" + encodeURIComponent(tipe ?? '')
+            + "&entitas_id=" + encodeURIComponent(entitas ?? '')
+            + "&cabang_id=" + encodeURIComponent(cabang ?? '');
+
+        window.location.href = url;
     });
     @endcanAccess
 });

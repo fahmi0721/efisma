@@ -58,6 +58,9 @@
                     <option value="">Semua Entitas</option>
                 </select>
                 @endif
+                <select id="filter_cabang" class="form-select form-select-sm cabang" style="width:180px">
+                    <option value="">Semua Cabang</option>
+                </select>
                 {{-- 🔽 Filter Tipe Partner --}}
                 <select id="filter_tipe" class="form-select " style="width:180px">
                     <option value="all">Semua Partner</option>
@@ -123,6 +126,27 @@ $(document).ready(function() {
     });
     @endif
     @canAccess('piutang.aging.view')
+    $('.cabang').select2({
+        ajax: {
+            url: '{{ route("cabang.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        minimumResultsForSearch: Infinity, // sembunyikan search box kalau sedikit opsi
+        dropdownParent: $('.card-header'), // pastikan dropdown tidak nyasar
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true
+    });
     const tb = $('#tb_data').DataTable({
         processing: true,
         serverSide: true,
@@ -131,6 +155,7 @@ $(document).ready(function() {
             data: function (d) {
                 d.filter = $('#filter_tipe').val();
                 d.entitas_id = $('#filter_entitas').val();
+                d.cabang_id = $('#filter_cabang').val();
             }
         },
         columns: [
@@ -155,16 +180,20 @@ $(document).ready(function() {
         tb.ajax.reload();
     });
     @endif
-     $('#filter_tipe').on('change', function() {
+     $('#filter_tipe, #filter_cabang').on('change', function() {
         tb.ajax.reload();
     });
     @endcanAccess
     @canAccess('piutang.aging.export')
     // 📤 Export Excel
     $('#btnExportExcel').click(function() {
-        const tipe = $('#filter_tipe').val();
-        const entitas = $('#filter_entitas').val();
-        window.location.href = "{{ route('piutang.aging.export') }}?filter=" + tipe + "&entitas_id=" + (entitas ?? '');
+        const params = {
+            filter: $('#filter_tipe').val() || '',
+            entitas_id: $('#filter_entitas').val() || '',
+            cabang_id: $('#filter_cabang').val() || ''
+        };
+        const query = new URLSearchParams(params).toString();
+        window.location.href = "{{ route('piutang.aging.export') }}?" + query;
     });
     @endcanAccess
 });

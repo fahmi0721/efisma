@@ -35,6 +35,10 @@ class M_CabangController extends Controller
     {
         $query = $request->get('q');
         $data = DB::table("m_cabang")->where('nama','like','%'.$query.'%')->orderBy('nama','asc')->get();
+        $data->prepend((object)[
+        'id' => '',
+        'nama' => 'Semua Cabang'
+    ]);
         return response()->json($data);
     }
 
