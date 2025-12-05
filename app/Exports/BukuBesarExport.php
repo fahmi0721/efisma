@@ -10,11 +10,13 @@ class BukuBesarExport implements FromView
 {
     protected $entitas_id;
     protected $periode;
+    protected $cabang_id;
 
-    public function __construct($entitas_id = null, $periode = null)
+    public function __construct($entitas_id = null, $periode = null, $cabang_id = null)
     {
         $this->entitas_id = $entitas_id;
         $this->periode = $periode;
+        $this->cabang_id = $cabang_id;
     }
 
     public function view(): View
@@ -38,6 +40,7 @@ class BukuBesarExport implements FromView
                 'b.kredit'
             )
             ->when($this->entitas_id, fn($q) => $q->where('b.entitas_id', $this->entitas_id))
+            ->when($this->cabang_id, fn($q) => $q->where('b.cabang_id', $this->cabang_id))
             ->whereBetween('b.tanggal', [$tglAwal, $tglAkhir])
             ->orderBy('b.tanggal', 'asc')
             ->get();
