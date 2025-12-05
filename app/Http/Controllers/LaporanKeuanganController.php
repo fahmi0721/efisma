@@ -151,6 +151,8 @@ class LaporanKeuanganController extends Controller
         $periode = $request->periode ?? date('Y-m'); // contoh: "2025-11"
         $periode_awal = $periode . '-01';
         $periode_akhir = date('Y-m-t', strtotime($periode_awal));
+        $cabang_id = $request->cabang_id; // filter dari dropdown jika admin/pusat
+
 
         // 🔹 Ambil seluruh akun dari view_akun_hirarki
         $akun = DB::table('view_akun_hirarki')
@@ -174,6 +176,7 @@ class LaporanKeuanganController extends Controller
             ->join('jurnal_header as j', 'j.id', '=', 'b.jurnal_id')
             ->join('m_akun_gl as a', 'a.id', '=', 'b.akun_id')
             ->where('j.status', 'posted')
+            ->when($cabang_id, fn($q) => $q->where('j.cabang_id', $cabang_id))
             ->when($entitas_id, fn($q) => $q->where('j.entitas_id', $entitas_id))
             ->whereBetween('b.tanggal', [$periode_awal, $periode_akhir])
             ->select(
@@ -255,9 +258,9 @@ class LaporanKeuanganController extends Controller
             $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
         }
         $periode = $request->periode ?? date('Y-m');
-
+        $cabang_id = $request->cabang_id;
         $filename = 'Laporan_PBL_' . $periode . '.xlsx';
-        return Excel::download(new PblExport($entitas_id, $periode), $filename);
+        return Excel::download(new PblExport($entitas_id, $periode,$cabang_id), $filename);
     }
 
      public function indexAruskas()
