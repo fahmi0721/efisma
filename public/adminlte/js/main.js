@@ -1,7 +1,7 @@
 function info(title,pesan,icons){
     Swal.fire({
         title: title,
-        text: pesan,
+        html: pesan,
         icon: icons,
         width: '380px',     // ubah lebar
         padding: '1rem',
@@ -35,7 +35,7 @@ function error_message(e, title = "") {
 
     Swal.fire({
         title: title,
-        text: pesan,
+        html: pesan,
         icon: icons,
         width: '380px',
         padding: '1rem',

@@ -231,6 +231,7 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
 
 
         Route::get('/pendapatan', [JurnalController::class, 'index'])->name('jurnal.pendapatan')->defaults('jenis', 'JP')->middleware('permission:pendapatan.view');
+        Route::get('/pendapatan/rincian_deposito', [JurnalController::class, 'rincian_deposito'])->name('jurnal.pendapatan.deposito')->defaults('jenis', 'JP')->middleware('permission:pendapatan.view');
         Route::get('/pendapatan/create', [JurnalController::class, 'create'])->name('jurnal.pendapatan.create')->defaults('jenis', 'JP')->middleware('permission:pendapatan.create');
         Route::post('/pendapatan/store', [JurnalController::class, 'store'])->name('jurnal.pendapatan.save')->defaults('jenis', 'JP')->middleware('permission:pendapatan.create');
         Route::get('/pendapatan/edit', [JurnalController::class, 'edit'])->name('jurnal.pendapatan.edit')->defaults('jenis', 'JP')->middleware('permission:pendapatan.edit');

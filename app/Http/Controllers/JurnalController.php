@@ -179,7 +179,116 @@ class JurnalController extends Controller
         return view('page.jurnal.index_' . $pg[$jenis]);
     }
 
+    public function rincian_deposito(Request $request){
+        if ($request->entitas_scope) {
+            $entitasId  = $request->entitas_scope;
+        }else{
+            $entitasId  = $request->entitas_id;
+        }
+        $customerId = $request->customer_id;
 
+        // -----------------------------------------
+        // Ambil daftar akun deposit
+        // -----------------------------------------
+        $akunDeposits = DB::table('m_akun_gl')
+            ->where('kategori', 'deposito_customer')
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($akunDeposits)) {
+            return DataTables::of([])->make(true);
+        }
+
+        // -----------------------------------------
+        // AMBIL TOTAL MASUK (POSTED JOURNAL)
+        // Group per entitas, customer, akun
+        // -----------------------------------------
+        $depositIn = DB::table('jurnal_detail AS d')
+            ->join('jurnal_header AS h', 'h.id', '=', 'd.jurnal_id')
+            ->join('m_akun_gl AS a', 'a.id', '=', 'd.akun_id')
+            ->join('m_entitas AS e', 'e.id', '=', 'h.entitas_id')
+            ->join('m_partner AS p', 'p.id', '=', 'h.partner_id')
+            ->select(
+                'h.entitas_id',
+                'h.partner_id',
+                'd.akun_id',
+                'a.no_akun',
+                'a.nama AS akun_nama',
+                'e.nama AS entitas_nama',
+                'p.nama AS customer_nama',
+                DB::raw('SUM(kredit - debit) AS total_in')
+            )
+            ->whereIn('d.akun_id', $akunDeposits)
+            ->where('h.status', 'posted')
+            ->when($entitasId, fn($q) => $q->where('h.entitas_id', $entitasId))
+            ->when($customerId, fn($q) => $q->where('h.partner_id', $customerId))
+            ->groupBy(
+                'h.entitas_id',
+                'h.partner_id',
+                'd.akun_id',
+                'a.no_akun',
+                'a.nama',
+                'e.nama',
+                'p.nama'
+            )
+            ->get();
+
+        // -----------------------------------------
+        // AMBIL TOTAL DIGUNAKAN (pelunasan_deposit)
+        // -----------------------------------------
+        $depositUsed = DB::table('pelunasan_deposit')
+            ->select(
+                'entitas_id',
+                'partner_id',
+                'akun_deposit_id AS akun_id',
+                DB::raw('SUM(jumlah) AS total_used')
+            )
+            ->when($entitasId, fn($q) => $q->where('entitas_id', $entitasId))
+            ->when($customerId, fn($q) => $q->where('partner_id', $customerId))
+            ->groupBy('entitas_id', 'partner_id', 'akun_deposit_id')
+            ->get();
+
+        // Index untuk lookup cepat
+        $usedIndex = [];
+        foreach ($depositUsed as $u) {
+            $key = "{$u->entitas_id}-{$u->partner_id}-{$u->akun_id}";
+            $usedIndex[$key] = $u->total_used;
+        }
+
+        // -----------------------------------------
+        // BUILD final data
+        // -----------------------------------------
+        $data = [];
+
+        foreach ($depositIn as $row) {
+
+            $key = "{$row->entitas_id}-{$row->partner_id}-{$row->akun_id}";
+            $totalUsed = $usedIndex[$key] ?? 0;
+
+            $saldo = $row->total_in - $totalUsed;
+
+            $data[] = [
+                'entitas'     => $row->entitas_nama,
+                'customer'    => $row->customer_nama,
+                'akun'        => "{$row->no_akun} - {$row->akun_nama}",
+                'total_in'    => $row->total_in,
+                'total_used'  => $totalUsed,
+                'saldo'       => $saldo,
+            ];
+        }
+
+        return DataTables::of($data)
+            ->editColumn('total_in', fn($row) => number_format($row['total_in'], 0, ',', '.'))
+            ->editColumn('total_used', fn($row) => number_format($row['total_used'], 0, ',', '.'))
+            ->editColumn('saldo', function ($row) {
+                $saldo = number_format($row['saldo'], 0, ',', '.');
+                return $row['saldo'] > 0
+                    ? "<span class='text-success fw-bold'>Rp {$saldo}</span>"
+                    : "<span class='text-danger fw-bold'>Rp {$saldo}</span>";
+            })
+            ->rawColumns(['saldo'])
+            ->make(true);
+    }
 
     public function create(Request $request,$jenis=null){
         $pg = array(
@@ -451,7 +560,7 @@ class JurnalController extends Controller
 
         // 💡 Flag untuk peringatan himbauan
         $warningMessages = [];
-
+        $adaPiutang = false;
         // 🔍 Validasi posisi akun vs saldo normal
         foreach ($request->detail as $row) {
             $akun = DB::table('m_akun_gl')->where('id', $row['akun_id'])->first();
@@ -467,6 +576,56 @@ class JurnalController extends Controller
 
             // ✅ Untuk JP → wajib sesuai saldo normal
             if ($jenis === 'JP') {
+                
+                if ($akun->kategori === 'deposito_customer') {
+                    $entitasId  = $request->entitas_id;
+                    $customerId = $request->partner_id;
+                    // Nominal debit (pemakaian deposit)
+                    $nominalDeposit = floatval(str_replace('.', '', $row['debit'] ?? 0));
+                    if ($nominalDeposit <= 0) {
+                        return response()->json([
+                            'status'  => 'error',
+                            'message' => "Akun <b>{$akun->no_akun} - {$akun->nama}</b> harus diisi di kolom Debit untuk pemakaian deposit."
+                        ], 422);
+                    }
+                    // 🔍 Hitung total deposit masuk (GL summary)
+                    $totalIn = DB::table('buku_besar')
+                        ->where('akun_id', $akun->id)
+                        ->where('partner_id', $customerId)
+                        ->where('entitas_id', $entitasId)
+                        ->sum(DB::raw('kredit - debit'));
+                    // 🔍 Hitung total deposit yang sudah dipakai
+                    $totalUsed = DB::table('pelunasan_deposit')
+                        ->where('akun_deposit_id', $akun->id)
+                        ->where('partner_id', $customerId)
+                        ->where('entitas_id', $entitasId)
+                        ->sum('jumlah');
+
+                    $saldoDeposit = $totalIn - $totalUsed;
+
+                    // ❌ Tidak ada saldo deposit sama sekali
+                    if ($saldoDeposit <= 0) {
+                        return response()->json([
+                            'status'  => 'error',
+                            'message' => "Saldo deposit untuk akun <b>{$akun->no_akun} - {$akun->nama}</b> tidak tersedia.
+                                        Customer ini tidak memiliki deposit pada akun tersebut."
+                        ], 422);
+                    }
+
+                    // ❌ Deposit tidak mencukupi nominal pemakaian
+                    if ($nominalDeposit > $saldoDeposit) {
+                        return response()->json([
+                            'status'  => 'error',
+                            'message' => "Pemakaian deposit melebihi saldo.
+                                        Saldo deposit tersedia pada akun <b>{$akun->no_akun} - {$akun->nama}</b> hanya Rp " . number_format($saldoDeposit, 0, ',', '.') . "
+                                        tetapi Anda menginput Rp " . number_format($nominalDeposit, 0, ',', '.')
+                        ], 422);
+                    }
+                    // skip saldo normal validation
+                }
+                if ($akun->kategori === 'deposito_customer') {
+                    continue;
+                }
                 if ($akun->saldo_normal === 'debet' && $kredit > 0) {
                     return response()->json([
                         'status' => 'error',
@@ -479,6 +638,10 @@ class JurnalController extends Controller
                         'message' => "Akun {$akun->no_akun} - {$akun->nama} memiliki saldo normal 'Kredit', tidak boleh diisi di kolom Debit."
                     ], 422);
                 }
+                if ($akun && $akun->kategori === 'piutang') {
+                    $adaPiutang = true;
+                    break;
+                }
             }
 
             // ⚠️ Untuk JKK dan JKM → beri himbauan tapi tidak blok simpan
@@ -490,6 +653,14 @@ class JurnalController extends Controller
             }
 
             // 🟢 Untuk JN → lewati validasi
+        }
+        if ($jenis === 'JP') {
+            if (!$adaPiutang) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Jurnal Pendapatan wajib memiliki satu baris detail dengan akun Piutang (kategori piutang_usaha).'
+                ], 422);
+            }
         }
 
         // Jika ada himbauan untuk JKK/JKM
@@ -595,6 +766,25 @@ class JurnalController extends Controller
             }
             // 🔹 Insert detail
             foreach ($request->detail as $row) {
+                // Ambil akun detail
+                $akun = DB::table('m_akun_gl')->where('id', $row['akun_id'])->first();
+
+                if ($akun && $akun->kategori === 'deposito_customer') {
+                    $nominal = floatval(str_replace('.', '', $row['debit'] ?? 0));
+                    if ($nominal > 0) {
+                        // INSERT ke tabel pelunasan_deposit
+                        DB::table('pelunasan_deposit')->insert([
+                            'entitas_id'        => $request->entitas_id,
+                            'partner_id'       => $request->partner_id,
+                            'jurnal_piutang_id' => $jurnalId,
+                            'akun_deposit_id'   => $row['akun_id'],
+                            'jumlah'            => $nominal,
+                            'created_at'        => now(),
+                            'updated_at'        => now(),
+                        ]);
+                    }
+        
+                }
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id' => $jurnalId,
                     'akun_id' => $row['akun_id'],
@@ -755,6 +945,59 @@ class JurnalController extends Controller
                 $kredit = floatval(str_replace('.', '', $row['kredit'] ?? 0));
 
                 if ($jenis === 'JP') {
+                     // 1️⃣ Hapus pelunasan deposit lama
+                    DB::table('pelunasan_deposit')
+                        ->where('jurnal_piutang_id', $id)
+                        ->delete();
+                    if ($akun->kategori === 'deposito_customer') {
+                        $entitasId  = $request->entitas_id;
+                        $customerId = $request->partner_id;
+                        // Nominal debit (pemakaian deposit)
+                        $nominalDeposit = floatval(str_replace('.', '', $row['debit'] ?? 0));
+                        if ($nominalDeposit <= 0) {
+                            return response()->json([
+                                'status'  => 'error',
+                                'message' => "Akun <b>{$akun->no_akun} - {$akun->nama}</b> harus diisi di kolom Debit untuk pemakaian deposit."
+                            ], 422);
+                        }
+                        // 🔍 Hitung total deposit masuk (GL summary)
+                        $totalIn = DB::table('buku_besar')
+                            ->where('akun_id', $akun->id)
+                            ->where('partner_id', $customerId)
+                            ->where('entitas_id', $entitasId)
+                            ->sum(DB::raw('kredit - debit'));
+                        // 🔍 Hitung total deposit yang sudah dipakai
+                        $totalUsed = DB::table('pelunasan_deposit')
+                            ->where('akun_deposit_id', $akun->id)
+                            ->where('partner_id', $customerId)
+                            ->where('entitas_id', $entitasId)
+                            ->sum('jumlah');
+
+                        $saldoDeposit = $totalIn - $totalUsed;
+
+                        // ❌ Tidak ada saldo deposit sama sekali
+                        if ($saldoDeposit <= 0) {
+                            return response()->json([
+                                'status'  => 'error',
+                                'message' => "Saldo deposit untuk akun <b>{$akun->no_akun} - {$akun->nama}</b> tidak tersedia.
+                                            Customer ini tidak memiliki deposit pada akun tersebut."
+                            ], 422);
+                        }
+
+                        // ❌ Deposit tidak mencukupi nominal pemakaian
+                        if ($nominalDeposit > $saldoDeposit) {
+                            return response()->json([
+                                'status'  => 'error',
+                                'message' => "Pemakaian deposit melebihi saldo.
+                                            Saldo deposit tersedia pada akun <b>{$akun->no_akun} - {$akun->nama}</b> hanya Rp " . number_format($saldoDeposit, 0, ',', '.') . "
+                                            tetapi Anda menginput Rp " . number_format($nominalDeposit, 0, ',', '.')
+                            ], 422);
+                        }
+                        // skip saldo normal validation
+                    }
+                    if ($akun->kategori === 'deposito_customer') {
+                        continue;
+                    }
                     if ($akun->saldo_normal === 'debet' && $kredit > 0) {
                         return response()->json([
                             'status' => 'error',
@@ -879,6 +1122,25 @@ class JurnalController extends Controller
             DB::table('jurnal_detail')->where('jurnal_id', $id)->delete();
 
             foreach ($request->detail as $row) {
+                 // Ambil akun detail
+                $akun = DB::table('m_akun_gl')->where('id', $row['akun_id'])->first();
+
+                if ($akun && $akun->kategori === 'deposito_customer') {
+                    $nominal = floatval(str_replace('.', '', $row['debit'] ?? 0));
+                    if ($nominal > 0) {
+                        // INSERT ke tabel pelunasan_deposit
+                        DB::table('pelunasan_deposit')->insert([
+                            'entitas_id'        => $request->entitas_id,
+                            'partner_id'       => $request->partner_id,
+                            'jurnal_piutang_id' => $id,
+                            'akun_deposit_id'   => $row['akun_id'],
+                            'jumlah'            => $nominal,
+                            'created_at'        => now(),
+                            'updated_at'        => now(),
+                        ]);
+                    }
+        
+                }
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id' => $id,
                     'akun_id' => $row['akun_id'],
@@ -1040,6 +1302,63 @@ class JurnalController extends Controller
                     'status' => false,
                     'message' => "Jurnal Pendapatan {$jurnal->kode_jurnal} tidak bisa di-unposting karena sudah memiliki pelunasan piutang."
                 ]);
+            }
+        }
+
+        // =====================================================
+        // 🔵 VALIDASI UNPOSTING UNTUK JKM YANG MENCATAT DEPOSIT
+        // =====================================================
+        if ($jurnal->jenis === 'JKM') {
+
+            // Ambil detail JKM untuk cek apakah ada akun deposito_customer
+            $details = DB::table('jurnal_detail')
+                ->join('m_akun_gl', 'm_akun_gl.id', '=', 'jurnal_detail.akun_id')
+                ->where('jurnal_detail.jurnal_id', $id)
+                ->select('jurnal_detail.*', 'm_akun_gl.kategori')
+                ->get();
+
+            // Filter baris yang merupakan akun deposito customer
+            $depositRows = $details->filter(fn($d) => $d->kategori === 'deposito_customer');
+
+            if ($depositRows->count() > 0) {
+
+                foreach ($depositRows as $row) {
+
+                    $akunId     = $row->akun_id;
+                    $customerId = $jurnal->partner_id;
+                    $entitasId  = $jurnal->entitas_id;
+                    $nominalJKM = floatval($row->kredit); // deposit IN
+
+                    // -----------------------------
+                    // 1️⃣ HITUNG TOTAL SALDO DEPOSIT SAAT INI (POSTED)
+                    // -----------------------------
+                    $totalIn = DB::table('buku_besar')
+                    ->where('akun_id', $akunId)
+                    ->where('partner_id', $customerId)
+                    ->where('entitas_id', $entitasId)
+                    ->sum(DB::raw('kredit - debit'));
+
+                    // total yang sudah digunakan di JP lain
+                    $totalUsed = DB::table('pelunasan_deposit')
+                        ->where('akun_deposit_id', $akunId)
+                        ->where('partner_id', $customerId)
+                        ->where('entitas_id', $entitasId)
+                        ->sum('jumlah');
+
+                    $saldoSekarang = $totalIn - $totalUsed;
+
+                    // -----------------------------
+                    // 2️⃣ HITUNG SALDO SETELAH UNPOSTING JKM INI
+                    // -----------------------------
+                    $saldoSetelahUnpost = $saldoSekarang - $nominalJKM;
+
+                    if ($saldoSetelahUnpost < 0) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => "JKM dengan No Dokumen {$jurnal->kode_jurnal} tidak dapat di-unposting karena deposit yang berasal dari jurnal ini sudah dipakai dan akan menyebabkan saldo deposit customer menjadi negatif."
+                        ]);
+                    }
+                }
             }
         }
 
@@ -1400,6 +1719,62 @@ class JurnalController extends Controller
             // 🔹 Jika aman, lanjut hapus dari buku besar dan ubah status jadi draft
             foreach ($jurnalList as $jurnal) {
                 PeriodeHelper::cekPeriodeOpen($jurnal->tanggal);
+                // =====================================================
+                // 🔵 VALIDASI UNPOSTING UNTUK JKM YANG MENCATAT DEPOSIT
+                // =====================================================
+                if ($jurnal->jenis === 'JKM') {
+
+                    // Ambil detail JKM untuk cek apakah ada akun deposito_customer
+                    $details = DB::table('jurnal_detail')
+                        ->join('m_akun_gl', 'm_akun_gl.id', '=', 'jurnal_detail.akun_id')
+                        ->where('jurnal_detail.jurnal_id', $jurnal->id)
+                        ->select('jurnal_detail.*', 'm_akun_gl.kategori')
+                        ->get();
+
+                    // Filter baris yang merupakan akun deposito customer
+                    $depositRows = $details->filter(fn($d) => $d->kategori === 'deposito_customer');
+
+                    if ($depositRows->count() > 0) {
+
+                        foreach ($depositRows as $row) {
+
+                            $akunId     = $row->akun_id;
+                            $customerId = $jurnal->partner_id;
+                            $entitasId  = $jurnal->entitas_id;
+                            $nominalJKM = floatval($row->kredit); // deposit IN
+
+                            // -----------------------------
+                            // 1️⃣ HITUNG TOTAL SALDO DEPOSIT SAAT INI (POSTED)
+                            // -----------------------------
+                            $totalIn = DB::table('buku_besar')
+                            ->where('akun_id', $akunId)
+                            ->where('partner_id', $customerId)
+                            ->where('entitas_id', $entitasId)
+                            ->sum(DB::raw('kredit - debit'));
+
+                            // total yang sudah digunakan di JP lain
+                            $totalUsed = DB::table('pelunasan_deposit')
+                                ->where('akun_deposit_id', $akunId)
+                                ->where('partner_id', $customerId)
+                                ->where('entitas_id', $entitasId)
+                                ->sum('jumlah');
+
+                            $saldoSekarang = $totalIn - $totalUsed;
+
+                            // -----------------------------
+                            // 2️⃣ HITUNG SALDO SETELAH UNPOSTING JKM INI
+                            // -----------------------------
+                            $saldoSetelahUnpost = $saldoSekarang - $nominalJKM;
+
+                            if ($saldoSetelahUnpost < 0) {
+                                return response()->json([
+                                    'status' => 'error',
+                                    'message' => "Unposting dibatalkan. JKM {$jurnal->kode_jurnal} mengandung deposit yang sudah dipakai. Menghapus JKM ini akan membuat saldo deposit menjadi negatif."
+                                ],422);
+                            }
+                        }
+                    }
+                }
                 DB::table('buku_besar')
                     ->where('jurnal_id', $jurnal->id)
                     ->delete();

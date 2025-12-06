@@ -339,7 +339,7 @@ function startBatchPosting(totalBatch, modalProgress) {
                     $("#progressText").text("Semua batch berhasil diunposting.");
                     setTimeout(() => {
                         modalProgress.hide();
-                        Swal.fire('Sukses', 'Semua jurnal berhasil diposting ke buku besar.', 'success');
+                        Swal.fire('Sukses', 'Semua jurnal berhasil diunposting ke buku besar.', 'success');
                         $("#btn-submit").html("<i class='fa fa-bolt'></i> Unposting");
                         $("#btn-submit").prop("disabled", false);
                         $('#t_data').DataTable().ajax.reload();

@@ -26,6 +26,11 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Jurnal Pendapatan</h5>
                     <div class="ms-auto">
+                        @canAccess('pendapatan.view')
+                        <button  class="btn btn-warning btn-sm cekDepositBtn">
+                            <i class="fas fa-wallet"></i> Cek Deposito Customer
+                        </button>
+                        @endcanAccess
                         @canAccess('pendapatan.unposting')
                         <a href="{{ route('jurnal.pendapatan.unposting') }}" class="btn btn-danger btn-sm">
                             <i class="fas fa-bolt"></i> Unposting
@@ -102,6 +107,53 @@
     </div>    
 </div>
 
+<!-- Modal Detail Deposito -->
+<div class="modal fade" id="modalDeposit" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Deposito Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    @if(auth()->user()->level != "entitas")
+                    <div class="col-md-4">
+                        <label>Entitas</label>
+                        <select id="filterEntitas" class="form-select filterEntitas select2">
+                            <option value="">-- Pilih Entitas --</option>
+                        </select>
+                    </div>
+                    @endif
+                    <div class="col-md-4">
+                        <label>Customer</label>
+                        <select id="filterCustomer" class="form-select filterCustomer select2">
+                            <option value="">-- Pilih Customer --</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <hr>
+                <table id="depositTable" class="table table-bordered table-striped w-100">
+                    <thead>
+                        <tr>
+                            <th>Entitas</th>
+                            <th>Customer</th>
+                            <th>Akun Deposit</th>
+                            <th>Total Masuk</th>
+                            <th>Total Terpakai</th>
+                            <th>Saldo</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detail Transaksi  -->
 <div class="modal fade" id="DetailTransaksi" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
@@ -123,6 +175,99 @@
 {{-- ✅ Flatpickr Month Picker --}}
 
 <script>
+$(document).on('click', '.cekDepositBtn', function() {
+    $('#modalDeposit').modal('show');
+    @if(auth()->user()->level != "entitas")
+    $('#filterEntitas').select2({
+        ajax: {
+            url: '{{ route("entitas.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:  q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
+        dropdownParent: $('#modalDeposit'),
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true
+    });
+    @endif
+    $('#filterCustomer').select2({
+        ajax: {
+            url: '{{ route("partner.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:  q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
+        dropdownParent: $('#modalDeposit'),
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true
+    });
+    loadDepositTable();  // kosong dulu
+    @if(auth()->user()->level != "entitas")
+    $("#filterCustomer, #filterEntitas").on('change', function() {
+        let entitasId = $("#filterEntitas").val();
+        let customerId = $("#filterCustomer").val();
+        loadDepositTable(entitasId,customerId)
+    });
+    @else
+        $("#filterCustomer").on('change', function() {
+        let entitasId = "";
+        let customerId = $("#filterCustomer").val();
+        loadDepositTable(entitasId,customerId)
+    });
+    @endif
+});
+
+function loadDepositTable(entitasId = '', customerId = '') {
+
+    // destroy table sebelum reload
+    if ($.fn.DataTable.isDataTable('#depositTable')) {
+        $('#depositTable').DataTable().clear().destroy();
+    }
+
+    $('#depositTable').DataTable({
+        processing: true,
+        responsive: true,
+        serverSide: true,
+        searching: false,
+        paging: false,
+        info: false,
+        ajax: {
+            url: "{{ route('jurnal.pendapatan.deposito') }}",
+            data: {
+                entitas_id: entitasId,
+                customer_id: customerId
+            }
+        },
+        columns: [
+            { data: 'entitas', name: 'entitas_nama' },
+            { data: 'customer', name: 'customer_nama' },
+            { data: 'akun', name: 'akun' },
+            { data: 'total_in', name: 'total_in' },
+            { data: 'total_used', name: 'total_used' },
+            { data: 'saldo', name: 'saldo' }
+        ]
+    });
+}
 document.addEventListener('DOMContentLoaded', function () {
     // ✅ Inisialisasi Flatpickr Month Picker
     flatpickr("#filter_from", {
