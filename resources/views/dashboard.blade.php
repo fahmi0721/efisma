@@ -190,6 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         allowInput: false,
         locale: "id"
     });
+    @if(auth()->user()->level != "entitas")
     // Select2 entitas dengan "Semua Entitas"
     $('#filter_entitas').select2({
         ajax: {
@@ -210,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // placeholder: 'Pilih Entitas',
         // allowClear: true
     });
-
+    @endif
     $('#filter_cabang').select2({
         ajax: {
             url: "{{ route('cabang.select') }}",
@@ -273,7 +274,9 @@ document.addEventListener('DOMContentLoaded', function () {
             "{{ route('dashboard.keuangan.pendapatan_beban') }}"
             + "?cabang_id=" + cabang_id
             + "&periode=" + periode
+            @if(auth()->user()->level != "entitas")
             + "&entitas_id=" + entitas
+            @endif
         );
 
         const json = await res.json();
@@ -314,7 +317,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const res = await fetch(
             "{{ route('dashboard.keuangan.labarugi_harian') }}"
             + "?cabang_id=" + cabang_id
+            @if(auth()->user()->level != "entitas")
             + "&entitas_id=" + entitas
+            @endif
             + "&periode=" + periode
         );
 
@@ -345,8 +350,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const periode = document.getElementById('periode').value;
         const res = await fetch(
             "{{ route('dashboard.keuangan.summary') }}" 
-            + "?cabang_id=" + cabang_id 
+            + "?cabang_id=" + cabang_id
+            @if(auth()->user()->level != "entitas") 
             + "&entitas_id=" + entitas 
+            @endif
             + "&periode=" + periode
         );
 
@@ -365,7 +372,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const res = await fetch(
             "{{ route('dashboard.keuangan.cashflow') }}"
             +"?cabang_id=" + cabang_id 
+            @if(auth()->user()->level != "entitas")
             +"&entitas_id=" + entitas 
+            @endif
             + "&periode=" + periode);
 
         const json = await res.json();
@@ -400,7 +409,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const res = await fetch(
             "{{ route('dashboard.keuangan.composition') }}" 
             + "?cabang_id=" + cabang_id 
+            @if(auth()->user()->level != "entitas")
             + "&entitas_id=" + entitas 
+            @endif
             + "&periode=" + periode
         );
         const json = await res.json();
@@ -434,7 +445,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const res = await fetch(
             "{{ route('dashboard.keuangan.aging_top') }}"
             +"?cabang_id=" + cabang_id 
+            @if(auth()->user()->level != "entitas")
             +"&entitas_id=" + entitas 
+            @endif
             + "&limit=10");
         const json = await res.json();
         const container = document.getElementById('agingList');
@@ -478,9 +491,16 @@ document.addEventListener('DOMContentLoaded', function () {
     reloadAll();
 
     // reload on filter change
+    @if(auth()->user()->level != "entitas")
     $('#filter_entitas,#periode,#filter_cabang').on('change', function() {
         reloadAll();
     });
+    @else
+     $('#periode,#filter_cabang').on('change', function() {
+        reloadAll();
+    });
+
+    @endif
 
     
 });
