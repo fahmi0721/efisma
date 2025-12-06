@@ -22,7 +22,12 @@ class DashboardController extends Controller
      */
     public function apiSummary(Request $request)
     {
-        $entitasId = $request->entitas_id ?: null;
+
+        if (auth()->user()->level == "entitas") {
+            $entitasId = $request->entitas_scope;
+        }else{
+            $entitasId = $request->entitas_id ?: null;
+        }
         $cabang_id = $request->cabang_id ?: null;
 
         // === Ambil periode dari request, default bulan ini ===
@@ -121,6 +126,7 @@ class DashboardController extends Controller
             'kas' => (float)$kas,
             'piutang' => (float)$piutang,
             'utang' => (float)$utang,
+            'suth' => $request->entitas_scope,
         ]);
     }
 
@@ -130,7 +136,11 @@ class DashboardController extends Controller
      */
     public function apiCashflow(Request $request)
     {
-        $entitasId = $request->entitas_id ?: null;
+        if ($request->entitas_scope) {
+            $entitasId = $request->entitas_scope;
+        }else{
+            $entitasId = $request->entitas_id ?: null;
+        }
         $cabang_id = $request->cabang_id ?: null;
         // periode default current month
         $periode = $request->periode ?? Carbon::now()->format('Y-m');
@@ -171,7 +181,11 @@ class DashboardController extends Controller
      */
     public function apiComposition(Request $request)
     {
-        $entitasId = $request->entitas_id ?: null;
+        if ($request->entitas_scope) {
+            $entitasId = $request->entitas_scope;
+        }else{
+            $entitasId = $request->entitas_id ?: null;
+        }
         $cabang_id = $request->cabang_id ?: null;
         $limit = intval($request->limit ?: 10);
 
@@ -238,7 +252,11 @@ class DashboardController extends Controller
      */
     public function apiAgingTop(Request $request)
     {
-        $entitasId = $request->entitas_id ?: null;
+        if ($request->entitas_scope) {
+            $entitasId = $request->entitas_scope;
+        }else{
+            $entitasId = $request->entitas_id ?: null;
+        }
         $cabang_id = $request->cabang_id ?: null;
         $limit = intval($request->limit ?: 10);
 
@@ -260,7 +278,11 @@ class DashboardController extends Controller
     function apiPendapatanBeban(Request $request)
     {
         $cabang_id = $request->cabang_id ?: null;
-        $entitasId = $request->entitas_id ?: null;
+        if ($request->entitas_scope) {
+            $entitasId = $request->entitas_scope;
+        }else{
+            $entitasId = $request->entitas_id ?: null;
+        }
         $periode = $request->periode ?: date('Y-m');
 
         $start = Carbon::createFromFormat('Y-m', $periode)->startOfMonth();
@@ -311,7 +333,11 @@ class DashboardController extends Controller
 
     public function apiLabaRugiHarian(Request $request)
     {
-        $entitasId = $request->entitas_id;
+        if ($request->entitas_scope) {
+            $entitasId = $request->entitas_scope;
+        }else{
+            $entitasId = $request->entitas_id ?: null;
+        }
         $cabang_id = $request->cabang_id;
         $periode   = $request->periode;
 

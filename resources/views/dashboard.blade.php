@@ -14,10 +14,11 @@
 
     <div class="ms-auto d-flex gap-2">
         <input type="text" id="periode" class="form-control  w-auto" readonly />
+        @if(auth()->user()->level != "entitas")
         <select id="filter_entitas" class="form-select  w-auto">
             <option value="">Semua Entitas</option>
         </select>
-
+        @endif
         <select id="filter_cabang" class="form-select  w-auto">
             <option value="">Semua Cabang</option>
         </select>
@@ -350,6 +351,7 @@ document.addEventListener('DOMContentLoaded', function () {
         );
 
         const json = await res.json();
+        console.log(json);
         document.getElementById('kpi_aset').innerText = currency(json.aset);
         document.getElementById('kpi_liabilitas').innerText = currency(json.liabilitas);
         document.getElementById('kpi_kas').innerText = currency(json.kas);
