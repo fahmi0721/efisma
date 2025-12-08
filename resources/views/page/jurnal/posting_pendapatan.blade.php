@@ -59,10 +59,10 @@
                                 <th>Kode</th>
                                 <th>Keterangan</th>
                                 <th>Tanggal</th>
+                                <th>Total</th>
                                 <th>Entitas</th>
                                 <th>Partner</th>
                                 <th>Cabang</th>
-                                <th>Total</th>
                                 <th>Status</th>
                                 <th>#</th>
                             </tr>
@@ -70,8 +70,11 @@
                         <tbody></tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="7" class="text-end fw-bold">TOTAL :</th>
+                                <th colspan="4" class="text-end fw-bold">TOTAL :</th>
                                 <th id="footer_total_debit" class="text-end fw-bold"></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
                                 <th></th>
                                 <th></th>
                             </tr>
@@ -191,10 +194,7 @@ function load_data(){
             { data: 'kode_jurnal', name: 'kode_jurnal' },
             { data: 'keterangan', name: 'keterangan', orderable:false },
             { data: 'tanggal', name: 'tanggal' },
-            { data: 'entitas', name: 'entitas', orderable:false },
-            { data: 'partner', name: 'partner', orderable:false },
-            { data: 'cabang', name: 'cabang', orderable:false },
-            { 
+            {
                 data: 'total_debit', 
                 name: 'total_debit',
                 className: 'text-end',
@@ -203,6 +203,9 @@ function load_data(){
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0, }).format(data);
                 },orderable:false, 
             },
+            { data: 'entitas', name: 'entitas', orderable:false },
+            { data: 'partner', name: 'partner', orderable:false },
+            { data: 'cabang', name: 'cabang', orderable:false },
             { data: 'status', name: 'status', orderable:false },
             { data: 'detail', name: 'detail', orderable:false, searchable:false }
         ],
@@ -229,7 +232,7 @@ function load_data(){
             };
 
             let totalDebit = api
-                .column(7)
+                .column(4)
                 .data()
                 .reduce(function (a, b) {
                     return toNumber(a) + toNumber(b);
