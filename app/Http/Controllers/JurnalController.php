@@ -1492,6 +1492,8 @@ class JurnalController extends Controller
             */
             if ($request->entitas_scope) {
                 $query->where('j.entitas_id', $request->entitas_scope);
+            }else{
+                $query->when($request->entitas_id, fn($q) => $q->where('j.entitas_id', $request->entitas_id));
             }
             // filter tanggal
             if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
@@ -1528,13 +1530,58 @@ class JurnalController extends Controller
                         : "<span class='badge text-bg-success'>Posted</span>";
                     return $res;
                 })
-                ->addColumn('aksi', function ($row) {
-                    $html = '<div class="btn-group btn-group-sm">';
-                    $html .= '<button title="Detail Transaksi" type="button" data-toggle="tooltip" class="btn btn-info btn-view" onclick="detail_transaksi(' . $row->id . ')"><i class="fas fa-eye"></i></button>';
-                    $html .= "</div>";
+                ->addColumn('detail', function ($row) {
+
+                    // ambil detail
+                    $detail = DB::table('jurnal_detail as d')
+                        ->join('m_akun_gl as a', 'a.id', '=', 'd.akun_id')
+                        ->select(
+                            'a.no_akun as kode_akun',
+                            'a.nama as nama_akun',
+                            'd.debit',
+                            'd.kredit',
+                            'd.deskripsi'
+                        )
+                        ->where('d.jurnal_id', $row->id)
+                        ->orderBy('d.id')
+                        ->get();
+
+                    // buat tabel detail
+                    $html = "
+                        <div class='bg-light p-2 rounded border mt-2'>
+                            <strong>Detail Transaksi:</strong>
+                            <table class='table table-sm table-bordered mt-2 mb-0'>
+                                <thead class='table-secondary'>
+                                    <tr>
+                                        <th>Akun</th>
+                                        <th class='text-end'>Debit</th>
+                                        <th class='text-end'>Kredit</th>
+                                        <th>Deskripsi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    ";
+
+                    foreach ($detail as $d) {
+                        $html .= "
+                            <tr>
+                                <td>{$d->kode_akun} - {$d->nama_akun}</td>
+                                <td class='text-end'>" . number_format($d->debit) . "</td>
+                                <td class='text-end'>" . number_format($d->kredit) . "</td>
+                                <td>{$d->deskripsi}</td>
+                            </tr>
+                        ";
+                    }
+
+                    $html .= "
+                                </tbody>
+                            </table>
+                        </div>
+                    ";
+
                     return $html;
                 })
-                ->rawColumns(['aksi','status'])
+                ->rawColumns(['detail','status'])
                 ->make(true);
         }
         $pg = array(
@@ -1548,33 +1595,38 @@ class JurnalController extends Controller
 
     public function prepareBatch(Request $request)
     {
-        $request->validate([
+        $rules = [
             'tanggal_awal'   => 'required|date',
             'tanggal_akhir'  => 'required|date|after_or_equal:tanggal_awal',
             'jenis'          => 'required',
             'status'         => 'required',
-        ],[
-            // TANGGAL AWAL
+        ];
+
+        $messages = [
             'tanggal_awal.required' => 'Tanggal awal wajib diisi.',
             'tanggal_awal.date'     => 'Format tanggal awal tidak valid.',
 
-            // TANGGAL AKHIR
             'tanggal_akhir.required'        => 'Tanggal akhir wajib diisi.',
             'tanggal_akhir.date'            => 'Format tanggal akhir tidak valid.',
             'tanggal_akhir.after_or_equal'  => 'Tanggal akhir tidak boleh lebih kecil dari tanggal awal.',
 
-            // JENIS
             'jenis.required' => 'Jenis jurnal wajib dipilih.',
-
-            // STATUS
             'status.required' => 'Status jurnal wajib dipilih.',
-        ]);
+        ];
+
+      
+
+        $request->validate($rules, $messages);
+        if ($request->entitas_scope) {
+            $entitas =  $request->entitas_scope;
+        }else{
+            $entitas =  $request->entitas_id;
+        }
         $query = DB::table('jurnal_header')
             ->whereBetween('tanggal', [$request->tanggal_awal, $request->tanggal_akhir])
-            ->where('status', $request->status);
-        if ($request->filled('entitas_id')) {
-            $query->where('entitas_id', $request->entitas_id);
-        }
+            ->where('status', $request->status)
+            ->when($entitas, fn($q) => $q->where('entitas_id', $entitas));
+       
 
         if ($request->filled('jenis')) {
             $query->where('jenis', $request->jenis);

@@ -33,8 +33,14 @@
                     <div class="card-body">
                         <!-- 🔄 Ganti Tahun → Periode -->
                         <div class="row mb-3">
-                            <label for="periode" class="col-sm-3 col-form-label">Periode <b class="text-danger">*</b></label>
-                            <div class="col-sm-9">
+                            @if(auth()->user()->level != "entitas")
+                            <div class="col-sm-3">
+                                <select id="filter_entitas" name="entitas_id" class="form-control form-select"> 
+                                    <option value="">Semua Entitas</option>
+                                </select>
+                            </div>
+                            @endif
+                            <div class="col-sm-6">
                                 <div class="input-group mb-3">
                                     <input type="text" id="tanggal_awal" name="tanggal_awal" class="form-control" 
                                        placeholder="Pilih Tanggal Awal (YYYY-MM-DD)" readonly>
@@ -49,18 +55,27 @@
                     <table id='t_data' class='table table-bordered table-striped dt-responsive nowrap'>
                         <thead>
                             <tr class="text-center">
-                            <th width="5%">No</th>
-                            <th>Kode</th>
-                            <th>Keterangan</th>
-                            <th>Tanggal</th>
-                            <th>Entitas</th>
-                            <th>Partner</th>
-                            <th>Cabang</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th width="5%">Aksi</th>
-                        </tr>
+                                <th width="5%">No</th>
+                                <th>Kode</th>
+                                <th>Keterangan</th>
+                                <th>Tanggal</th>
+                                <th>Entitas</th>
+                                <th>Partner</th>
+                                <th>Cabang</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th width="5%">Aksi</th>
+                            </tr>
                         </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="7" class="text-end fw-bold">TOTAL :</th>
+                                <th id="footer_total_debit" class="text-end fw-bold"></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
                     </table>
 
                     <div class="card-footer">
@@ -76,23 +91,7 @@
         </div>
     </div>    
 </div>
-<!-- Modal Detail Transaksi -->
-<div class="modal fade" id="DetailTransaksi" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title">Detail Transaksi</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="DetailTransaksiBody">
-        
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-danger" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+
 <!-- Modal Progress Posting -->
 <div class="modal fade" id="modalProgress" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -127,6 +126,30 @@ $(document).ready(function() {
         allowInput: false,
         locale: "id"
     });
+
+
+    @if(auth()->user()->level != "entitas")
+    // 🔽 Select2 Entitas
+        $('#filter_entitas').select2({
+            ajax: {
+                url: '{{ route("entitas.select") }}',
+                dataType: 'json',
+                delay: 250,
+                processResults: function (data) {
+                    return {
+                        results: data.map(function(q){
+                            return {id: q.id, text: q.nama};
+                        })
+                    };
+                },
+                cache: true
+            },
+            theme: 'bootstrap4',
+            width: '100%',
+            // placeholder: "-- Pilih Entitas --",
+            // allowClear: true
+        });
+    @endif
 
 
     flatpickr("#tanggal_akhir", {
@@ -236,7 +259,7 @@ function load_data(){
             data: function (d) {
                 d.tanggal_awal = $('#tanggal_awal').val(); // kirim periode ke backend
                 d.tanggal_akhir = $('#tanggal_akhir').val(); // kirim periode ke backend
-                d.jenis = $('#tanggal_akhir').val(); // kirim periode ke backend
+                d.entitas_id = $('#filter_entitas').val(); // kirim periode ke backend
             }
         },
         columns: [
@@ -257,8 +280,45 @@ function load_data(){
                 },orderable:false, 
             },
             { data: 'status', name: 'status', orderable:false },
-            { data: 'aksi', name: 'aksi', orderable:false, searchable:false }
+            { data: 'detail', name: 'detail', orderable:false, searchable:false }
         ],
+        footerCallback: function (row, data, start, end, display) {
+
+            let api = this.api();
+
+            let toNumber = function (value) {
+
+                if (!value) return 0;
+
+                let cleaned = value.toString();
+
+                // buang decimal .00
+                if (cleaned.includes(".")) {
+                    cleaned = cleaned.split(".")[0];
+                }
+
+                // buang semua selain angka
+                cleaned = cleaned.replace(/[^\d]/g, "");
+
+                return Number(cleaned) || 0;
+            };
+
+            let totalDebit = api
+                .column(7)
+                .data()
+                .reduce(function (a, b) {
+                    return toNumber(a) + toNumber(b);
+                }, 0);
+
+            // tampilkan
+            $('#footer_total_debit').html(
+                new Intl.NumberFormat('id-ID', { 
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0 
+                }).format(totalDebit)
+            );
+        }
         // order: [[2, 'desc']],
     });
     // Init tooltip setiap setelah table redraw

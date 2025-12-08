@@ -33,8 +33,14 @@
                     <div class="card-body">
                         <!-- 🔄 Ganti Tahun → Periode -->
                         <div class="row mb-3">
-                            <label for="periode" class="col-sm-3 col-form-label">Periode <b class="text-danger">*</b></label>
-                            <div class="col-sm-9">
+                            @if(auth()->user()->level != "entitas")
+                            <div class="col-sm-3">
+                                <select id="filter_entitas" name="entitas_id" class="form-control form-select"> 
+                                    <option value="">Semua Entitas</option>
+                                </select>
+                            </div>
+                            @endif
+                            <div class="col-sm-6">
                                 <div class="input-group mb-3">
                                     <input type="text" id="tanggal_awal" name="tanggal_awal" class="form-control" 
                                        placeholder="Pilih Tanggal Awal (YYYY-MM-DD)" readonly>
@@ -49,18 +55,27 @@
                     <table id='t_data' class='table table-bordered table-striped dt-responsive nowrap'>
                         <thead>
                             <tr class="text-center">
-                            <th width="5%">No</th>
-                            <th>Kode</th>
-                            <th>Keterangan</th>
-                            <th>Tanggal</th>
-                            <th>Entitas</th>
-                            <th>Partner</th>
-                            <th>Cabang</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th width="5%">Aksi</th>
-                        </tr>
+                                <th width="5%">No</th>
+                                <th>Kode</th>
+                                <th>Keterangan</th>
+                                <th>Tanggal</th>
+                                <th>Entitas</th>
+                                <th>Partner</th>
+                                <th>Cabang</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>#</th>
+                            </tr>
                         </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="7" class="text-end fw-bold">TOTAL :</th>
+                                <th id="footer_total_debit" class="text-end fw-bold"></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
                     </table>
 
                     <div class="card-footer">
@@ -76,22 +91,7 @@
         </div>
     </div>    
 </div>
-<div class="modal fade" id="DetailTransaksi" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title">Detail Transaksi</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="DetailTransaksiBody">
-        
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-danger" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+
 
 <!-- Modal Progress Posting -->
 <div class="modal fade" id="modalProgress" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
@@ -137,6 +137,29 @@ $(document).ready(function() {
         locale: "id"
     });
 
+    @if(auth()->user()->level != "entitas")
+    // 🔽 Select2 Entitas
+        $('#filter_entitas').select2({
+            ajax: {
+                url: '{{ route("entitas.select") }}',
+                dataType: 'json',
+                delay: 250,
+                processResults: function (data) {
+                    return {
+                        results: data.map(function(q){
+                            return {id: q.id, text: q.nama};
+                        })
+                    };
+                },
+                cache: true
+            },
+            theme: 'bootstrap4',
+            width: '100%',
+            // placeholder: "-- Pilih Entitas --",
+            // allowClear: true
+        });
+    @endif
+
     // 🧠 Submit Form
     $("#form_data").submit(function(e){
         e.preventDefault();
@@ -145,81 +168,6 @@ $(document).ready(function() {
 });
 
 
-function detail_transaksi(id){
-    $.ajax({
-        url: "{{ route('jurnal.detail_transaksi') }}?id="+id,
-        type: 'GET',
-        success: function (res) {
-            console.log(res);
-            let modal = $("#DetailTransaksi");
-            let html ="";
-            html += "<div class='table-responsive'>";
-            html += "<table class='table table-striped table-bordered'>";
-                html += "<thead>";
-                    html += "<tr>";
-                        html += "<th>No</th>";
-                        html += "<th>Akun GL</th>";
-                        html += "<th>Deskripsi</th>";
-                        html += "<th>Debet</th>";
-                        html += "<th>Kredit</th>";
-                    html += "</tr>";
-                html += "</thead>";
-                html += "<tbody>";
-                    if (res.length === 0) {
-                        tbody.append('<tr><td colspan="5" class="text-center text-muted">Tidak ada data</td></tr>');
-                        return;
-                    }
-                    let no=1;
-                    let totDebet=0;
-                    let totKredit=0;
-                    res.forEach(function(item) {
-                        // pastikan debit & kredit selalu angka valid
-                        let debit = item.debit;
-                        let kredit = item.kredit;
-
-                        // kalau berbentuk string (misalnya "1.000.000"), ubah ke number
-                        if (typeof debit === 'string') {
-                            debit = parseFloat(debit.replace(/\./g, '').replace(',', '.')) || 0;
-                        }
-                        if (typeof kredit === 'string') {
-                            kredit = parseFloat(kredit.replace(/\./g, '').replace(',', '.')) || 0;
-                        }
-                        html += `
-                            <tr>
-                                <td>${no}</td>
-                                <td>${item.akun_gl}</td>
-                                <td>${item.deskripsi ?? '-'}</td>
-                                <td class="text-end">${Number(item.debit).toLocaleString('id-ID')}</td>
-                                <td class="text-end">${Number(item.kredit).toLocaleString('id-ID')}</td>
-                            </tr>
-                        `;
-                        no++;                        
-                        totDebet += debit;
-                        totKredit += kredit;
-                    });
-                html += "</tbody>";
-                html += "<tfoot>";
-                    html += "<tr>";
-                        html += "<th colspan='3' class='text-end'>TOTAL</th>";
-                        html += "<th class='text-end'>"+Number(totDebet).toLocaleString('id-ID')+"</th>";
-                        html += "<th class='text-end'>"+Number(totKredit).toLocaleString('id-ID')+"</th>";
-                    html += "</tr>";
-                html += "</tfoot>";
-            html += "</table>";
-            html += "<div>";
-            $("#DetailTransaksiBody").html(html);
-            modal.modal("show");
-            console.log(totDebet);
-        },
-        error: function (err) {
-            console.error(err);
-            alert('Gagal mengambil data jurnal.');
-        }
-    });
-
-
-    
-}
 
 // Filter tombol klik
 $('#btnFilter').on('click', function() {
@@ -236,7 +184,7 @@ function load_data(){
             data: function (d) {
                 d.tanggal_awal = $('#tanggal_awal').val(); // kirim periode ke backend
                 d.tanggal_akhir = $('#tanggal_akhir').val(); // kirim periode ke backend
-                d.jenis = $('#tanggal_akhir').val(); // kirim periode ke backend
+                d.entitas_id = $('#filter_entitas').val(); // kirim periode ke backend
             }
         },
         columns: [
@@ -257,8 +205,45 @@ function load_data(){
                 },orderable:false, 
             },
             { data: 'status', name: 'status', orderable:false },
-            { data: 'aksi', name: 'aksi', orderable:false, searchable:false }
+            { data: 'detail', name: 'detail', orderable:false, searchable:false }
         ],
+        footerCallback: function (row, data, start, end, display) {
+
+            let api = this.api();
+
+            let toNumber = function (value) {
+
+                if (!value) return 0;
+
+                let cleaned = value.toString();
+
+                // buang decimal .00
+                if (cleaned.includes(".")) {
+                    cleaned = cleaned.split(".")[0];
+                }
+
+                // buang semua selain angka
+                cleaned = cleaned.replace(/[^\d]/g, "");
+
+                return Number(cleaned) || 0;
+            };
+
+            let totalDebit = api
+                .column(7)
+                .data()
+                .reduce(function (a, b) {
+                    return toNumber(a) + toNumber(b);
+                }, 0);
+
+            // tampilkan
+            $('#footer_total_debit').html(
+                new Intl.NumberFormat('id-ID', { 
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0 
+                }).format(totalDebit)
+            );
+        }
         // order: [[2, 'desc']],
     });
     // Init tooltip setiap setelah table redraw
