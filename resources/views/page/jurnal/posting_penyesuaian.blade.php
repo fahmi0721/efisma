@@ -57,21 +57,25 @@
                             <tr class="text-center">
                                 <th width="5%">No</th>
                                 <th>Kode</th>
-                                <th>Keterangan</th>
                                 <th>Tanggal</th>
                                 <th>Entitas</th>
                                 <th>Partner</th>
                                 <th>Cabang</th>
                                 <th>Total</th>
                                 <th>Status</th>
+                                <th>Keterangan</th>
                                 <th width="5%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="7" class="text-end fw-bold">TOTAL :</th>
+                                <th colspan="3" class="text-end fw-bold">TOTAL :</th>
                                 <th id="footer_total_debit" class="text-end fw-bold"></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
                                 <th></th>
                                 <th></th>
                             </tr>
@@ -168,81 +172,6 @@ $(document).ready(function() {
 });
 
 
-function detail_transaksi(id){
-    $.ajax({
-        url: "{{ route('jurnal.detail_transaksi') }}?id="+id,
-        type: 'GET',
-        success: function (res) {
-            console.log(res);
-            let modal = $("#DetailTransaksi");
-            let html ="";
-            html += "<div class='table-responsive'>";
-            html += "<table class='table table-striped table-bordered'>";
-                html += "<thead>";
-                    html += "<tr>";
-                        html += "<th>No</th>";
-                        html += "<th>Akun GL</th>";
-                        html += "<th>Deskripsi</th>";
-                        html += "<th>Debet</th>";
-                        html += "<th>Kredit</th>";
-                    html += "</tr>";
-                html += "</thead>";
-                html += "<tbody>";
-                    if (res.length === 0) {
-                        tbody.append('<tr><td colspan="5" class="text-center text-muted">Tidak ada data</td></tr>');
-                        return;
-                    }
-                    let no=1;
-                    let totDebet=0;
-                    let totKredit=0;
-                    res.forEach(function(item) {
-                        // pastikan debit & kredit selalu angka valid
-                        let debit = item.debit;
-                        let kredit = item.kredit;
-
-                        // kalau berbentuk string (misalnya "1.000.000"), ubah ke number
-                        if (typeof debit === 'string') {
-                            debit = parseFloat(debit.replace(/\./g, '').replace(',', '.')) || 0;
-                        }
-                        if (typeof kredit === 'string') {
-                            kredit = parseFloat(kredit.replace(/\./g, '').replace(',', '.')) || 0;
-                        }
-                        html += `
-                            <tr>
-                                <td>${no}</td>
-                                <td>${item.akun_gl}</td>
-                                <td>${item.deskripsi ?? '-'}</td>
-                                <td class="text-end">${Number(item.debit).toLocaleString('id-ID')}</td>
-                                <td class="text-end">${Number(item.kredit).toLocaleString('id-ID')}</td>
-                            </tr>
-                        `;
-                        no++;                        
-                        totDebet += debit;
-                        totKredit += kredit;
-                    });
-                html += "</tbody>";
-                html += "<tfoot>";
-                    html += "<tr>";
-                        html += "<th colspan='3' class='text-end'>TOTAL</th>";
-                        html += "<th class='text-end'>"+Number(totDebet).toLocaleString('id-ID')+"</th>";
-                        html += "<th class='text-end'>"+Number(totKredit).toLocaleString('id-ID')+"</th>";
-                    html += "</tr>";
-                html += "</tfoot>";
-            html += "</table>";
-            html += "<div>";
-            $("#DetailTransaksiBody").html(html);
-            modal.modal("show");
-            console.log(totDebet);
-        },
-        error: function (err) {
-            console.error(err);
-            alert('Gagal mengambil data jurnal.');
-        }
-    });
-
-
-    
-}
 
 // Filter tombol klik
 $('#btnFilter').on('click', function() {
@@ -265,11 +194,6 @@ function load_data(){
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
             { data: 'kode_jurnal', name: 'kode_jurnal' },
-            { data: 'keterangan', name: 'keterangan', orderable:false },
-            { data: 'tanggal', name: 'tanggal' },
-            { data: 'entitas', name: 'entitas', orderable:false },
-            { data: 'partner', name: 'partner', orderable:false },
-            { data: 'cabang', name: 'cabang', orderable:false },
             { 
                 data: 'total_debit', 
                 name: 'total_debit',
@@ -279,7 +203,12 @@ function load_data(){
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0, }).format(data);
                 },orderable:false, 
             },
-            { data: 'status', name: 'status', orderable:false },
+            
+            { data: 'tanggal', name: 'tanggal' },
+            { data: 'entitas', name: 'entitas', orderable:false },
+            { data: 'partner', name: 'partner', orderable:false },
+            { data: 'cabang', name: 'cabang', orderable:false },
+            { data: 'keterangan', name: 'keterangan', orderable:false },
             { data: 'detail', name: 'detail', orderable:false, searchable:false }
         ],
         footerCallback: function (row, data, start, end, display) {
@@ -304,7 +233,7 @@ function load_data(){
             };
 
             let totalDebit = api
-                .column(7)
+                .column(3)
                 .data()
                 .reduce(function (a, b) {
                     return toNumber(a) + toNumber(b);

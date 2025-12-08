@@ -70,12 +70,14 @@
                         <tbody></tbody>
                         <tfoot>
                             <tr>
-                                <th colspan="7" class="text-end fw-bold">TOTAL :</th>
+                                <th colspan="3" class="text-end fw-bold">TOTAL :</th>
                                 <th id="footer_total_debit" class="text-end fw-bold"></th>
                                 <th></th>
                                 <th></th>
-
-                                
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
                             </tr>
                         </tfoot>
                     </table>
@@ -188,11 +190,7 @@ function load_data(){
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
             { data: 'kode_jurnal', name: 'kode_jurnal' },
-            { data: 'keterangan', name: 'keterangan', orderable:false },
             { data: 'tanggal', name: 'tanggal' },
-            { data: 'entitas', name: 'entitas', orderable:false },
-            { data: 'partner', name: 'partner', orderable:false },
-            { data: 'cabang', name: 'cabang', orderable:false },
             { 
                 data: 'total_debit', 
                 name: 'total_debit',
@@ -202,7 +200,12 @@ function load_data(){
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0, }).format(data);
                 },orderable:false, 
             },
+            { data: 'entitas', name: 'entitas', orderable:false },
+            { data: 'partner', name: 'partner', orderable:false },
+            { data: 'cabang', name: 'cabang', orderable:false },
+            
             { data: 'status', name: 'status', orderable:false },
+            { data: 'keterangan', name: 'keterangan', orderable:false },
             { data: 'detail', name: 'detail', orderable:false, searchable:false }
         ],
         // FOOTER TOTAL
