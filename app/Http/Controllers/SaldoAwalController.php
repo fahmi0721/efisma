@@ -135,6 +135,20 @@ class SaldoAwalController extends Controller
         ];
         $saldo = str_replace(['.', 'Rp', ' '], '', $request->saldo);
 
+        // Jika format Indonesia (1.250.000,75)
+        if (str_contains($saldo, ',')) {
+            $saldo = str_replace('.', '', $saldo); // hapus pemisah ribuan
+            $saldo = str_replace(',', '.', $saldo); // ubah koma ke titik desimal
+        }
+
+        // Jika format US (1,250,000.75)
+        else {
+            $saldo = str_replace(',', '', $saldo);
+        }
+
+        // Pastikan numeric sebelum masuk DB
+        $saldo = (float) $saldo;
+
         $validation = Validator::make($request->all(), $rules, $messages);
         if ($validation->fails()) {
             return response()->json([
