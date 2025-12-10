@@ -100,7 +100,7 @@ $(document).ready(function() {
         theme: 'bootstrap4',
         width: 'resolve',
         placeholder: "..:: Pilih Kategori ::..",
-        // allowClear: true,
+        allowClear: true,
         minimumResultsForSearch: -1, // -1 = search box selalu disembunyikan
         escapeMarkup: markup => markup
     });
