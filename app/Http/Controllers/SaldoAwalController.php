@@ -203,7 +203,16 @@ class SaldoAwalController extends Controller
             'entitas_id.required' => 'Entitas wajib dipilih.',
         ];
         $saldo = str_replace(['.', 'Rp', ' '], '', $request->saldo);
+        // Jika format Indonesia (1.250.000,75)
+        if (str_contains($saldo, ',')) {
+            $saldo = str_replace('.', '', $saldo); // hapus pemisah ribuan
+            $saldo = str_replace(',', '.', $saldo); // ubah koma ke titik desimal
+        }
 
+        // Jika format US (1,250,000.75)
+        else {
+            $saldo = str_replace(',', '', $saldo);
+        }
         $validation = Validator::make($request->all(), $rules);
         if ($validation->fails()) {
             return response()->json([

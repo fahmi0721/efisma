@@ -63,7 +63,7 @@
                         <div class="row mb-3">
                             <label for="saldo" class="col-sm-3 col-form-label">Saldo <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
-                                <input type="text" value="{{ number_format($data->saldo, 0, ',', '.') }}" onkeyup="formatRupiah(this)" class="form-control" id="saldo" name="saldo" placeholder="Saldo" />
+                                <input type="text" value="{{ number_format($data->saldo, 2, ',', '.') }}" onkeyup="formatRupiah(this)" class="form-control" id="saldo" name="saldo" placeholder="Saldo" />
                             </div>
                         </div>
                     </div>
