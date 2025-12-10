@@ -26,6 +26,20 @@ class M_PartnerController extends Controller
                 $query->where('m_partner.entitas_id', $request->entitas_scope);
             }
 
+             // 🔹 Filter kategori
+            if ($request->filled('entitas_id') && !empty($request->entitas_id)) {
+                $query->where('m_partner.entitas_id', $request->entitas_id);
+            }
+
+             // 🔹 Filter kategori
+            if ($request->filled('kategori') && !empty($request->kategori)) {
+                if($request->kategori == "customer"){
+                    $query->where("m_partner.is_customer","active");
+                }else{
+                    $query->where("m_partner.is_vendor","active");
+                }
+            }
+
             $data = $query->get();
                 
             return  Datatables::of($data)

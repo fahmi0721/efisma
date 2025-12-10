@@ -26,6 +26,7 @@
             <div class="card card-success card-outline mb-4">
                 <div class="card-header d-flex  align-items-center">
                     <h5 class="mb-0">Data Partner</h5>
+                    
                     @canAccess('partner.create')
                     <a href="{{ route('partner.create') }}" class="btn btn-success btn-sm ms-auto">
                         <i class="fas fa-plus-square"></i> Create New
@@ -33,6 +34,22 @@
                     @endcanAccess
                 </div>
                 <div class="card-body">
+                    <div class='row g-2 mb-4'>
+                        @if(auth()->user()->level != "entitas")
+                        <div class='col-md-3'>
+                            <select name="entitas_id" id="entitas_id" class='form-select form-control entitas_id'>
+                                <option value="">Semua Entitas</option>
+                            </select>
+                        </div>
+                        @endif
+                        <div class='col-md-3 mb-3'>
+                            <select name="kategori" id="kategori" class='form-select form-control kategori'>
+                                <option value="">..:: Pilih Kategori ::..</option>
+                                <option value="customer">Customer</option>
+                                <option value="vendor">Vendor</option>
+                            </select>
+                        </div>
+                    </div>
                     <table id="tb_data" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">
                         <thead>
                             <tr>
@@ -59,6 +76,34 @@
 <script>
 $(document).ready(function() {
     load_data();
+    @if(auth()->user()->level != "entitas")
+    $('#entitas_id').select2({
+        ajax: {
+            url: '{{ route("entitas.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: data => ({
+                results: data.map(q => ({ id: q.id, text: q.nama }))
+            }),
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true,
+        minimumResultsForSearch: 0, // -1 = search box selalu disembunyikan
+        escapeMarkup: markup => markup
+    });
+    @endif
+
+    $('#kategori').select2({
+        theme: 'bootstrap4',
+        width: 'resolve',
+        placeholder: "..:: Pilih Kategori ::..",
+        // allowClear: true,
+        minimumResultsForSearch: -1, // -1 = search box selalu disembunyikan
+        escapeMarkup: markup => markup
+    });
 });
 function hapusData(id) {
     Swal.fire({
@@ -99,12 +144,21 @@ function hapusData(id) {
         }
     });
 }
+
 load_data = function(){
     $('#tb_data').DataTable({
         processing: true,
         serverSide: true,
         responsive: true,
-        ajax: "{{ route('partner') }}",
+        ajax: {
+            url: "{{ route('partner') }}",
+            data: function (d) {
+                d.kategori = $('#kategori').val();
+                @if(auth()->user()->level != "entitas")
+                d.entitas_id = $('#entitas_id').val();
+                @endif
+            }
+        },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex' },
             { data: 'nama', name: 'nama' },
@@ -126,6 +180,15 @@ load_data = function(){
     // Init pertama kali
     $('[data-bs-toggle="tooltip"]').tooltip();
 }
+@if(auth()->user()->level != "entitas")
+$("#kategori,#entitas_id").on("change",function(){
+     $('#tb_data').DataTable().ajax.reload();
+})
+@else
+$("#kategori").on("change",function(){
+     $('#tb_data').DataTable().ajax.reload();
+})
+@endif
 </script>
 @endsection
 
