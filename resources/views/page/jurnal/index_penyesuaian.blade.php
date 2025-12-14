@@ -1,15 +1,15 @@
 @extends('layouts.app')
-@section('title','Jurnal Penyesuaian')
+@section('title','Jurnal Rupa-Rupa')
 
 @section('breadcrumb')
 <div class="app-content-header">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-6"><h5 class="mb-2">Jurnal Penyesuaian</h5></div>
+            <div class="col-sm-6"><h5 class="mb-2">Jurnal Rupa-Rupa</h5></div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-end">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Jurnal Penyesuaian</li>
+                    <li class="breadcrumb-item active" aria-current="page">Jurnal Rupa-Rupa</li>
                 </ol>
             </div>
         </div>
@@ -24,7 +24,7 @@
 
             <div class="card card-success card-outline mb-4">
                 <div class="card-header d-flex align-items-center">
-                    <h5 class="mb-0">Jurnal Penyesuaian</h5>
+                    <h5 class="mb-0">Jurnal Rupa-Rupa</h5>
                     <div class="ms-auto">
                         @canAccess('penyesuaian.unposting')
                         <a href="{{ route('jurnal.penyesuaian.unposting') }}" class="btn btn-danger btn-sm">
@@ -300,7 +300,8 @@ function unposting(id){
                     Swal.fire('Berhasil!', res.message, 'success');
                     $('#tb_data').DataTable().ajax.reload();
                 } else {
-                    Swal.fire('Gagal!', res.message, 'error');
+                    console.log(res);
+                    error_message(res,'Proses Data Error');
                 }
             });
         }

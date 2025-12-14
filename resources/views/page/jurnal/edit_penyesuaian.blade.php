@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title','Update Jurnal Penyesuaian')
+@section('title','Update Jurnal Rupa-Rupa')
 
 @section('breadcrumb')
 <div class="app-content-header">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-6"><h5 class="mb-2">Update Jurnal Penyesuaian</h5></div>
+            <div class="col-sm-6"><h5 class="mb-2">Update Jurnal Rupa-Rupa</h5></div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-end">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('jurnal.penyesuaian') }}">Jurnal Penyesuaian</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Update Jurnal Penyesuaian</li>
+                    <li class="breadcrumb-item"><a href="{{ route('jurnal.penyesuaian') }}">Jurnal Rupa-Rupa</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Update Jurnal Rupa-Rupa</li>
                 </ol>
             </div>
         </div>
@@ -37,6 +37,7 @@
                     @method("put")
                     <input type="hidden" value="{{ $id }}" id='id' name='id'>
                     <input type="hidden" id='jurnal_piutang_id' name="jurnal_piutang_id" value="{{ !empty($pelunasan) ? $pelunasan->jurnal_piutang_id : '' }}">
+                    <input type="hidden" id='jurnal_id_jkk' name="jurnal_id_jkk" value="{{ $data->jurnal_id_jkk }}">
 
                     <div class="card-body">
 
@@ -52,7 +53,7 @@
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
-                                <select name="entitas_id" id="entitas_id" class="form-control entitas">
+                                <select {{ !empty($data->jurnal_id_jkk) ? 'disabled' :'' }}  name="entitas_id" id="entitas_id" class="form-control entitas">
                                     <option value="">-- Pilih Entitas --</option>
                                 </select>
                             </div>
@@ -71,7 +72,7 @@
                         <div class="row mb-3">
                             <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
-                                <select name="partner_id" id="partner_id" class="form-control partner">
+                                <select  name="partner_id" id="partner_id" class="form-control partner">
                                     <option value="">-- Pilih Partner --</option>
                                 </select>
                             </div>
@@ -333,19 +334,33 @@ $(document).ready(function() {
     // 🔁 Saat entitas diubah → reset & reload partner
     $('.entitas').on('change', function () {
         $('.partner').val(null).trigger('change'); // kosongkan value dulu
+        
     });
     @endif
     @if(!empty($cabang_id))
         var cabang_id = "{{ $cabang_id->id }}";
         var option = new Option("{{ $cabang_id->nama }}", {{ $cabang_id->id }}, true, true);
         $(".cabang").append(option).trigger('change');   
-        @if(!empty($pelunasan)) $(".cabang").prop("disabled",true); @else $(".cabang").prop("disabled",false); @endif
+        @if(!empty($pelunasan)) 
+            $(".cabang").prop("disabled",true); 
+        @elseif(!empty($data->jurnal_id_jkk))
+            $(".cabang").prop("disabled",true);
+        @else 
+            $(".cabang").prop("disabled",false); 
+        @endif
     @endif
     @if(auth()->user()->level != "entitas")
     @if(!empty($entitas_id))
         var entitas_id = "{{ $entitas_id->id }}";
         var option = new Option("{{ $entitas_id->id }} - {{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
         $(".entitas").append(option).trigger('change');    
+        @if(!empty($pelunasan)) 
+            $(".entitas").prop("disabled",true); 
+        @elseif(!empty($data->jurnal_id_jkk))
+            $(".entitas").prop("disabled",true);
+        @else 
+            $(".entitas").prop("disabled",false); 
+        @endif
     @endif
     @endif
 
@@ -353,7 +368,14 @@ $(document).ready(function() {
         var partner_id = "{{ $partner_id->id }}";
         var option = new Option("{{ $partner_id->nama }}", {{ $partner_id->id }}, true, true);
         $(".partner").append(option).trigger('change');    
-        @if(!empty($pelunasan)) $(".partner").prop("disabled",true); @else $(".partner").prop("disabled",false); @endif
+        @if(!empty($pelunasan)) 
+            $(".partner").prop("disabled",true); 
+        @elseif(!empty($data->jurnal_id_jkk))
+            $(".partner").prop("disabled",true);
+        @else 
+            $(".partner").prop("disabled",false); 
+        @endif
+        
     @endif
 
     if (detailData.length > 0) {
@@ -361,6 +383,7 @@ $(document).ready(function() {
         tbody.html('');
         $.each(detailData, function(i, row) {
             let tr = $('#rowTemplate tr').clone();
+            
             // Inisialisasi select2 untuk baris baru saja
             tr.find('.akun-select').select2({
                 ajax: {
@@ -396,15 +419,39 @@ $(document).ready(function() {
             tr.find('.akun-select').append(option).trigger('change');
             // 🔹 tambahkan penanda data-piutang jika akun kategori piutang
             if (row.kategori === 'piutang') {
+                
                 tr.attr('data-piutang', 'true');
                 tr.addClass('table-warning'); 
                 tr.find('.btn-hapus').attr('data-piutang', 'ada'); // untuk trigger nanti
+                tr.find('.btn-hapus').attr('data-toggle', 'tooltip'); // untuk trigger nanti
+                tr.find('.btn-hapus').attr('title', 'tidak boleh dihapus'); // untuk trigger nanti
+                tr.find('.btn-hapus').html("<i class='fa fa-times'></i>"); // untuk trigger nanti
+                tr.find('.btn-hapus').addClass('btn-piutang').addClass('btn-warning').removeClass("btn-hapus").removeClass("btn-danger");
                 // bisa juga disable tombol cari invoice agar hanya 1 aktif
+                
                 @if(isset($pelunasan))
                     $('#btnCariInvoice').prop('disabled', true);
                 @endif
             }
+
+            if (row.kategori === 'uang_muka') {
+                
+                tr.attr('data-piutang', 'true');
+                tr.addClass('table-warning'); 
+                tr.find('.btn-hapus').attr('data-uangmuka', 'ada'); // untuk trigger nanti
+                tr.find('.btn-hapus').attr('data-toggle', 'tooltip'); // untuk trigger nanti
+                tr.find('.btn-hapus').attr('title', 'tidak boleh dihapus'); // untuk trigger nanti
+                tr.find('.btn-hapus').html("<i class='fa fa-times'></i>"); // untuk trigger nanti
+                tr.find('.btn-hapus').addClass('btn-uangmuka').addClass('btn-warning').removeClass("btn-hapus").removeClass("btn-danger");
+                // bisa juga disable tombol cari invoice agar hanya 1 aktif
+                
+                @if(isset($data->jurnal_id_jkk))
+                    $('#btnCariInvoice').prop('disabled', true);
+                @endif
+            }
             tbody.append(tr);
+            lockOtherSelectsExcept(tr);
+            $("[data-toggle='tooltip']").tooltip();
         });
         hitungTotal();
     }
@@ -415,6 +462,18 @@ $(document).ready(function() {
         proses_data();
     });
 });
+
+function lockOtherSelectsExcept(rowTr) {
+    // Cek jika ada baris data-piutang true
+    let tbody = $('#tableDetail tbody');
+
+    // Jika ada piutang → baris piutang tetap aktif
+    tbody.find('tr[data-piutang="true"] .akun-select')
+         .prop('disabled', true)
+         .trigger('change.select2');
+
+    
+}
 
 // tambah baris baru
 $('#btnTambahBaris').click(function() {
@@ -614,21 +673,27 @@ function insertDetailJurnal(data) {
             <td><input type="text" name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
             <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
             <td class="text-center">
-                <button type="button" data-piutang='ada' class="btn btn-danger btn-sm btn-hapus"><i class="fas fa-trash"></i></button>
+                <button type="button" data-piutang='ada' title='tidak boleh dihapus' data-toggle='tooltip' class="btn btn-warning btn-sm btn-piutang"><i class="fas fa-times"></i></button>
             </td>
         </tr>
     `;
 
     // Masukkan ke tabel
     $('#tableDetail tbody').append(rowPiutang);
-
+    $("[data-toggle='tooltip']").tooltip();
     // Hitung ulang total
     hitungTotal();
 }
 
 function proses_data(){
+    let tbody = $('#tableDetail tbody');
     $(".cabang").prop("disabled",false);
     $(".partner").prop("disabled",false);
+    $(".entitas").prop("disabled",false);
+    // Jika ada piutang → baris piutang tetap aktif
+    tbody.find('tr[data-piutang="true"] .akun-select')
+         .prop('disabled', false)
+         .trigger('change.select2');
     let iData = new FormData(document.getElementById("form_data"));
     var id = $("#id").val();
     $.ajax({

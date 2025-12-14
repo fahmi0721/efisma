@@ -228,6 +228,7 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
         Route::post('/posting_batch', [JurnalController::class, 'postingBatch'])->name('jurnal.posting_batch')->middleware('permission:kas_keluar.posting|kas_masuk.posting|pendapatan.posting|penyesuaian.posting');
         Route::post('/unposting_batch', [JurnalController::class, 'unpostingBatch'])->name('jurnal.unposting_batch')->middleware('permission:kas_keluar.unposting|kas_masuk.unposting|pendapatan.unposting|penyesuaian.unposting');
         Route::get('/piutang/datatable', [JurnalController::class, 'datatablePiutang'])->name('jurnal.piutang.datatable')->middleware('permission:kas_keluar.view|kas_masuk.view|pendapatan.view|penyesuaian.view');
+        Route::get('/uangmuka/datatable', [JurnalController::class, 'datatableUangMuka'])->name('jurnal.uangmuka.datatable')->middleware('permission:penyesuaian.view|penyesuaian.create');
 
 
         Route::get('/pendapatan', [JurnalController::class, 'index'])->name('jurnal.pendapatan')->defaults('jenis', 'JP')->middleware('permission:pendapatan.view');
@@ -271,6 +272,17 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::get('/piutang/aging/export', [PiutangController::class, 'agingPiutangExport'])->name('piutang.aging.export')->middleware('permission:piutang.aging.export');
     Route::get('/piutang/daftar', [PiutangController::class, 'daftar'])->name('piutang.daftar')->middleware('permission:piutang.daftar.view');
     Route::get('/piutang/daftarexport', [PiutangController::class, 'exportExcel'])->name('piutang.daftar.export')->middleware('permission:piutang.daftar.export');
+});
+
+/**
+ * Route Uang Muka
+ */
+use App\Http\Controllers\UangmukaController;
+Route::group(['middleware' => ['auth','entitas_scope']], function () {
+    Route::get('/uangmuka/aging', [UangmukaController::class, 'agingIndex'])->name('uangmuka.aging')->middleware('permission:uangmuka.aging.view');
+    Route::get('/uangmuka/aging/export', [UangmukaController::class, 'agingExport'])->name('uangmuka.aging.export')->middleware('permission:uangmuka.aging.export');
+    Route::get('/uangmuka/daftar', [UangmukaController::class, 'index'])->name('uangmuka.daftar')->middleware('permission:uangmuka.daftar.view');
+    Route::get('/uangmuka/daftarexport', [UangmukaController::class, 'daftarxport'])->name('uangmuka.daftar.export')->middleware('permission:uangmuka.daftar.export');
 });
 
 

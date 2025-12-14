@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title','Posting Jurnal Penyesuaian')
+@section('title','Posting Jurnal Rupa-Rupa')
 
 @section('breadcrumb')
 <div class="app-content-header">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-6"><h5 class="mb-2">Posting Jurnal Penyesuaian</h5></div>
+            <div class="col-sm-6"><h5 class="mb-2">Posting Jurnal Rupa-Rupa</h5></div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-end">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('jurnal.penyesuaian') }}">Jurnal Penyesuaian</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Posting Jurnal Penyesuaian</li>
+                    <li class="breadcrumb-item"><a href="{{ route('jurnal.penyesuaian') }}">Jurnal Rupa-Rupa</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Posting Jurnal Rupa-Rupa</li>
                 </ol>
             </div>
         </div>
@@ -23,7 +23,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card card-success card-outline mb-4">
-                <div class="card-header"><div class="card-title">Posting Jurnal Penyesuaian</div></div>
+                <div class="card-header"><div class="card-title">Posting Jurnal Rupa-Rupa</div></div>
                 
                 <form action="javascript:void(0)" enctype="multipart/form-data" id="form_data">
                     @csrf
@@ -58,13 +58,13 @@
                                 <th width="5%">No</th>
                                 <th>Kode</th>
                                 <th>Tanggal</th>
+                                <th>Total</th>
                                 <th>Entitas</th>
                                 <th>Partner</th>
                                 <th>Cabang</th>
-                                <th>Total</th>
                                 <th>Status</th>
                                 <th>Keterangan</th>
-                                <th width="5%">Aksi</th>
+                                <th>#</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -176,6 +176,7 @@ $(document).ready(function() {
 // Filter tombol klik
 $('#btnFilter').on('click', function() {
     $('#t_data').DataTable().ajax.reload();
+    
 });
 
 function load_data(){
@@ -194,7 +195,8 @@ function load_data(){
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
             { data: 'kode_jurnal', name: 'kode_jurnal' },
-            { 
+            { data: 'tanggal', name: 'tanggal' },
+            {
                 data: 'total_debit', 
                 name: 'total_debit',
                 className: 'text-end',
@@ -203,11 +205,10 @@ function load_data(){
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0, }).format(data);
                 },orderable:false, 
             },
-            
-            { data: 'tanggal', name: 'tanggal' },
             { data: 'entitas', name: 'entitas', orderable:false },
             { data: 'partner', name: 'partner', orderable:false },
             { data: 'cabang', name: 'cabang', orderable:false },
+            { data: 'status', name: 'status', orderable:false },
             { data: 'keterangan', name: 'keterangan', orderable:false },
             { data: 'detail', name: 'detail', orderable:false, searchable:false }
         ],

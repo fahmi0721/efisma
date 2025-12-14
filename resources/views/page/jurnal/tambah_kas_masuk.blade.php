@@ -78,10 +78,10 @@
                         
 
                         <div class="row mb-3">
-                            <label for="no_invoice" class="col-sm-3 col-form-label">No Invoice </label>
+                            <label for="no_invoice" class="col-sm-3 col-form-label">No Ref </label>
                             <div class="col-sm-9">
-                                <input type="text"  class="form-control"  id="no_invoice_t" placeholder="No Invoice" />
-                                <input type="hidden"  class="form-control" id="no_invoice" name="no_invoice" placeholder="No Invoice" />
+                                <input type="text"  class="form-control"  id="no_invoice_t" placeholder="No Ref" />
+                                <input type="hidden"  class="form-control" id="no_invoice" name="no_invoice" placeholder="No Ref" />
                             </div>
                         </div>
 
@@ -213,6 +213,11 @@ $(document).ready(function() {
     $(".cabang").prop("disabled",false);
     $('#btnCariInvoice').click(function() {
         const partner = $('#partner_id').val();
+        const entitas = $('#entitas_id').val();
+        if (!entitas) {
+            Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
+            return;
+        }
         if (!partner) {
             Swal.fire('Oops', 'Pilih partner terlebih dahulu!', 'warning');
             return;
@@ -281,7 +286,7 @@ $(document).ready(function() {
             data: function (params) {
                 return {
                     q: params.term, // teks yang diketik user
-                    jenis: 'all', // teks yang diketik user
+                    jenis: 'customer', // teks yang diketik user
                     @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
                     @endif
@@ -447,6 +452,8 @@ $(document).on('click', '.btn-pilih-invoice', function() {
     var option = new Option(data.cabang, data.cabang_id, true, true);
     $(".cabang").append(option).trigger('change');
     $(".cabang").prop("disabled",true);
+    $(".entitas").prop("disabled",true);
+    $(".partner").prop("disabled",true);
 
 
     $("#no_invoice").val(data.no_invoice);
@@ -493,14 +500,14 @@ function insertDetailJurnal(data) {
             <td><input type="text" name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
             <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
             <td class="text-center">
-                <button type="button" data-piutang='ada' class="btn btn-danger btn-sm btn-hapus"><i class="fas fa-trash"></i></button>
+                <button type="button" title='Tidak Boleh Di Hapus' data-toggle='tooltip' data-piutang='ada' class="btn btn-warning btn-sm"><i class="fas fa-times"></i></button>
             </td>
         </tr>
     `;
 
     // Masukkan ke tabel
     $('#tableDetail tbody').append(rowPiutang);
-
+    $("[data-toggle='tooltip']").tooltip();
     // Hitung ulang total
     hitungTotal();
 }
@@ -521,6 +528,8 @@ function reIndexRows() {
  */
 function proses_data(confirmSave = false) {
     $(".cabang").prop("disabled",false);
+    $(".entitas").prop("disabled",false);
+    $(".partner").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
 
@@ -580,6 +589,7 @@ function proses_data(confirmSave = false) {
             $("#btn-submit").html("<i class='fa fa-save'></i> Simpan");
             $("#btn-submit").prop("disabled", false);
             Swal.fire("Error", e.responseJSON?.message || "Proses Data Error", "error");
+            
         }
     });
 }

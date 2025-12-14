@@ -345,6 +345,7 @@ $(document).ready(function() {
         var entitas_id = "{{ $entitas_id->id }}";
         var option = new Option("{{ $entitas_id->id }} - {{ $entitas_id->nama }}", {{ $entitas_id->id }}, true, true);
         $(".entitas").append(option).trigger('change');    
+        @if(!empty($pelunasan)) $(".entitas").prop("disabled",true); @else $(".entitas").prop("disabled",false); @endif
     @endif
     @endif
 
@@ -410,6 +411,12 @@ $(document).ready(function() {
                 tr.attr('data-piutang', 'true');
                 tr.addClass('table-warning'); 
                 tr.find('.btn-hapus').attr('data-piutang', 'ada'); // untuk trigger nanti
+                tr.find('.btn-hapus').attr('data-toggle', 'tooltip'); // untuk trigger nanti
+                tr.find('.btn-hapus').attr('title', 'tidak boleh dihapus'); // untuk trigger nanti
+                tr.find('.btn-hapus').html("<i class='fa fa-times'></i>"); // untuk trigger nanti
+                tr.find('.btn-danger').removeClass('btn-danger').addClass('btn-warning');
+                tr.find('.btn-hapus').removeClass('btn-hapus').addClass('btn-piutang');
+
                 // bisa juga disable tombol cari invoice agar hanya 1 aktif
                 @if(isset($pelunasan))
                     $('#btnCariInvoice').prop('disabled', true);
@@ -417,6 +424,7 @@ $(document).ready(function() {
             }
 
             tbody.append(tr);
+            $("[data-toggle='tooltip']").tooltip();
         });
         hitungTotal();
     }
@@ -642,6 +650,7 @@ function insertDetailJurnal(data) {
  * @param {boolean} confirmSave - true jika user sudah konfirmasi peringatan
  */
 function proses_data(confirmSave = false) {
+    $(".entitas").prop("disabled",false);
     $(".cabang").prop("disabled",false);
     $(".partner").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
@@ -675,6 +684,10 @@ function proses_data(confirmSave = false) {
                 }).then((res) => {
                     if (res.isConfirmed) {
                         proses_data(true); // kirim ulang dengan konfirmasi
+                    }else{
+                        $(".entitas").prop("disabled",true);
+                        $(".cabang").prop("disabled",true);
+                        $(".partner").prop("disabled",true);
                     }
                 });
                 return;

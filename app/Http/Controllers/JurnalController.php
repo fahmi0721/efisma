@@ -8,6 +8,9 @@ use Illuminate\Database\QueryException;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Auth;
 use App\Helpers\PeriodeHelper;
+use App\Helpers\JurnalService;
+use App\Helpers\PelunasanPiutangService;
+use App\Helpers\UangMukaService;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use Validator;
@@ -216,7 +219,7 @@ class JurnalController extends Controller
                 'a.nama AS akun_nama',
                 'e.nama AS entitas_nama',
                 'p.nama AS customer_nama',
-                DB::raw('SUM(kredit - debit) AS total_in')
+                DB::raw('SUM(kredit) AS total_in')
             )
             ->whereIn('d.akun_id', $akunDeposits)
             ->where('h.status', 'posted')
@@ -356,7 +359,41 @@ class JurnalController extends Controller
         ));
     }
 
+    public function datatableUangMuka(Request $request){
+        $entitas = $request->entitas_id;
 
+        $query = DB::table('view_uang_muka_per_akun')
+                    ->join("m_cabang","m_cabang.id","view_uang_muka_per_akun.cabang_id")
+                    ->select("view_uang_muka_per_akun.*","m_cabang.nama as nama_cabang")
+                    ->where('view_uang_muka_per_akun.sisa', '>', 0);
+
+        if ($entitas) {
+            $query->where('view_uang_muka_per_akun.entitas_id', $entitas);
+        }
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('aksi', function($row){
+                return "<button class='btn btn-sm btn-primary pilihUangMuka'
+                            data-id='{$row->jurnal_id}'
+                            data-nominal='{$row->nominal}'
+                            data-kode='{$row->kode_jurnal}'
+                            data-akun_nama='{$row->akun_uang_muka}'
+                            data-akun_id='{$row->akun_uang_muka_id}'
+                            data-terpakai='{$row->terpakai}'
+                            data-umur='{$row->umur}'
+                            data-sisa='{$row->sisa}'
+                            data-partner='{$row->partner_nama}'
+                            data-partner_id='{$row->partner_id}'
+                            data-cabang='{$row->nama_cabang}'
+                            data-cabang_id='{$row->cabang_id}'
+                            data-entitas='{$row->entitas_id}'>
+                            Pilih
+                        </button>";
+            })
+            ->rawColumns(['aksi'])
+            ->make(true);
+    }
 
     function detail_transaksi(Request $request){
         $jurnal_id = $request->id;
@@ -462,30 +499,30 @@ class JurnalController extends Controller
      */
     public function store(Request $request, $jenis = null)
     {
-        // 🔹 Validasi jenis jurnal
+        /* =========================================================
+        VALIDASI JENIS JURNAL
+        ==========================================================*/
         $allowedJenis = ['JP', 'JKM', 'JKK', 'JN'];
         if (!in_array($jenis, $allowedJenis)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Jenis jurnal tidak valid. Hanya diperbolehkan: JP, JKM, JKK, dan JN.'
+                'message' => 'Jenis jurnal tidak valid.'
             ], 422);
         }
 
-        // 🔹 Rules awal
+        /* =========================================================
+        RULES VALIDASI
+        ==========================================================*/
         $rules = [
             'tanggal'            => 'required|date',
             'entitas_id'         => 'required|integer',
             'cabang_id'          => 'required|integer',
             'keterangan'         => 'nullable|string',
-
-            // Detail
             'detail'             => 'required|array|min:2',
             'detail.*.akun_id'   => 'required|integer',
             'detail.*.debit'     => 'nullable',
             'detail.*.kredit'    => 'nullable',
-            'detail.*.deskripsi' => 'nullable|string',
         ];
-
         // 🔹 Messages awal
         $messages = [
             'tanggal.required'        => 'Tanggal wajib dipilih.',
@@ -508,291 +545,222 @@ class JurnalController extends Controller
             'detail.*.deskripsi.string' => 'Deskripsi harus berupa teks.',
         ];
 
-        // 🔹 Tambahan rule berdasarkan jenis jurnal
-        switch ($jenis) {
-            case 'JN':
-                // tidak ada tambahan
-                break;
-
-            case 'JP':
-                // Invoice
-                $rules['no_invoice'] = 'required|string';
-                $messages += [
+        if ($jenis === 'JP') {
+            $rules += [
+                'no_invoice'       => 'required|string',
+                'tanggal_invoice'  => 'required|date',
+                'partner_id'       => 'required|integer',
+            ];$messages += [
                     'no_invoice.required' => 'No Invoice wajib diisi.',
-                    'no_invoice.string'   => 'No Invoice tidak valid.',
-                ];
+                'no_invoice.string'   => 'No Invoice tidak valid.',
+            ];
 
-                // Tanggal Invoice
-                $rules['tanggal_invoice'] = 'required|date';
-                $messages += [
-                    'tanggal_invoice.required' => 'Tanggal Invoice wajib diisi.',
-                    'tanggal_invoice.date'     => 'Tanggal Invoice tidak valid.',
-                ];
-                
-                // JP butuh partner
-                $rules['partner_id'] = 'required|integer';
-                $messages += [
-                    'partner_id.required' => 'Partner wajib dipilih.',
-                    'partner_id.integer'  => 'Partner tidak valid.',
-                ];
-                break;
 
-            default: // JKM, JKK
-                $rules['partner_id'] = 'required|integer';
-                $messages += [
-                    'partner_id.required' => 'Partner wajib dipilih.',
-                    'partner_id.integer'  => 'Partner tidak valid.',
-                ];
-                break;
+        } elseif(in_array($jenis,["JKK","JKM"])) { 
+            $rules['partner_id'] = 'required|integer';
+            $messages += [
+                'partner_id.required' => 'Partner wajib dipilih.',
+                'partner_id.integer'  => 'Partner tidak valid.',
+            ];
         }
 
-        // 🔹 Jalankan validasi
-        $validation = Validator::make($request->all(), $rules, $messages);
-
+        $validation = Validator::make($request->all(), $rules,$messages);
         if ($validation->fails()) {
             return response()->json([
                 'status' => 'warning',
-                'message' => $validation->errors()->first(),
+                'message' => $validation->errors()->first()
             ], 422);
         }
 
-
-
-        // 💡 Flag untuk peringatan himbauan
+        /* =========================================================
+        PRE-VALIDASI DETAIL
+        ==========================================================*/
         $warningMessages = [];
         $adaPiutang = false;
-        // 🔍 Validasi posisi akun vs saldo normal
-        foreach ($request->detail as $row) {
-            $akun = DB::table('m_akun_gl')->where('id', $row['akun_id'])->first();
-            if (!$akun) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => "Akun dengan ID {$row['akun_id']} tidak ditemukan."
-                ], 422);
-            }
 
-            $debit = floatval(str_replace('.', '', $row['debit'] ?? 0));
+        // FLAG uang muka
+        $isUangMuka = false;
+        $akunUangMukaId = null;
+        $nominalUangMuka = 0;
+
+        foreach ($request->detail as $row) {
+
+            $akun = JurnalService::getAkun($row['akun_id']);
+            $debit  = floatval(str_replace('.', '', $row['debit'] ?? 0));
             $kredit = floatval(str_replace('.', '', $row['kredit'] ?? 0));
 
-            // ✅ Untuk JP → wajib sesuai saldo normal
-            if ($jenis === 'JP') {
+            /* =========================================================
+            1) DETEKSI UANG MUKA
+            ==========================================================*/
+            $um = JurnalService::detectUangMukaDetail($row);
+            if ($um['is']) {
+                $isUangMuka     = true;
+                $akunUangMukaId = $um['akun_id'];
+                $nominalUangMuka = $um['nominal'];
+            }
+
+            /* =========================================================
+            2) VALIDASI DEPOSIT (JP)
+            ==========================================================*/
+            if ($jenis === 'JP' && JurnalService::isDepositAkun($akun)) {
+
+                $saldoDeposit = JurnalService::getSaldoDeposit(
+                    $akun->id,
+                    $request->partner_id,
+                    $request->entitas_id
+                );
+
+                if ($debit <= 0) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => "Pemakaian deposit harus diisi pada kolom Debit."
+                    ], 422);
+                }
+
+                if ($debit > $saldoDeposit) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => "Saldo deposit tidak cukup. Saldo: " . number_format($saldoDeposit)
+                    ], 422);
+                }
                 
-                if ($akun->kategori === 'deposito_customer') {
-                    $entitasId  = $request->entitas_id;
-                    $customerId = $request->partner_id;
-                    // Nominal debit (pemakaian deposit)
-                    $nominalDeposit = floatval(str_replace('.', '', $row['debit'] ?? 0));
-                    if ($nominalDeposit <= 0) {
-                        return response()->json([
-                            'status'  => 'error',
-                            'message' => "Akun <b>{$akun->no_akun} - {$akun->nama}</b> harus diisi di kolom Debit untuk pemakaian deposit."
-                        ], 422);
-                    }
-                    // 🔍 Hitung total deposit masuk (GL summary)
-                    $totalIn = DB::table('buku_besar')
-                        ->where('akun_id', $akun->id)
-                        ->where('partner_id', $customerId)
-                        ->where('entitas_id', $entitasId)
-                        ->sum(DB::raw('kredit - debit'));
-                    // 🔍 Hitung total deposit yang sudah dipakai
-                    $totalUsed = DB::table('pelunasan_deposit')
-                        ->where('akun_deposit_id', $akun->id)
-                        ->where('partner_id', $customerId)
-                        ->where('entitas_id', $entitasId)
-                        ->sum('jumlah');
+                continue; // skip saldo normal
+            }
 
-                    $saldoDeposit = $totalIn - $totalUsed;
+            /* =========================================================
+            3) VALIDASI SALDO NORMAL (JP)
+            ==========================================================*/
+            if ($jenis === 'JP') {
+                $err = JurnalService::validateSaldoNormal($akun, $debit, $kredit);
+                if ($err) {
+                    return response()->json(['status' => 'error','message' => $err], 422);
+                }
 
-                    // ❌ Tidak ada saldo deposit sama sekali
-                    if ($saldoDeposit <= 0) {
-                        return response()->json([
-                            'status'  => 'error',
-                            'message' => "Saldo deposit untuk akun <b>{$akun->no_akun} - {$akun->nama}</b> tidak tersedia.
-                                        Customer ini tidak memiliki deposit pada akun tersebut."
-                        ], 422);
-                    }
-
-                    // ❌ Deposit tidak mencukupi nominal pemakaian
-                    if ($nominalDeposit > $saldoDeposit) {
-                        return response()->json([
-                            'status'  => 'error',
-                            'message' => "Pemakaian deposit melebihi saldo.
-                                        Saldo deposit tersedia pada akun <b>{$akun->no_akun} - {$akun->nama}</b> hanya Rp " . number_format($saldoDeposit, 0, ',', '.') . "
-                                        tetapi Anda menginput Rp " . number_format($nominalDeposit, 0, ',', '.')
-                        ], 422);
-                    }
-                    // skip saldo normal validation
-                }
-                if ($akun->kategori === 'deposito_customer') {
-                    continue;
-                }
-                if ($akun->saldo_normal === 'debet' && $kredit > 0) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => "Akun {$akun->no_akun} - {$akun->nama} memiliki saldo normal 'Debet', tidak boleh diisi di kolom Kredit."
-                    ], 422);
-                }
-                if ($akun->saldo_normal === 'kredit' && $debit > 0) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => "Akun {$akun->no_akun} - {$akun->nama} memiliki saldo normal 'Kredit', tidak boleh diisi di kolom Debit."
-                    ], 422);
-                }
-                if ($akun && $akun->kategori === 'piutang') {
+                if (JurnalService::isPiutangAkun($akun)) {
                     $adaPiutang = true;
-                    break;
                 }
             }
-
-            // ⚠️ Untuk JKK dan JKM → beri himbauan tapi tidak blok simpan
-            if (in_array($jenis, ['JKK', 'JKM'])) {
-                if (($akun->saldo_normal === 'debet' && $kredit > 0) ||
-                    ($akun->saldo_normal === 'kredit' && $debit > 0)) {
-                    $warningMessages[] = "Akun {$akun->no_akun} - {$akun->nama} tidak sesuai dengan saldo normal ({$akun->saldo_normal}).";
-                }
-            }
-
-            // 🟢 Untuk JN → lewati validasi
-        }
-        if ($jenis === 'JP') {
-            if (!$adaPiutang) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'Jurnal Pendapatan wajib memiliki satu baris detail dengan akun Piutang (kategori piutang_usaha).'
-                ], 422);
-            }
         }
 
-        // Jika ada himbauan untuk JKK/JKM
-        if (!empty($warningMessages) && !$request->has('confirm')) {
+        if ($jenis === 'JP' && !$adaPiutang) {
             return response()->json([
-                'status' => 'warning',
-                'message' => "Beberapa akun tidak sesuai saldo normal:\n- " . implode("\n- ", $warningMessages) . "\nLanjutkan simpan?",
-                'need_confirm' => true
-            ], 200);
-        }
-
-        // 💰 Hitung total debit dan kredit
-        $totalDebit = collect($request->detail)->sum(fn($i) => (float) str_replace('.', '', $i['debit'] ?? 0));
-        $totalKredit = collect($request->detail)->sum(fn($i) => (float) str_replace('.', '', $i['kredit'] ?? 0));
-
-        if (round($totalDebit, 2) !== round($totalKredit, 2)) {
-            return response()->json([
-                'status' => "error",
-                'message' => 'Total debit dan kredit tidak balance!'
+                'status' => 'error',
+                'message' => 'JP harus memiliki akun piutang.'
             ], 422);
         }
 
-    // 🔹 VALIDASI TAMBAHAN: jika JKM atau JN menunjuk ke JP → pastikan tidak melebihi sisa piutang
-        if (($jenis === 'JKM' && $request->filled('jurnal_id_jp')) || ($jenis === 'JN' && $request->filled('jurnal_id_jp'))) {
-            $jurnalPiutangId = $request->jurnal_id_jp;
+        
 
-            // Ambil total JP
-            $invoice = DB::table('jurnal_header')
-                ->select('id', 'kode_jurnal', 'total_debit')
-                ->where('id', $jurnalPiutangId)
-                ->first();
+        /* =========================================================
+        HITUNG TOTAL DEBIT / KREDIT
+        ==========================================================*/
+        $totalDebit  = collect($request->detail)->sum(fn($i) => floatval(str_replace('.', '', $i['debit'] ?? 0)));
+        $totalKredit = collect($request->detail)->sum(fn($i) => floatval(str_replace('.', '', $i['kredit'] ?? 0)));
 
-            if (!$invoice) {
-                throw new \Exception("Invoice JP tidak ditemukan.");
-            }
+        if ($totalDebit != $totalKredit) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Total Debit dan Kredit tidak balance.'
+            ], 422);
+        }
 
-            // Hitung total pelunasan sebelumnya (kecuali JKM ini)
-            $totalSudahBayar = DB::table('pelunasan_piutang')
-                ->where('jurnal_piutang_id', $jurnalPiutangId)
-                ->sum('jumlah');
+        // =========================================================
+        // VALIDASI PELUNASAN PIUTANG (JKM / JN)
+        // =========================================================
+        if (($jenis === 'JKM' || $jenis === 'JN') && $request->filled('jurnal_id_jp')) {
 
-            $sisaPiutang = $invoice->total_debit - $totalSudahBayar;
+            $valid = PelunasanPiutangService::validatePelunasanWithDate(
+                $request->jurnal_id_jp, // ID JP
+                $totalDebit,             // pelunasan baru
+                $request->tanggal   // tanggal jurnal kas (JKM / JN)
+            );
 
-            // Total pelunasan baru (kredit akun piutang)
-            $totalPelunasanBaru = collect($request->detail)->sum(function ($d) {
-                return (float) str_replace('.', '', $d['kredit'] ?? 0);
-            });
-
-            if ($totalPelunasanBaru > $sisaPiutang) {
+            if (!$valid['status']) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => "Jumlah pelunasan melebihi sisa piutang. 
-                                Sisa piutang Invoice {$invoice->kode_jurnal} adalah Rp " . number_format($sisaPiutang, 0, ',', '.')
+                    'message' => $valid['message']
                 ], 422);
             }
         }
 
+       
+
+        /* =========================================================
+        SIMPAN DATA
+        ==========================================================*/
         DB::beginTransaction();
         try {
-            // ✅ Cek periode terbuka
             PeriodeHelper::cekPeriodeOpen($request->tanggal);
-
-            // 🔹 Generate kode jurnal otomatis
+            // nomor jurnal
             $prefix = $jenis . '-' . date('Ym');
-            $lastKode = DB::table('jurnal_header')
-                ->where('kode_jurnal', 'like', $prefix . '%')
-                ->max('kode_jurnal');
-            $urutan = $lastKode ? intval(substr($lastKode, -3)) + 1 : 1;
-            $kodeJurnal = $prefix . '-' . str_pad($urutan, 3, '0', STR_PAD_LEFT);
-
-            // 🔹 Insert header
-            $data = array(
-                'kode_jurnal' => $kodeJurnal,
-                'jenis' => $jenis,
-                'tanggal' => $request->tanggal,
-                'entitas_id' => $request->entitas_id,
-                'partner_id' => $request->partner_id,
-                'cabang_id' => $request->cabang_id,
-                'keterangan' => $request->keterangan,
-                'total_debit' => $totalDebit,
+            $last = DB::table('jurnal_header')->where('kode_jurnal', 'like', $prefix . '%')->max('kode_jurnal');
+            $urut = $last ? intval(substr($last, -3)) + 1 : 1;
+            $kode = $prefix . '-' . str_pad($urut, 3, '0', STR_PAD_LEFT);
+            
+            $dataHeader = [
+                'kode_jurnal'  => $kode,
+                'jenis'        => $jenis,
+                'tanggal'      => $request->tanggal,
+                'entitas_id'   => $request->entitas_id,
+                'cabang_id'    => $request->cabang_id,
+                'partner_id'   => $request->partner_id,
+                'keterangan'   => $request->keterangan,
+                'total_debit'  => $totalDebit,
                 'total_kredit' => $totalKredit,
-                'status' => 'draft',
-                'created_by' => Auth::id(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            );
-            if ($request->filled('no_invoice')) {
-                $data += array("no_invoice" => $request->no_invoice);
-            }
-            if ($request->filled('tanggal_invoice')) {
-                $data += array("tanggal_invoice" => $request->tanggal_invoice);
-            }
-            $jurnalId = DB::table('jurnal_header')->insertGetId($data);
+                'status'       => 'draft',
+                'created_by'   => Auth::id(),
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ];
 
-            if(($jenis == "JKM" && !empty($request->jurnal_id_jp)) || $jenis == "JN" && !empty($request->jurnal_id_jp)){
-                DB::table('pelunasan_piutang')->insert([
-                    'jurnal_kas_id' => $jurnalId,
-                    'jurnal_piutang_id' => $request->jurnal_id_jp,
-                    'jumlah' => $totalDebit,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);   
+            // tambah referensi uang muka jika JN dan ada id JKK
+            if ($jenis === 'JN' && $request->filled('jurnal_id_jkk')) {
+                $dataHeader['jurnal_id_jkk'] = $request->jurnal_id_jkk;
             }
-            // 🔹 Insert detail
+            // header
+            $jurnalId = DB::table('jurnal_header')->insertGetId($dataHeader);
+
+            if (($jenis === 'JKM' || $jenis === 'JN') && $request->filled('jurnal_id_jp')) {
+
+                PelunasanPiutangService::insertPelunasan(
+                    $jurnalId,
+                    $request->jurnal_id_jp,
+                    $totalDebit
+                );
+            }
+
+            if (($jenis === 'JN') && $request->filled('jurnal_id_jkk')) {
+
+                UangMukaService::validateDraftPelunasan($request);
+            }
+
+            // detail
             foreach ($request->detail as $row) {
-                // Ambil akun detail
-                $akun = DB::table('m_akun_gl')->where('id', $row['akun_id'])->first();
-
-                if ($akun && $akun->kategori === 'deposito_customer') {
-                    $nominal = floatval(str_replace('.', '', $row['debit'] ?? 0));
-                    if ($nominal > 0) {
-                        // INSERT ke tabel pelunasan_deposit
-                        DB::table('pelunasan_deposit')->insert([
-                            'entitas_id'        => $request->entitas_id,
-                            'partner_id'       => $request->partner_id,
-                            'jurnal_piutang_id' => $jurnalId,
-                            'akun_deposit_id'   => $row['akun_id'],
-                            'jumlah'            => $nominal,
-                            'created_at'        => now(),
-                            'updated_at'        => now(),
-                        ]);
-                    }
-        
-                }
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id' => $jurnalId,
-                    'akun_id' => $row['akun_id'],
-                    'deskripsi' => $row['deskripsi'] ?? '',
-                    'debit' => str_replace('.', '', $row['debit'] ?? 0),
-                    'kredit' => str_replace('.', '', $row['kredit'] ?? 0),
+                    'akun_id'   => $row['akun_id'],
+                    'deskripsi' => $row['deskripsi'] ?? "",
+                    'debit'     => str_replace('.', '', $row['debit'] ?? 0),
+                    'kredit'    => str_replace('.', '', $row['kredit'] ?? 0),
                     'created_at' => now(),
                     'updated_at' => now(),
+                ]);
+            }
+
+            /* =========================================================
+            INSERT AUTO-UANG MUKA JIKA JKK
+            ==========================================================*/
+            if ($jenis === 'JKK' && $isUangMuka && $nominalUangMuka > 0) {
+
+                DB::table('pelunasan_uang_muka')->insert([
+                    'entitas_id'          => $request->entitas_id,
+                    'partner_id'          => $request->partner_id,
+                    'jurnal_uang_muka_id' => $jurnalId,
+                    'jurnal_biaya_id'     => null,
+                    'akun_biaya_id'       => null,
+                    'jumlah'              => 0,
+                    'created_at'          => now(),
+                    'updated_at'          => now(),
                 ]);
             }
 
@@ -800,14 +768,15 @@ class JurnalController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Jurnal berhasil disimpan',
-                'kode_jurnal' => $kodeJurnal
+                'message' => 'Jurnal berhasil disimpan.',
+                'kode_jurnal' => $kode
             ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal menyimpan jurnal: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -817,32 +786,31 @@ class JurnalController extends Controller
 
     public function update(Request $request, $id, $jenis = null)
     {
+
         $id = $request->id;
 
+        /* =========================================================
+        VALIDASI JENIS JURNAL
+        ==========================================================*/
         $allowedJenis = ['JP', 'JKM', 'JKK', 'JN'];
         if (!in_array($jenis, $allowedJenis)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Jenis jurnal tidak valid. Hanya diperbolehkan: JP, JKM, JKK, dan JN.'
+                'message' => 'Jenis jurnal tidak valid.'
             ], 422);
         }
 
-        // 🔹 Rules awal
+        /* =========================================================
+        VALIDASI FORM INPUT
+        ==========================================================*/
         $rules = [
             'tanggal'            => 'required|date',
             'entitas_id'         => 'required|integer',
             'cabang_id'          => 'required|integer',
             'keterangan'         => 'nullable|string',
-
-            // Detail
             'detail'             => 'required|array|min:2',
             'detail.*.akun_id'   => 'required|integer',
-            'detail.*.debit'     => 'nullable',
-            'detail.*.kredit'    => 'nullable',
-            'detail.*.deskripsi' => 'nullable|string',
         ];
-
-        // 🔹 Messages awal
         $messages = [
             'tanggal.required'        => 'Tanggal wajib dipilih.',
             'tanggal.date'            => 'Format tanggal tidak valid.',
@@ -864,47 +832,27 @@ class JurnalController extends Controller
             'detail.*.deskripsi.string' => 'Deskripsi harus berupa teks.',
         ];
 
-        // 🔹 Tambahan rule berdasarkan jenis jurnal
-        switch ($jenis) {
-            case 'JN':
-                // tidak ada tambahan
-                break;
 
-            case 'JP':
-                // Invoice
-                $rules['no_invoice'] = 'required|string';
-                $messages += [
+        if ($jenis === 'JP') {
+            $rules += [
+                'no_invoice'       => 'required|string',
+                'tanggal_invoice'  => 'required|date',
+                'partner_id'       => 'required|integer',
+            ];$messages += [
                     'no_invoice.required' => 'No Invoice wajib diisi.',
-                    'no_invoice.string'   => 'No Invoice tidak valid.',
-                ];
+                'no_invoice.string'   => 'No Invoice tidak valid.',
+            ];
 
-                // Tanggal Invoice
-                $rules['tanggal_invoice'] = 'required|date';
-                $messages += [
-                    'tanggal_invoice.required' => 'Tanggal Invoice wajib diisi.',
-                    'tanggal_invoice.date'     => 'Tanggal Invoice tidak valid.',
-                ];
-                
-                // JP butuh partner
-                $rules['partner_id'] = 'required|integer';
-                $messages += [
-                    'partner_id.required' => 'Partner wajib dipilih.',
-                    'partner_id.integer'  => 'Partner tidak valid.',
-                ];
-                break;
 
-            default: // JKM, JKK
-                $rules['partner_id'] = 'required|integer';
-                $messages += [
-                    'partner_id.required' => 'Partner wajib dipilih.',
-                    'partner_id.integer'  => 'Partner tidak valid.',
-                ];
-                break;
+        } elseif(in_array($jenis,["JKK","JKM"])) { 
+            $rules['partner_id'] = 'required|integer';
+            $messages += [
+                'partner_id.required' => 'Partner wajib dipilih.',
+                'partner_id.integer'  => 'Partner tidak valid.',
+            ];
         }
 
-        // 🔹 Jalankan validasi
-        $validation = Validator::make($request->all(), $rules, $messages);
-
+        $validation = Validator::make($request->all(), $rules,$messages);
         if ($validation->fails()) {
             return response()->json([
                 'status' => 'warning',
@@ -912,241 +860,168 @@ class JurnalController extends Controller
             ], 422);
         }
 
-        // 💰 Hitung total debit & kredit
-        $totalDebit = collect($request->detail)->sum(function ($item) {
-            return (float) str_replace('.', '', $item['debit'] ?? 0);
-        });
+        /* =========================================================
+        HITUNG TOTAL DEBIT / KREDIT
+        ==========================================================*/
+        $totalDebit = collect($request->detail)->sum(fn($i) => floatval(str_replace('.', '', $i['debit'] ?? 0)));
+        $totalKredit = collect($request->detail)->sum(fn($i) => floatval(str_replace('.', '', $i['kredit'] ?? 0)));
 
-        $totalKredit = collect($request->detail)->sum(function ($item) {
-            return (float) str_replace('.', '', $item['kredit'] ?? 0);
-        });
-
-        if (round($totalDebit, 2) !== round($totalKredit, 2)) {
+        if ($totalDebit != $totalKredit) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Total debit dan kredit tidak balance!'
             ], 422);
         }
 
-        // ⚖️ Validasi saldo normal sesuai jenis jurnal
+        /* =========================================================
+        LOOP VALIDASI DETAIL
+        ==========================================================*/
+
         $warningMessages = [];
+        $adaPiutang = false;
 
-        if ($jenis !== 'JN') {
-            foreach ($request->detail as $row) {
-                $akun = DB::table('m_akun_gl')->where('id', $row['akun_id'])->first();
-                if (!$akun) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => "Akun dengan ID {$row['akun_id']} tidak ditemukan."
-                    ], 422);
-                }
+        // flag uang muka
+        $isUangMuka = false;
+        $akunUangMukaId = null;
+        $nominalUangMuka = 0;
 
-                $debit = floatval(str_replace('.', '', $row['debit'] ?? 0));
-                $kredit = floatval(str_replace('.', '', $row['kredit'] ?? 0));
+        foreach ($request->detail as $row) {
 
-                if ($jenis === 'JP') {
-                     // 1️⃣ Hapus pelunasan deposit lama
-                    DB::table('pelunasan_deposit')
-                        ->where('jurnal_piutang_id', $id)
-                        ->delete();
-                    if ($akun->kategori === 'deposito_customer') {
-                        $entitasId  = $request->entitas_id;
-                        $customerId = $request->partner_id;
-                        // Nominal debit (pemakaian deposit)
-                        $nominalDeposit = floatval(str_replace('.', '', $row['debit'] ?? 0));
-                        if ($nominalDeposit <= 0) {
-                            return response()->json([
-                                'status'  => 'error',
-                                'message' => "Akun <b>{$akun->no_akun} - {$akun->nama}</b> harus diisi di kolom Debit untuk pemakaian deposit."
-                            ], 422);
-                        }
-                        // 🔍 Hitung total deposit masuk (GL summary)
-                        $totalIn = DB::table('buku_besar')
-                            ->where('akun_id', $akun->id)
-                            ->where('partner_id', $customerId)
-                            ->where('entitas_id', $entitasId)
-                            ->sum(DB::raw('kredit - debit'));
-                        // 🔍 Hitung total deposit yang sudah dipakai
-                        $totalUsed = DB::table('pelunasan_deposit')
-                            ->where('akun_deposit_id', $akun->id)
-                            ->where('partner_id', $customerId)
-                            ->where('entitas_id', $entitasId)
-                            ->sum('jumlah');
+            $akun = JurnalService::getAkun($row['akun_id']);
+            $debit  = floatval(str_replace('.', '', $row['debit'] ?? 0));
+            $kredit = floatval(str_replace('.', '', $row['kredit'] ?? 0));
 
-                        $saldoDeposit = $totalIn - $totalUsed;
+            if (!$akun) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Akun {$row['akun_id']} tidak ditemukan."
+                ], 422);
+            }
 
-                        // ❌ Tidak ada saldo deposit sama sekali
-                        if ($saldoDeposit <= 0) {
-                            return response()->json([
-                                'status'  => 'error',
-                                'message' => "Saldo deposit untuk akun <b>{$akun->no_akun} - {$akun->nama}</b> tidak tersedia.
-                                            Customer ini tidak memiliki deposit pada akun tersebut."
-                            ], 422);
-                        }
+            /* =========================================================
+            1) DETEKSI UANG MUKA
+            ==========================================================*/
+            $um = JurnalService::detectUangMukaDetail($row);
+            if ($um['is']) {
+                $isUangMuka     = true;
+                $akunUangMukaId = $um['akun_id'];
+                $nominalUangMuka = $um['nominal'];
+            }
 
-                        // ❌ Deposit tidak mencukupi nominal pemakaian
-                        if ($nominalDeposit > $saldoDeposit) {
-                            return response()->json([
-                                'status'  => 'error',
-                                'message' => "Pemakaian deposit melebihi saldo.
-                                            Saldo deposit tersedia pada akun <b>{$akun->no_akun} - {$akun->nama}</b> hanya Rp " . number_format($saldoDeposit, 0, ',', '.') . "
-                                            tetapi Anda menginput Rp " . number_format($nominalDeposit, 0, ',', '.')
-                            ], 422);
-                        }
-                        // skip saldo normal validation
-                    }
-                    if ($akun->kategori === 'deposito_customer') {
-                        continue;
-                    }
-                    if ($akun->saldo_normal === 'debet' && $kredit > 0) {
-                        return response()->json([
-                            'status' => 'error',
-                            'message' => "Akun {$akun->no_akun} - {$akun->nama} memiliki saldo normal DEBET, tidak boleh diisi di kolom Kredit."
-                        ], 422);
-                    }
-                    if ($akun->saldo_normal === 'kredit' && $debit > 0) {
-                        return response()->json([
-                            'status' => 'error',
-                            'message' => "Akun {$akun->no_akun} - {$akun->nama} memiliki saldo normal KREDIT, tidak boleh diisi di kolom Debit."
-                        ], 422);
-                    }
-                }
+            
 
-                if (in_array($jenis, ['JKM', 'JKK'])) {
-                    if (($akun->saldo_normal === 'debet' && $kredit > 0) ||
-                        ($akun->saldo_normal === 'kredit' && $debit > 0)) {
-                        $warningMessages[] = "Akun {$akun->no_akun} - {$akun->nama} tidak sesuai saldo normal ({$akun->saldo_normal}).";
-                    }
+            /* =========================================================
+            3) VALIDASI SALDO NORMAL (JP)
+            ==========================================================*/
+            if ($jenis === 'JP') {
+
+                $err = JurnalService::validateSaldoNormal($akun, $debit, $kredit);
+                if ($err) return response()->json(['status' => 'error', 'message' => $err], 422);
+
+                if (JurnalService::isPiutangAkun($akun)) {
+                    $adaPiutang = true;
                 }
             }
 
-            if (count($warningMessages) > 0 && !$request->has('confirm')) {
-                return response()->json([
-                    'status' => 'warning',
-                    'message' => implode("\n", $warningMessages),
-                    'need_confirm' => true
-                ], 200);
+            /* =========================================================
+            4) WARNING UNTUK JKM/JKK (bukan error)
+            ==========================================================*/
+            if (in_array($jenis, ['JKM', 'JKK'])) {
+                if (($akun->saldo_normal === 'debet' && $kredit > 0) ||
+                    ($akun->saldo_normal === 'kredit' && $debit > 0)) {
+
+                    $warningMessages[] = "Akun {$akun->no_akun}-{$akun->nama} tidak sesuai saldo normal.";
+                }
             }
         }
 
+        if ($jenis === 'JP' && !$adaPiutang) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'JP harus memiliki akun piutang.'
+            ], 422);
+        }
+
+        if (count($warningMessages) > 0 && !$request->has('confirm')) {
+            return response()->json([
+                'status' => 'warning',
+                'message' => implode("\n", $warningMessages),
+                'need_confirm' => true,
+            ]);
+        }
+
+        /* =========================================================
+        VALIDASI PELUNASAN PIUTANG (JKM / JN)
+        ==========================================================*/
+        if (in_array($jenis, ['JKM','JN']) && $request->filled('jurnal_piutang_id')) {
+
+            $valid = PelunasanPiutangService::validatePelunasanWithDate(
+                $request->jurnal_piutang_id,
+                $totalDebit,
+                $request->tanggal
+            );
+
+            if (!$valid['status']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $valid['message']
+                ], 422);
+            }
+        }
+        if (($jenis === 'JN') && $request->filled('jurnal_id_jkk')) {
+
+            UangMukaService::validateDraftPelunasan($request);
+        }
+        /* =========================================================
+        UPDATE JURNAL HEADER + DETAIL
+        ==========================================================*/
         DB::beginTransaction();
         try {
+            
             PeriodeHelper::cekPeriodeOpen($request->tanggal);
 
             $data = [
-                'tanggal' => $request->tanggal,
-                'entitas_id' => $request->entitas_id,
-                'cabang_id' => $request->cabang_id,
-                'partner_id' => $request->partner_id,
-                'keterangan' => $request->keterangan,
-                'total_debit' => $totalDebit,
+                'tanggal'      => $request->tanggal,
+                'entitas_id'   => $request->entitas_id,
+                'cabang_id'    => $request->cabang_id,
+                'partner_id'   => $request->partner_id,
+                'keterangan'   => $request->keterangan,
+                'total_debit'  => $totalDebit,
                 'total_kredit' => $totalKredit,
-                'updated_at' => now(),
+                'updated_at'   => now(),
             ];
-
-            if ($request->filled('no_invoice')) {
-                $data['no_invoice'] = $request->no_invoice;
-            }
-
-            if ($request->filled('tanggal_invoice')) {
-                $data['tanggal_invoice'] = $request->tanggal_invoice;
-            }
-
-            if($jenis == "JKM" && !empty($request->jurnal_piutang_id)){
-                $get_data_invoice = DB::table("jurnal_header")->where('id', $request->jurnal_piutang_id)->first();
-                $data['no_invoice'] = $get_data_invoice->no_invoice;
-                $data['tanggal_invoice'] = $get_data_invoice->tanggal_invoice;
-            }
 
             DB::table('jurnal_header')->where('id', $id)->update($data);
 
-            // 🔹 VALIDASI TAMBAHAN: jika JKM menunjuk ke JP → pastikan tidak melebihi sisa piutang
-            if (in_array($jenis,array("JKM","JN")) && $request->filled('jurnal_piutang_id')) {
-                $jurnalPiutangId = $request->jurnal_piutang_id;
+            /* =========================================================
+            UPDATE PELUNASAN PIUTANG
+            ==========================================================*/
+            if (in_array($jenis, ['JKM','JN'])) {
 
-                // Ambil total JP
-                $invoice = DB::table('jurnal_header')
-                    ->select('id', 'kode_jurnal', 'total_debit')
-                    ->where('id', $jurnalPiutangId)
-                    ->first();
+                // hapus pelunasan lama
+                DB::table('pelunasan_piutang')->where('jurnal_kas_id', $id)->delete();
 
-                if (!$invoice) {
-                    throw new \Exception("Invoice JP tidak ditemukan.");
-                }
-
-                // Hitung total pelunasan sebelumnya (kecuali JKM ini)
-                $totalSudahBayar = DB::table('pelunasan_piutang')
-                    ->where('jurnal_piutang_id', $jurnalPiutangId)
-                    ->where('jurnal_kas_id', '!=', $id)
-                    ->sum('jumlah');
-
-                $sisaPiutang = $invoice->total_debit - $totalSudahBayar;
-
-                // Total pelunasan baru (kredit akun piutang)
-                $totalPelunasanBaru = collect($request->detail)->sum(function ($d) {
-                    return (float) str_replace('.', '', $d['kredit'] ?? 0);
-                });
-
-                if ($totalPelunasanBaru > $sisaPiutang) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => "Jumlah pelunasan melebihi sisa piutang. 
-                                    Sisa piutang Invoice {$invoice->kode_jurnal} adalah Rp " . number_format($sisaPiutang, 0, ',', '.')
-                    ], 422);
-                }
-            }
-
-            // 🔹 UPDATE PELUNASAN (jika JKM)
-            if (in_array($jenis,array("JKM","JN"))) {
-                $pelunasanLama = DB::table('pelunasan_piutang')->where('jurnal_kas_id', $id)->first();
-                $jurnalPiutangBaru = $request->input('jurnal_piutang_id');
-
-                if ($pelunasanLama && $pelunasanLama->jurnal_piutang_id != $jurnalPiutangBaru) {
-                    DB::table('pelunasan_piutang')->where('jurnal_kas_id', $id)->delete();
-                }
-
-                if ($jurnalPiutangBaru) {
-                    DB::table('pelunasan_piutang')->updateOrInsert(
-                        ['jurnal_kas_id' => $id],
-                        [
-                            'jurnal_piutang_id' => $jurnalPiutangBaru,
-                            'jumlah' => $totalKredit ?? 0,
-                            'updated_at' => now(),
-                            'created_at' => now(),
-                        ]
+                if ($request->filled('jurnal_piutang_id')) {
+                    PelunasanPiutangService::insertPelunasan(
+                        $id,
+                        $request->jurnal_piutang_id,
+                        $totalDebit
                     );
                 }
             }
 
-            // 🔁 Hapus & Insert ulang detail
+            /* =========================================================
+            UPDATE DETAIL
+            ==========================================================*/
             DB::table('jurnal_detail')->where('jurnal_id', $id)->delete();
 
             foreach ($request->detail as $row) {
-                 // Ambil akun detail
-                $akun = DB::table('m_akun_gl')->where('id', $row['akun_id'])->first();
-
-                if ($akun && $akun->kategori === 'deposito_customer') {
-                    $nominal = floatval(str_replace('.', '', $row['debit'] ?? 0));
-                    if ($nominal > 0) {
-                        // INSERT ke tabel pelunasan_deposit
-                        DB::table('pelunasan_deposit')->insert([
-                            'entitas_id'        => $request->entitas_id,
-                            'partner_id'       => $request->partner_id,
-                            'jurnal_piutang_id' => $id,
-                            'akun_deposit_id'   => $row['akun_id'],
-                            'jumlah'            => $nominal,
-                            'created_at'        => now(),
-                            'updated_at'        => now(),
-                        ]);
-                    }
-        
-                }
                 DB::table('jurnal_detail')->insert([
-                    'jurnal_id' => $id,
-                    'akun_id' => $row['akun_id'],
-                    'deskripsi' => $row['deskripsi'] ?? '',
-                    'debit' => floatval(str_replace(['.', ','], ['', '.'], $row['debit'] ?? 0)),
-                    'kredit' => floatval(str_replace(['.', ','], ['', '.'], $row['kredit'] ?? 0)),
+                    'jurnal_id'  => $id,
+                    'akun_id'    => $row['akun_id'],
+                    'deskripsi'  => $row['deskripsi'] ?? '',
+                    'debit'      => floatval(str_replace('.', '', $row['debit'] ?? 0)),
+                    'kredit'     => floatval(str_replace('.', '', $row['kredit'] ?? 0)),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -1162,10 +1037,11 @@ class JurnalController extends Controller
             DB::rollBack();
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
+
 
 
 
@@ -1227,7 +1103,11 @@ class JurnalController extends Controller
             return response()->json(['status' => false, 'message' => 'Total debit dan kredit tidak balance, tidak bisa diposting!']);
         }
 
-        
+        if (($jurnal->jenis === 'JN')) {
+            UangMukaService::postingPelunasan($id);
+        }
+
+
 
         DB::beginTransaction();
         try {
@@ -1246,8 +1126,43 @@ class JurnalController extends Controller
                 ->select('h.id as jurnal_id', 'h.kode_jurnal', 'h.tanggal', 'd.deskripsi', 'h.jenis', 'h.entitas_id', 'h.partner_id', 'd.akun_id', 'd.debit', 'd.kredit','h.cabang_id')
                 ->where('h.id', $id)
                 ->get();
-
+            $tes=null;
             foreach ($details as $row) {
+                $debit  = floatval($row->debit);
+                $kredit = floatval($row->kredit);
+                $akun = JurnalService::getAkun($row->akun_id);
+
+                if ($jurnal->jenis === 'JP' && JurnalService::isDepositAkun($akun)) {
+                    $nominal = $debit;
+
+                    
+                    
+                    $saldoDeposit = JurnalService::getSaldoDeposit(
+                        $akun->id,
+                        $jurnal->partner_id,
+                        $jurnal->entitas_id
+                    );
+
+                    if ($debit > $saldoDeposit) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => "Saldo deposit tidak cukup. Saldo: " .number_format($saldoDeposit,2,",")
+                        ]);
+                    }
+                    if ($nominal > 0) {
+                        DB::table('pelunasan_deposit')->insert([
+                            'entitas_id'        => $jurnal->entitas_id,
+                            'partner_id'        => $jurnal->partner_id,
+                            'jurnal_piutang_id' => $id,
+                            'akun_deposit_id'   => $row->akun_id,
+                            'jumlah'            => $nominal,
+                            'created_at'        => now(),
+                            'updated_at'        => now(),
+                        ]);
+                    }
+                    
+                    // continue; // skip saldo normal
+                }
                 DB::table('buku_besar')->insert([
                     'jurnal_id' => $row->jurnal_id,
                     'akun_id' => $row->akun_id,
@@ -1263,6 +1178,7 @@ class JurnalController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                
             }
             DB::table('log_jurnal')->insert([
                 'jurnal_id' => $id,
@@ -1271,7 +1187,7 @@ class JurnalController extends Controller
                 'created_at' => now(),
             ]);
             DB::commit();
-            return response()->json(['status' => true, 'message' => 'Jurnal berhasil diposting']);
+            return response()->json(['status' => true, 'message' => 'Jurnal berhasil diposting' .$tes]);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1361,6 +1277,21 @@ class JurnalController extends Controller
                 }
             }
         }
+
+        if($jurnal->jenis === "JN"){
+            UangMukaService::unpostingPelunasan($id);
+        }
+
+        if ($jurnal->jenis === 'JKK') {
+            try {
+                JurnalService::validateJKKNotUsed($id);
+            } catch (\Exception  $e) {
+                return response()->json(['status' => false, 'message' => 'Gagal unposting jurnal: '.$e->getMessage()]);
+            }
+            
+        }
+
+        
 
         DB::beginTransaction();
         try {
@@ -1671,9 +1602,13 @@ class JurnalController extends Controller
                     'message' => 'Tidak ada jurnal draft pada rentang tanggal tersebut.'
                 ], 422);
             }
+            
 
             foreach ($jurnalList as $jurnal) {
                 PeriodeHelper::cekPeriodeOpen($jurnal->tanggal);
+                if (($jurnal->jenis === 'JN')) {
+                    UangMukaService::postingPelunasan($jurnal->id);
+                }
                 // Ambil detail jurnal
                 $detail = DB::table('jurnal_detail')
                     ->where('jurnal_id', $jurnal->id)
@@ -1771,6 +1706,10 @@ class JurnalController extends Controller
             // 🔹 Jika aman, lanjut hapus dari buku besar dan ubah status jadi draft
             foreach ($jurnalList as $jurnal) {
                 PeriodeHelper::cekPeriodeOpen($jurnal->tanggal);
+                if ($jurnal->jenis === 'JKK') {
+                    JurnalService::validateJKKNotUsed($jurnal->id);
+                }
+
                 // =====================================================
                 // 🔵 VALIDASI UNPOSTING UNTUK JKM YANG MENCATAT DEPOSIT
                 // =====================================================

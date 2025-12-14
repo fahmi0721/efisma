@@ -23,6 +23,8 @@ function error_message(e, title = "") {
     else if (e.status == 405 || e.status == 500 || e.status == 419) {
         if (e.responseJSON && "messages" in e.responseJSON) {
             pesan = e.responseJSON.messages;
+        }else if (e.responseJSON && "message" in e.responseJSON) {
+            pesan = e.responseJSON.message;
         } else {
             pesan = e.responseText || "Terjadi kesalahan pada server";
         }

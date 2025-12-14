@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title','Unposting Jurnal Penyesuaian')
+@section('title','Unposting Jurnal Rupa-Rupa')
 
 @section('breadcrumb')
 <div class="app-content-header">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-6"><h5 class="mb-2">Unposting Jurnal Penyesuaian</h5></div>
+            <div class="col-sm-6"><h5 class="mb-2">Unposting Jurnal Rupa-Rupa</h5></div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-end">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('jurnal.penyesuaian') }}">Jurnal Penyesuaian</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Unposting Jurnal Penyesuaian</li>
+                    <li class="breadcrumb-item"><a href="{{ route('jurnal.penyesuaian') }}">Jurnal Rupa-Rupa</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Unposting Jurnal Rupa-Rupa</li>
                 </ol>
             </div>
         </div>
@@ -23,7 +23,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card card-success card-outline mb-4">
-                <div class="card-header"><div class="card-title">Unposting Jurnal Penyesuaian</div></div>
+                <div class="card-header"><div class="card-title">Unposting Jurnal Rupa-Rupa</div></div>
                 
                 <form action="javascript:void(0)" enctype="multipart/form-data" id="form_data">
                     @csrf
@@ -349,8 +349,12 @@ function startBatchPosting(totalBatch, modalProgress) {
             error: function(err){
                 $("#progressBar").removeClass("bg-success").addClass("bg-danger").text("Gagal!");
                 $("#progressText").text("Terjadi kesalahan pada batch ke-" + (current + 1));
+                $("#btn-submit").prop("disabled", false);
+                $("#btn-submit").html("<i class='fa fa-bolt'></i> Unposting");
                 modalProgress.hide();
                 Swal.fire('Error', 'Gagal memproses batch: ' + err.responseText, 'error');
+                
+                
             }
         });
     }

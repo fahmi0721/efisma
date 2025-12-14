@@ -71,6 +71,7 @@
                                     <option value="piutang" @if($data->kategori == 'piutang') selected @endif>Piutang</option>
                                     <option value="investasi" @if($data->kategori == 'investasi') selected @endif>Investasi</option>
                                     <option value="pendanaan" @if($data->kategori == 'pendanaan') selected @endif>Pendanaan</option>
+                                    <option value="uang_muka" @if($data->kategori == 'uang_muka') selected @endif>Uang Muka</option>
                                     <option value="deposito_customer" @if($data->kategori == 'deposito_customer') selected @endif>Deposito Customer</option>
                                     <option value="pendapatan_operasional" @if($data->kategori == 'pendapatan_operasional') selected @endif>Pendapatan Operasional</option>
                                     <option value="beban_operasional" @if($data->kategori == 'beban_operasional') selected @endif>Beban Operasional</option>

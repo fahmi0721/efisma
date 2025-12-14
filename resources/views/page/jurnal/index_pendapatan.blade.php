@@ -205,6 +205,15 @@ $(document).on('click', '.cekDepositBtn', function() {
             url: '{{ route("partner.select") }}',
             dataType: 'json',
             delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term, // teks yang diketik user
+                    jenis: 'customer', // teks yang diketik user
+                    @if(auth()->user()->level != "entitas")
+                    entitas_id: $('#filterEntitas').val() || null // kirim data tambahan jika ada
+                    @endif
+                };
+            },
             processResults: function (data) {
                 return {
                     results: data.map(function(q){

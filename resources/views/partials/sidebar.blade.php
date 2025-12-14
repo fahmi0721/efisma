@@ -167,7 +167,7 @@
             <li class="nav-item">
             <a href="{{ route('jurnal.penyesuaian') }}" class="nav-link {{  setActive(['jurnal.penyesuaian', 'jurnal.penyesuaian.create', 'jurnal.penyesuaian.edit'], 'active')}}">
                 <i class="nav-icon fa fa-book"></i>
-                <p>Jurnal Penyesuaian</p>
+                <p>Jurnal Rupa-Rupa</p>
             </a>
             </li>
             @endcanAccess 
@@ -197,6 +197,35 @@
                     <a href="{{ route('piutang.daftar') }}" class="nav-link {{  setActive(['piutang.daftar'], 'active')  }}">
                         <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
                         <p>Daftar Piutang</p>
+                    </a>
+                    </li>
+                    @endcanAccess
+                </ul>
+            </li>
+            @endcanAccess
+            @canAccess('uangmuka.aging.view|uangmuka.daftar.view')
+            <li class="nav-item {{ setActive(['uangmuka.aging','uangmuka.daftar'], 'menu-open')  }}">
+                <a href="#" class="nav-link {{ setActive(['uangmuka.aging','uangmuka.daftar'], 'active')  }}">
+                    <i class="nav-icon fa fa-book"></i>
+                    <p>
+                    Uang Muka
+                    <i class="nav-arrow bi bi-chevron-right"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview">
+                    @canAccess('uangmuka.aging.view')
+                    <li class="nav-item">
+                    <a href="{{ route('uangmuka.aging') }}" class="nav-link {{  setActive(['uangmuka.aging'], 'active')  }}">
+                        <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
+                        <p>Aging Uang Muka</p>
+                    </a>
+                    </li>
+                    @endcanAccess
+                    @canAccess('uangmuka.daftar.view')
+                    <li class="nav-item">
+                    <a href="{{ route('uangmuka.daftar') }}" class="nav-link {{  setActive(['uangmuka.daftar'], 'active')  }}">
+                        <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
+                        <p>Daftar Uang Muka</p>
                     </a>
                     </li>
                     @endcanAccess
