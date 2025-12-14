@@ -1131,12 +1131,9 @@ class JurnalController extends Controller
                 $debit  = floatval($row->debit);
                 $kredit = floatval($row->kredit);
                 $akun = JurnalService::getAkun($row->akun_id);
-
                 if ($jurnal->jenis === 'JP' && JurnalService::isDepositAkun($akun)) {
                     $nominal = $debit;
 
-                    
-                    
                     $saldoDeposit = JurnalService::getSaldoDeposit(
                         $akun->id,
                         $jurnal->partner_id,
@@ -1212,13 +1209,7 @@ class JurnalController extends Controller
             $cekPelunasan = DB::table('pelunasan_piutang')
                 ->where('jurnal_piutang_id', $id)
                 ->exists();
-
-            if ($cekPelunasan) {
-                return response()->json([
-                    'status' => false,
-                    'message' => "Jurnal Pendapatan {$jurnal->kode_jurnal} tidak bisa di-unposting karena sudah memiliki pelunasan piutang."
-                ]);
-            }
+            
         }
 
         // =====================================================
@@ -1303,6 +1294,7 @@ class JurnalController extends Controller
                 'updated_at' => now(),
             ]);
 
+            DB::table('pelunasan_deposit')->where('jurnal_piutang_id', $id)->delete();
             DB::table('buku_besar')->where('jurnal_id', $id)->delete();
 
             DB::commit();
@@ -1622,6 +1614,38 @@ class JurnalController extends Controller
 
                 // Simpan ke buku besar
                 foreach ($detail as $d) {
+                    $debit  = floatval($d->debit);
+                    $kredit = floatval($d->kredit);
+                    $akun = JurnalService::getAkun($d->akun_id);
+                    if ($jurnal->jenis === 'JP' && JurnalService::isDepositAkun($akun)) {
+                        $nominal = $debit;
+
+                        $saldoDeposit = JurnalService::getSaldoDeposit(
+                            $akun->id,
+                            $jurnal->partner_id,
+                            $jurnal->entitas_id
+                        );
+
+                        if ($debit > $saldoDeposit) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => "Saldo deposit tidak cukup. Saldo: " .number_format($saldoDeposit,2,",")
+                            ],500);
+                        }
+                        if ($nominal > 0) {
+                            DB::table('pelunasan_deposit')->insert([
+                                'entitas_id'        => $jurnal->entitas_id,
+                                'partner_id'        => $jurnal->partner_id,
+                                'jurnal_piutang_id' => $jurnal->id,
+                                'akun_deposit_id'   => $d->akun_id,
+                                'jumlah'            => $nominal,
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ]);
+                        }
+                        
+                        // continue; // skip saldo normal
+                    }
                     DB::table('buku_besar')->insert([
                         'jurnal_id' => $jurnal->id,
                         'akun_id' => $d->akun_id,
@@ -1769,7 +1793,7 @@ class JurnalController extends Controller
                 DB::table('buku_besar')
                     ->where('jurnal_id', $jurnal->id)
                     ->delete();
-
+                DB::table('pelunasan_deposit')->where('jurnal_piutang_id', $jurnal->id)->delete();
                 DB::table('jurnal_header')
                     ->where('id', $jurnal->id)
                     ->update([
