@@ -552,11 +552,11 @@ class JurnalController extends Controller
                 'partner_id'       => 'required|integer',
             ];$messages += [
                     'no_invoice.required' => 'No Invoice wajib diisi.',
-                'no_invoice.string'   => 'No Invoice tidak valid.',
+                    'no_invoice.string'   => 'No Invoice tidak valid.',
             ];
 
 
-        } elseif(in_array($jenis,["JKK","JKM"])) { 
+        } elseif(in_array($jenis,["JKM"])) { 
             $rules['partner_id'] = 'required|integer';
             $messages += [
                 'partner_id.required' => 'Partner wajib dipilih.',
