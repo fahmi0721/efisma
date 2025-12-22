@@ -122,16 +122,19 @@ class PiutangController extends Controller
 
     public function daftar(Request $request)
     {
-        $filter = $request->input('filter', 'all');
+        $partner_id = $request->input('partner_id');
         $entitas_id = $request->input('entitas_id');
         $cabang_id = $request->input('cabang_id');
         if ($request->ajax()) {
             $query = DB::table('view_daftar_piutang');
 
-            if ($filter === 'customer') {
-                $query->where('is_customer', 'active');
-            } elseif ($filter === 'vendor') {
-                $query->where('is_vendor', 'active');
+            /*
+            |----------------------------------------------------------
+            | FILTER PARTNER
+            |----------------------------------------------------------
+            */
+            if (!empty($partner_id)) {
+                $query->where('partner_id', $partner_id);
             }
 
             if (!empty($entitas_id)) {
@@ -191,16 +194,19 @@ class PiutangController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $filter = $request->input('filter', 'all');
+        $partner_id = $request->input('partner_id');
         $entitas_id = $request->input('entitas_id');
         $cabang_id = $request->input('cabang_id');
 
         $data = DB::table('view_daftar_piutang');
 
-        if ($filter === 'customer') {
-            $data->where('is_customer', 'active');
-        } elseif ($filter === 'vendor') {
-            $data->where('is_vendor', 'active');
+        /*
+        |----------------------------------------------------------
+        | FILTER PARTNER
+        |----------------------------------------------------------
+        */
+        if (!empty($partner_id)) {
+            $query->where('partner_id', $partner_id);
         }
 
         if (!empty($entitas_id)) {

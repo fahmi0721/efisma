@@ -18,92 +18,74 @@
 @endsection
 @section('css')
 <style>
-.select2-container--bootstrap-5 .select2-selection--single {
-    height: calc(1.5em + .5rem + 2px); /* tinggi sama dengan btn-sm */
-    padding: .25rem .5rem;
-    font-size: .875rem;
-    line-height: 1.5;
-    border-radius: .2rem;
-}
 
-.select2-container--bootstrap-5 .select2-selection__arrow {
-    height: 100%;
-}
-
-.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-    line-height: 1.5;
-    padding-left: .25rem;
-}
-
-.select2-container {
-    min-width: 160px !important;
-}
-
-.card-header .select2 {
-    margin-bottom: 0 !important;
-}
 </style>
 
 @endsection
 @section('content')
-<div class="container-fluid">
-    <div class="card card-success card-outline">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-            <h5 class="mb-0">Daftar Piutang</h5>
+<div class="container">
+    <!-- FILTER -->
+<div class="row g-2 mb-4">
+    @if(auth()->user()->level != "entitas")
+    <div class="col-md-3">
+        <select id="filter_entitas" class="form-select form-select-sm entitas">
+            <option value="">Semua Entitas</option>
+        </select>
+    </div>
+    @endif
+    <div class="col-md-3">
+        <select id="filter_cabang" class="form-select form-select-sm cabang">
+            <option value="">Semua Cabang</option>
+        </select>
+    </div>
 
-            <div class="d-flex align-items-center gap-2 ms-auto">
-                @if(auth()->user()->level != "entitas")
-                {{-- 🔽 Filter Entitas --}}
-                <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:180px">
-                    <option value="">Semua Entitas</option>
-                </select>
-                @endif
+    <div class="col-md-3">
+        {{-- 🔽 Filter Tipe Partner --}}
+        <select id="filter_tipe" class="form-select partner">
+            <option value="all">Semua Partner</option>
+        </select>
+    </div>
 
-                <select id="filter_cabang" class="form-select form-select-sm cabang" style="width:180px">
-                    <option value="">Semua Cabang</option>
-                </select>
-
-                {{-- 🔽 Filter Tipe Partner --}}
-                <select id="filter_tipe" class="form-select " style="width:180px">
-                    <option value="all">Semua Partner</option>
-                    <option value="customer">Customer</option>
-                    <option value="vendor">Vendor</option>
-                </select>
-                @canAccess('piutang.daftar.export')
-                {{-- 📤 Tombol Export Excel --}}
-                <button id="btnExportExcel" class="btn btn-success">
-                    <i class="fas fa-file-excel"></i> Export Excel
-                </button>
-                @endcanAccess
-            </div>
+    <div class="col-md-3">
+        <div class='btn-group'>
+        @canAccess('piutang.daftar.export')
+        <button id='btnExportExcel' data-toggle='tooltip' title='Export Excel' class="btn btn-success">
+            <i class="fas fa-file-excel"></i> 
+        </button>
+        @endcanAccess
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table id="tb_data" class="table table-bordered table-striped align-middle">
-                    <thead class="table-light text-center">
-                        <tr>
-                            <th width="5%">No</th>
-                            <th>Tanggal</th>
-                            <th>Invoice</th>
-                            <th>Partner</th>
-                            <th class="text-end">Tagihan</th>
-                            <th class="text-end">Pelunasan</th>
-                            <th class="text-end">Sisa Piutang</th>
-                            <th class="text-center">Umur (Hari)</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                    <tfoot class="table-light fw-bold text-end">
-                        <tr>
-                            <th colspan="4" class="text-center">TOTAL</th>
-                            <th id="total_tagihan">0</th>
-                            <th id="total_pelunasan">0</th>
-                            <th id="total_sisa">0</th>
-                            <th></th>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+    </div>
+</div>
+<div class="card card-success card-outline">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <h5 class="mb-0">Daftar Piutang</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="tb_data" class="table table-bordered table-striped align-middle">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th width="5%">No</th>
+                        <th>Tanggal</th>
+                        <th>Invoice</th>
+                        <th>Partner</th>
+                        <th class="text-end">Tagihan</th>
+                        <th class="text-end">Pelunasan</th>
+                        <th class="text-end">Sisa Piutang</th>
+                        <th class="text-center">Umur (Hari)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot class="table-light fw-bold text-end">
+                    <tr>
+                        <th colspan="4" class="text-center">TOTAL</th>
+                        <th id="total_tagihan">0</th>
+                        <th id="total_pelunasan">0</th>
+                        <th id="total_sisa">0</th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
 </div>
@@ -137,6 +119,31 @@ $(document).ready(function() {
     });
     @endif
     @canAccess('piutang.daftar.view')
+    // 🔹 Select2 Partner
+    $('.partner').select2({
+        ajax: {
+            url: '{{ route("partner.select") }}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term, // teks yang diketik user
+                    jenis: 'all', // teks yang diketik user
+                    @if(auth()->user()->level != "entitas")
+                    entitas_id: $('#entitas_id').val() || "{{ auth()->user()->entitas_id }}" // kirim data tambahan jika ada
+                    @endif
+                };
+            },
+            processResults: data => ({
+                results: data.map(q => ({ id: q.id, text: q.nama }))
+            }),
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: "-- Pilih Partner --",
+        allowClear: true
+    });
     $('.cabang').select2({
         ajax: {
             url: '{{ route("cabang.select") }}',
@@ -164,7 +171,7 @@ $(document).ready(function() {
          ajax: {
             url: "{{ route('piutang.daftar') }}",
             data: function (d) {
-                d.filter = $('#filter_tipe').val();
+                d.partner_id = $('#filter_tipe').val();
                 d.entitas_id = $('#filter_entitas').val();
                 d.cabang_id = $('#filter_cabang').val();
             }
@@ -233,12 +240,16 @@ $(document).ready(function() {
     @canAccess('piutang.daftar.export')
     // 📤 Export Excel
     $('#btnExportExcel').click(function() {
-        const tipe = $('#filter_tipe').val();
-        const entitas = $('#filter_entitas').val();
+        const partner = $('#filter_tipe').val();
+        @if(auth()->user()->level == 'entitas'){
+            const entitas = "{{ auth()->user()->entitas_id }}";
+        @else
+            const entitas = $('#filter_entitas').val();
+        @endif
         const cabang = $('#filter_cabang').val(); // ← ambil pilihan cabang
 
         const url = "{{ route('piutang.daftar.export') }}"
-            + "?filter=" + encodeURIComponent(tipe ?? '')
+            + "?parter_id=" + encodeURIComponent(partner ?? '')
             + "&entitas_id=" + encodeURIComponent(entitas ?? '')
             + "&cabang_id=" + encodeURIComponent(cabang ?? '');
 
