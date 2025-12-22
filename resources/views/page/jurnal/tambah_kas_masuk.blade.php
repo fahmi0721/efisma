@@ -286,7 +286,7 @@ $(document).ready(function() {
             data: function (params) {
                 return {
                     q: params.term, // teks yang diketik user
-                    jenis: 'customer', // teks yang diketik user
+                    jenis: 'all', // teks yang diketik user
                     @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
                     @endif
