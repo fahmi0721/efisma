@@ -76,6 +76,28 @@ class JurnalService
         return $totalIn - $totalUsed;
     }
 
+
+    /* =========================================================
+       PARSE RUPIAH
+    ==========================================================*/
+    public static function parseRupiah($value): float
+    {
+        if ($value === null || $value === '') {
+            return 0;
+        }
+
+        // Hapus simbol dan spasi
+        $value = str_replace(['Rp', ' ', "\u{A0}"], '', $value);
+
+        // Jika format Indonesia (ada koma)
+        if (str_contains($value, ',')) {
+            $value = str_replace('.', '', $value);   // hapus ribuan
+            $value = str_replace(',', '.', $value);  // koma → titik
+        }
+
+        return (float) $value;
+    }
+
     
 
 

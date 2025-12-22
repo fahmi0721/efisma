@@ -326,8 +326,8 @@ class JurnalController extends Controller
                 DB::raw("CONCAT(a.no_akun, ' - ', a.nama) as akun_gl"),
                 'd.deskripsi',
                 'akun_id',
-                DB::raw("CAST(d.debit AS UNSIGNED) as debit"),
-                DB::raw("CAST(d.kredit AS UNSIGNED) as kredit"),
+                'd.debit',
+                'd.kredit',
                 'a.kategori' // 🔹 tambahkan ini
             )
             ->get();
@@ -403,8 +403,8 @@ class JurnalController extends Controller
         ->select(
            DB::raw("CONCAT(a.no_akun, ' - ', a.nama) as akun_gl"),
             'd.deskripsi',
-            DB::raw("CAST(d.debit AS UNSIGNED) as debit"),
-            DB::raw("CAST(d.kredit AS UNSIGNED) as kredit")
+            'd.debit',
+            'd.kredit'
         )
         ->get();
         return response()->json($detail);
@@ -586,8 +586,8 @@ class JurnalController extends Controller
         foreach ($request->detail as $row) {
 
             $akun = JurnalService::getAkun($row['akun_id']);
-            $debit  = floatval(str_replace('.', '', $row['debit'] ?? 0));
-            $kredit = floatval(str_replace('.', '', $row['kredit'] ?? 0));
+            $debit  = JurnalService::parseRupiah($row['debit'] ?? 0);
+            $kredit = JurnalService::parseRupiah($row['kredit'] ?? 0);
 
             /* =========================================================
             1) DETEKSI UANG MUKA
@@ -654,8 +654,8 @@ class JurnalController extends Controller
         /* =========================================================
         HITUNG TOTAL DEBIT / KREDIT
         ==========================================================*/
-        $totalDebit  = collect($request->detail)->sum(fn($i) => floatval(str_replace('.', '', $i['debit'] ?? 0)));
-        $totalKredit = collect($request->detail)->sum(fn($i) => floatval(str_replace('.', '', $i['kredit'] ?? 0)));
+        $totalDebit  = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiah($i['debit'] ?? 0));
+        $totalKredit = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiah($i['kredit'] ?? 0));
 
         if ($totalDebit != $totalKredit) {
             return response()->json([
@@ -740,8 +740,8 @@ class JurnalController extends Controller
                     'jurnal_id' => $jurnalId,
                     'akun_id'   => $row['akun_id'],
                     'deskripsi' => $row['deskripsi'] ?? "",
-                    'debit'     => str_replace('.', '', $row['debit'] ?? 0),
-                    'kredit'    => str_replace('.', '', $row['kredit'] ?? 0),
+                    'debit'      => JurnalService::parseRupiah($row['debit'] ?? 0),
+                    'kredit'     => JurnalService::parseRupiah($row['kredit'] ?? 0),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -863,8 +863,8 @@ class JurnalController extends Controller
         /* =========================================================
         HITUNG TOTAL DEBIT / KREDIT
         ==========================================================*/
-        $totalDebit = collect($request->detail)->sum(fn($i) => floatval(str_replace('.', '', $i['debit'] ?? 0)));
-        $totalKredit = collect($request->detail)->sum(fn($i) => floatval(str_replace('.', '', $i['kredit'] ?? 0)));
+        $totalDebit  = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiah($i['debit'] ?? 0));
+        $totalKredit = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiah($i['kredit'] ?? 0));
 
         if ($totalDebit != $totalKredit) {
             return response()->json([
@@ -888,8 +888,8 @@ class JurnalController extends Controller
         foreach ($request->detail as $row) {
 
             $akun = JurnalService::getAkun($row['akun_id']);
-            $debit  = floatval(str_replace('.', '', $row['debit'] ?? 0));
-            $kredit = floatval(str_replace('.', '', $row['kredit'] ?? 0));
+            $debit  = JurnalService::parseRupiah($row['debit'] ?? 0);
+            $kredit = JurnalService::parseRupiah($row['kredit'] ?? 0);
 
             if (!$akun) {
                 return response()->json([
@@ -1020,8 +1020,8 @@ class JurnalController extends Controller
                     'jurnal_id'  => $id,
                     'akun_id'    => $row['akun_id'],
                     'deskripsi'  => $row['deskripsi'] ?? '',
-                    'debit'      => floatval(str_replace('.', '', $row['debit'] ?? 0)),
-                    'kredit'     => floatval(str_replace('.', '', $row['kredit'] ?? 0)),
+                    'debit'      => JurnalService::parseRupiah($row['debit'] ?? 0),
+                    'kredit'     => JurnalService::parseRupiah($row['kredit'] ?? 0),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
