@@ -174,6 +174,14 @@
             @endcanAccess
             @canAccess('piutang.aging.view|piutang.daftar.view|pbl.view|neraca.view|arus_kas.view|buku_besar.index')
             <li class="nav-header">LAPORAN</li>
+            @canAccess('kartuakun.view')
+            <li class="nav-item">
+            <a href="{{ route('laporan.kartuakun') }}" class="nav-link {{  setActive(['laporan.kartuakun'], 'active')  }}">
+                <i class="nav-icon fa fa-solid fa-book"></i>
+                <p>Kartu Akun</p>
+            </a>
+            </li>
+            @endcanAccess
             @canAccess('piutang.aging.view|piutang.daftar.view')
             <li class="nav-item {{ setActive(['piutang.aging','piutang.daftar'], 'menu-open')  }}">
                 <a href="#" class="nav-link {{ setActive(['piutang.aging','piutang.daftar'], 'active')  }}">

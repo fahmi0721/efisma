@@ -306,5 +306,10 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
 
         Route::get('buku_besar', [LaporanKeuanganController::class, 'indexBukuBesar'])->name('laporan.bukubesar')->middleware('permission:buku_besar.index');
         Route::get('buku_besar/export', [LaporanKeuanganController::class, 'exportBukuBesar'])->name('laporan.bukubesar.export')->middleware('permission:buku_besar.export');
+
+        Route::get('kartu_akun', [LaporanKeuanganController::class, 'indexKartuAkun'])->name('laporan.kartuakun')->middleware('permission:kartuakun.view');
+        Route::get('kartu_akun/export', [LaporanKeuanganController::class, 'exportKartuAkun'])->name('laporan.kartuakun.export')->middleware('permission:kartuakun.export');
+
+        // Route::get('kartu_akun/export', [LaporanKeuanganController::class, 'exportBukuBesar'])->name('laporan.bukubesar.export')->middleware('permission:buku_besar.export');
     });
 });
