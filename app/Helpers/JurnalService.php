@@ -86,14 +86,16 @@ class JurnalService
             return 0;
         }
 
-        // Hapus simbol dan spasi
+        $value = (string) $value;
+
+        // Hapus simbol & spasi
         $value = str_replace(['Rp', ' ', "\u{A0}"], '', $value);
 
-        // Jika format Indonesia (ada koma)
-        if (str_contains($value, ',')) {
-            $value = str_replace('.', '', $value);   // hapus ribuan
-            $value = str_replace(',', '.', $value);  // koma → titik
-        }
+        // Hapus SEMUA pemisah ribuan
+        $value = str_replace('.', '', $value);
+
+        // Ubah koma jadi titik (desimal)
+        $value = str_replace(',', '.', $value);
 
         return (float) $value;
     }

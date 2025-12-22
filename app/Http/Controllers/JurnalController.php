@@ -516,7 +516,6 @@ class JurnalController extends Controller
         $rules = [
             'tanggal'            => 'required|date',
             'entitas_id'         => 'required|integer',
-            'cabang_id'          => 'required|integer',
             'keterangan'         => 'nullable|string',
             'detail'             => 'required|array|min:2',
             'detail.*.akun_id'   => 'required|integer',
@@ -531,9 +530,6 @@ class JurnalController extends Controller
             'entitas_id.required'     => 'Entitas wajib dipilih.',
             'entitas_id.integer'      => 'Entitas tidak valid.',
 
-            'cabang_id.required'      => 'Cabang wajib dipilih.',
-            'cabang_id.integer'       => 'Cabang tidak valid.',
-
             'keterangan.string'       => 'Keterangan harus berupa teks.',
 
             'detail.required'         => 'Detail transaksi wajib diisi.',
@@ -547,12 +543,20 @@ class JurnalController extends Controller
 
         if ($jenis === 'JP') {
             $rules += [
+                'cabang_id'          => 'required|integer',
                 'no_invoice'       => 'required|string',
                 'tanggal_invoice'  => 'required|date',
                 'partner_id'       => 'required|integer',
             ];$messages += [
-                    'no_invoice.required' => 'No Invoice wajib diisi.',
-                    'no_invoice.string'   => 'No Invoice tidak valid.',
+                'cabang_id.required'      => 'Cabang wajib dipilih.',
+                'cabang_id.integer'       => 'Cabang tidak valid.',
+                'no_invoice.required' => 'No Invoice wajib diisi.',
+                'no_invoice.string'   => 'No Invoice tidak valid.',
+                'tanggal_invoice.required' => 'Tgl Invoice wajib diisi.',
+                'tanggal_invoice.date'   => 'Tgl Invoice tidak valid.',
+                'partner_id.required'      => 'Partner wajib dipilih.',
+                'partner_id.integer'       => 'Partner tidak valid.',
+                    
             ];
 
 
@@ -806,7 +810,6 @@ class JurnalController extends Controller
         $rules = [
             'tanggal'            => 'required|date',
             'entitas_id'         => 'required|integer',
-            'cabang_id'          => 'required|integer',
             'keterangan'         => 'nullable|string',
             'detail'             => 'required|array|min:2',
             'detail.*.akun_id'   => 'required|integer',
@@ -817,9 +820,6 @@ class JurnalController extends Controller
 
             'entitas_id.required'     => 'Entitas wajib dipilih.',
             'entitas_id.integer'      => 'Entitas tidak valid.',
-
-            'cabang_id.required'      => 'Cabang wajib dipilih.',
-            'cabang_id.integer'       => 'Cabang tidak valid.',
 
             'keterangan.string'       => 'Keterangan harus berupa teks.',
 
@@ -835,16 +835,23 @@ class JurnalController extends Controller
 
         if ($jenis === 'JP') {
             $rules += [
+                'cabang_id'          => 'required|integer',
                 'no_invoice'       => 'required|string',
-                'tanggal_invoice'  => 'required|date',
+                'tanggal_invoice'  => 'required|tanggal_invoice',
                 'partner_id'       => 'required|integer',
             ];$messages += [
-                    'no_invoice.required' => 'No Invoice wajib diisi.',
+                'cabang_id.required' => 'Cabang wajib diisi.',
+                'cabang_id.integer'   => 'Cabang Invoice tidak valid.',
+                'no_invoice.required' => 'No Invoice wajib diisi.',
                 'no_invoice.string'   => 'No Invoice tidak valid.',
+                'tanggal_invoice.required' => 'Tgl Invoice wajib diisi.',
+                'tanggal_invoice.tanggal_invoice'   => 'Tgl Invoice tidak valid.',
+                'partner_id.required'       => 'Partner/Customer Wajib diisi',
+                'partner_id.integer'   => 'Partner/Customer tidak valid.'
             ];
 
 
-        } elseif(in_array($jenis,["JKK","JKM"])) { 
+        } elseif(in_array($jenis,["JKM"])) { 
             $rules['partner_id'] = 'required|integer';
             $messages += [
                 'partner_id.required' => 'Partner wajib dipilih.',

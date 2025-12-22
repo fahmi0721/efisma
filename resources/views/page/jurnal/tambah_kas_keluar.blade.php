@@ -51,7 +51,7 @@
                         @endif
 
                         <div class="row mb-3">
-                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
+                            <label for="cabang_id" class="col-sm-3 col-form-label">Cabang</label>
                             <div class="col-sm-9">
                                 <select name="cabang_id" id="cabang_id" class="form-control cabang">
                                     <option value="">-- Pilih Cabang --</option>
