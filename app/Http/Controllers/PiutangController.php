@@ -164,6 +164,11 @@ class PiutangController extends Controller
                     });
                 })
 
+                // Search untuk keterangan
+                ->filterColumn('keterangan', function($q, $kw) {
+                    $q->where('keterangan', 'LIKE', "%$kw%");
+                })
+
                 // Search untuk partner_nama
                 ->filterColumn('partner_nama', function($q, $kw) {
                     $q->where('partner_nama', 'LIKE', "%$kw%");

@@ -42,7 +42,7 @@
     <div class="col-md-3">
         {{-- 🔽 Filter Tipe Partner --}}
         <select id="filter_tipe" class="form-select partner">
-            <option value="all">Semua Partner</option>
+            <option value="all">..:: Pilih Partner ::..</option>
         </select>
     </div>
 
@@ -69,6 +69,7 @@
                         <th>Tanggal</th>
                         <th>Invoice</th>
                         <th>Partner</th>
+                        <th>Keterangan</th>
                         <th class="text-end">Tagihan</th>
                         <th class="text-end">Pelunasan</th>
                         <th class="text-end">Sisa Piutang</th>
@@ -78,7 +79,7 @@
                 <tbody></tbody>
                 <tfoot class="table-light fw-bold text-end">
                     <tr>
-                        <th colspan="4" class="text-center">TOTAL</th>
+                        <th colspan="5" class="text-center">TOTAL</th>
                         <th id="total_tagihan">0</th>
                         <th id="total_pelunasan">0</th>
                         <th id="total_sisa">0</th>
@@ -198,6 +199,7 @@ $(document).ready(function() {
                 }
             },
             { data: 'partner_nama' ,orderable: false },
+            { data: 'keterangan' ,orderable: false },
             { data: 'total_tagihan', className: 'text-end',orderable: false,searchable: false },
             { data: 'total_pelunasan', className: 'text-end',orderable: false,searchable: false },
             { data: 'sisa_piutang', className: 'text-end fw-bold',orderable: false,searchable: false },
@@ -217,14 +219,14 @@ $(document).ready(function() {
             };
 
             // hitung total tiap kolom
-            let totalTagihan = api.column(4, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
-            let totalPelunasan = api.column(5, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
-            let totalSisa = api.column(6, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+            let totalTagihan = api.column(5, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+            let totalPelunasan = api.column(6, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
+            let totalSisa = api.column(7, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
 
             // tampilkan hasil di footer
-            $(api.column(4).footer()).html(totalTagihan.toLocaleString('id-ID'));
-            $(api.column(5).footer()).html(totalPelunasan.toLocaleString('id-ID'));
-            $(api.column(6).footer()).html(totalSisa.toLocaleString('id-ID'));
+            $(api.column(5).footer()).html(totalTagihan.toLocaleString('id-ID'));
+            $(api.column(6).footer()).html(totalPelunasan.toLocaleString('id-ID'));
+            $(api.column(7).footer()).html(totalSisa.toLocaleString('id-ID'));
         },
         language: {
             searchPlaceholder: 'Cari partner...',
