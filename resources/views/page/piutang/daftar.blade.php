@@ -206,27 +206,18 @@ $(document).ready(function() {
             { data: 'umur_piutang', className: 'text-center',orderable: false,searchable: false },
         ],
         order: [[1, 'desc']],
-        footerCallback: function (row, data, start, end, display) {
+        drawCallback: function(settings) {
             let api = this.api();
+            let json = api.ajax.json(); // Mengambil data tambahan dari server
+            
+            if (json.totalFooter) {
+                let res = json.totalFooter;
+                let format = new Intl.NumberFormat('id-ID');
 
-            // fungsi konversi string ke angka
-            let intVal = function (i) {
-                return typeof i === 'string'
-                    ? i.replace(/\./g, '').replace(/,/g, '.') * 1
-                    : typeof i === 'number'
-                        ? i
-                        : 0;
-            };
-
-            // hitung total tiap kolom
-            let totalTagihan = api.column(5, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
-            let totalPelunasan = api.column(6, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
-            let totalSisa = api.column(7, { page: 'current' }).data().reduce((a, b) => intVal(a) + intVal(b), 0);
-
-            // tampilkan hasil di footer
-            $(api.column(5).footer()).html(totalTagihan.toLocaleString('id-ID'));
-            $(api.column(6).footer()).html(totalPelunasan.toLocaleString('id-ID'));
-            $(api.column(7).footer()).html(totalSisa.toLocaleString('id-ID'));
+                $(api.column(5).footer()).html(format.format(res.total_tagihan));
+                $(api.column(6).footer()).html(format.format(res.total_pelunasan));
+                $(api.column(7).footer()).html(format.format(res.sisa_piutang));
+            }
         },
         language: {
             searchPlaceholder: 'Cari partner...',

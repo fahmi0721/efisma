@@ -196,9 +196,14 @@ class PiutangController extends Controller
                 ->filterColumn('total_pelunasan', function($q, $kw) {
                     $q->havingRaw("total_pelunasan LIKE ?", ["%$kw%"]);
                 })
-                ->editColumn('total_tagihan', fn($r) => number_format($r->total_tagihan, 0, ',', '.'))
-                ->editColumn('total_pelunasan', fn($r) => number_format($r->total_pelunasan, 0, ',', '.'))
-                ->editColumn('sisa_piutang', fn($r) => number_format($r->sisa_piutang, 0, ',', '.'))
+                ->editColumn('total_tagihan', fn($r) => number_format($r->total_tagihan, 2, ',', '.'))
+                ->editColumn('total_pelunasan', fn($r) => number_format($r->total_pelunasan, 2, ',', '.'))
+                ->editColumn('sisa_piutang', fn($r) => number_format($r->sisa_piutang, 2, ',', '.'))
+                ->with('totalFooter', [
+                    'total_tagihan'   => $query->sum('total_tagihan'),
+                    'total_pelunasan'  => $query->sum('total_pelunasan'),
+                    'sisa_piutang'  => $query->sum('sisa_piutang'),
+                ])
                 ->make(true);
         }
         
