@@ -97,6 +97,11 @@ class M_PartnerController extends Controller
             ->orderBy('nama')
             ->limit(20)
             ->get();
+            $m_partner->prepend((object)[
+            'id' => '',
+            'nama' => 'Semua Partner',
+            'entitas_id' => ''
+        ]);
 
         return response()->json($m_partner);
     }

@@ -42,7 +42,7 @@
     <div class="col-md-3">
         {{-- 🔽 Filter Tipe Partner --}}
         <select id="filter_tipe" class="form-select partner">
-            <option value="all">..:: Pilih Partner ::..</option>
+            <option value="">Semua Partner</option>
         </select>
     </div>
 
@@ -142,8 +142,8 @@ $(document).ready(function() {
         },
         theme: 'bootstrap4',
         width: '100%',
-        placeholder: "-- Pilih Partner --",
-        allowClear: true
+        // placeholder: "-- Pilih Partner --",
+        // allowClear: true
     });
     $('.cabang').select2({
         ajax: {
