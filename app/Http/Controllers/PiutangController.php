@@ -42,12 +42,20 @@ class PiutangController extends Controller
             $data = $query->get();
             return DataTables::of($data)
                 ->addIndexColumn()
-                ->editColumn('aging_0_14', fn($row) => number_format($row->aging_0_14, 0, ',', '.'))
-                ->editColumn('aging_15_30', fn($row) => number_format($row->aging_15_30, 0, ',', '.'))
-                ->editColumn('aging_31_45', fn($row) => number_format($row->aging_31_45, 0, ',', '.'))
-                ->editColumn('aging_46_60', fn($row) => number_format($row->aging_46_60, 0, ',', '.'))
-                ->editColumn('aging_60_plus', fn($row) => number_format($row->aging_60_plus, 0, ',', '.'))
-                ->editColumn('total_piutang', fn($row) => "<b>" . number_format($row->total_piutang, 0, ',', '.') . "</b>")
+                ->editColumn('aging_0_14', fn($row) => number_format($row->aging_0_14, 2, ',', '.'))
+                ->editColumn('aging_15_30', fn($row) => number_format($row->aging_15_30, 2, ',', '.'))
+                ->editColumn('aging_31_45', fn($row) => number_format($row->aging_31_45, 2, ',', '.'))
+                ->editColumn('aging_46_60', fn($row) => number_format($row->aging_46_60, 2, ',', '.'))
+                ->editColumn('aging_60_plus', fn($row) => number_format($row->aging_60_plus, 2, ',', '.'))
+                ->editColumn('total_piutang', fn($row) => "<b>" . number_format($row->total_piutang, 2, ',', '.') . "</b>")
+                ->with('totalFooter', [
+                    'aging_0_14'   => $data->sum('aging_0_14'),
+                    'aging_15_30'  => $data->sum('aging_15_30'),
+                    'aging_31_45'  => $data->sum('aging_31_45'),
+                    'aging_46_60'  => $data->sum('aging_46_60'),
+                    'aging_60_plus' => $data->sum('aging_60_plus'),
+                    'total_piutang' => $data->sum('total_piutang'),
+                ])
                 ->rawColumns(['total_piutang'])
                 ->make(true);
         }

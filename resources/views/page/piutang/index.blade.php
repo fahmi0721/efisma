@@ -91,6 +91,17 @@
                         </tr>
                     </thead>
                     <tbody></tbody>
+                    <tfoot>
+                    <tr class="bg-light fw-bold">
+                        <th colspan="2" class="text-center">TOTAL</th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                    </tr>
+                </tfoot>
                 </table>
             </div>
         </div>
@@ -169,6 +180,22 @@ $(document).ready(function() {
             { data: 'total_piutang', name: 'total_piutang', className: 'text-end fw-bold' },
         ],
         order: [[1, 'asc']],
+        drawCallback: function(settings) {
+            let api = this.api();
+            let json = api.ajax.json(); // Mengambil data tambahan dari server
+            
+            if (json.totalFooter) {
+                let res = json.totalFooter;
+                let format = new Intl.NumberFormat('id-ID');
+
+                $(api.column(2).footer()).html(format.format(res.aging_0_14));
+                $(api.column(3).footer()).html(format.format(res.aging_15_30));
+                $(api.column(4).footer()).html(format.format(res.aging_31_45));
+                $(api.column(5).footer()).html(format.format(res.aging_46_60));
+                $(api.column(6).footer()).html(format.format(res.aging_60_plus));
+                $(api.column(7).footer()).html(format.format(res.total_piutang));
+            }
+        },
         language: {
             searchPlaceholder: 'Cari partner...',
             processing: '<i class="fa fa-spinner fa-spin"></i> Loading...'
