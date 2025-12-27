@@ -543,14 +543,18 @@ class LaporanKeuanganController extends Controller
                 ->first();
 
             if (!$saldoAwal) {
-                return response()->json([
-                    'data' => [],
-                    'error' => 'Saldo awal periode belum diinput '.$periode
-                ]);
+                $saldo = 0;
+                $saldoNormal = DB::table('m_akun_gl')
+                ->where('id', $akun_id)
+                ->value('saldo_normal'); 
+                
+            }else{
+                $saldo = $saldoAwal->saldo;
+                $saldoNormal = $saldoAwal->saldo_normal;    
             }
 
-            $saldo = $saldoAwal->saldo;
-            $saldoNormal = $saldoAwal->saldo_normal;
+            // $saldo = $saldoAwal->saldo;
+            // $saldoNormal = $saldoAwal->saldo_normal;
 
             // 🔹 Mutasi
             $rows = DB::table('buku_besar as b')
