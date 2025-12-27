@@ -608,9 +608,23 @@ class LaporanKeuanganController extends Controller
                     'saldo'       => $saldo,
                 ];
             }
+            // Hitung total manual dari array $data karena sum() tidak bisa langsung di array
+            $totalDebit = 0;
+            $totalKredit = 0;
+            foreach ($data as $item) {
+                $totalDebit += $item['debit'] ?? 0;
+                $totalKredit += $item['kredit'] ?? 0;
+            }
+            $saldoAkhir = $saldo; 
+
 
             return DataTables::of(collect($data))
                 ->addIndexColumn()
+                ->with('totalFooter', [
+                    'total_debit'   => $totalDebit,
+                    'total_kredit'  => $totalKredit,
+                    'saldo_akhir'  => $saldoAkhir
+                ])
                 ->make(true);
         }
 

@@ -81,6 +81,14 @@
                 </tr>
             </thead>
             <tbody></tbody>
+            <tfoot class="table-light fw-bold text-end">
+                <tr>
+                    <th colspan="4" class="text-center">TOTAL</th>
+                    <th id="total_debet">0</th>
+                    <th id="total_kredit">0</th>
+                    <th id="total_saldo">0</th>
+                </tr>
+            </tfoot>
         </table>
     </div>
     </div>
@@ -139,6 +147,28 @@ let isLoaded = false;
                 },orderable:false, 
             },
         ],
+        drawCallback: function(settings) {
+            let api = this.api();
+            let json = api.ajax.json(); // Mengambil data tambahan dari server
+            
+            if (json.totalFooter) {
+                let res = json.totalFooter;
+                let format = new Intl.NumberFormat('id-ID');
+
+                $(api.column(4).footer()).html(format.format(res.total_debit));
+                $(api.column(5).footer()).html(format.format(res.total_kredit));
+                $(api.column(6).footer()).html(format.format(res.saldo_akhir));
+            }
+             // Sembunyikan pagination jika data kosong atau hanya 1 halaman
+            var rowCount = api.rows().data().length;
+            if (rowCount === 0) {
+                $('.dataTables_paginate').hide();
+                $('.dataTables_info').hide();
+            } else {
+                $('.dataTables_paginate').show();
+                $('.dataTables_info').show();
+            }
+        },
         // order: [[2, 'desc']],
     });
 @endcanAccess
