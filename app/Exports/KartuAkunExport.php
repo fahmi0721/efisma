@@ -15,18 +15,22 @@ class KartuAkunExport implements FromCollection, WithHeadings, WithStyles, Shoul
     protected $akun_id;
     protected $entitas_id;
     protected $periode;
+    protected $tgl_awal;
+    protected $tgl_akhir;
 
-    public function __construct($akun_id, $entitas_id, $periode)
+    public function __construct($akun_id, $entitas_id, $tanggal_awal,$tanggal_akhir)
     {
         $this->akun_id    = $akun_id;
         $this->entitas_id = $entitas_id;
-        $this->periode    = $periode;
+        $this->tgl_awal = $tanggal_awal;
+        $this->tgl_akhir = $tanggal_akhir;
+        $this->periode    = date('Y-m', strtotime($tanggal_awal));
     }
 
     public function collection()
     {
-        $tglAwal  = $this->periode . '-01';
-        $tglAkhir = date('Y-m-t', strtotime($tglAwal));
+        $tglAwal  = $this->tgl_awal;
+        $tglAkhir = $this->tgl_akhir;
 
         // 🔹 Saldo Awal
         $saldoAwal = DB::table('m_saldo_awal as s')
@@ -38,11 +42,14 @@ class KartuAkunExport implements FromCollection, WithHeadings, WithStyles, Shoul
             ->first();
 
         if (!$saldoAwal) {
-            return collect([]);
+            $saldo       = 0;
+            $saldoNormal = "debet";
+        }else{
+            $saldo       = (float) $saldoAwal->saldo;
+            $saldoNormal = $saldoAwal->saldo_normal;
         }
 
-        $saldo       = (float) $saldoAwal->saldo;
-        $saldoNormal = $saldoAwal->saldo_normal;
+        
 
         $rows = collect();
 

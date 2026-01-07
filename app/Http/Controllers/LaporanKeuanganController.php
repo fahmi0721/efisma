@@ -515,10 +515,10 @@ class LaporanKeuanganController extends Controller
         }
 
         $akun_id = $request->akun_gl_id; // WAJIB
-        $periode = $request->periode ?? date('Y-m');
+        $periode = date('Y-m', strtotime($request->tanggal_awal));
 
-        $tglAwal  = $periode . '-01';
-        $tglAkhir = date('Y-m-t', strtotime($tglAwal));
+        $tglAwal  = $request->tanggal_awal;
+        $tglAkhir = $request->tanggal_akhir;
 
         // =========================
         // AJAX (DataTables)
@@ -634,7 +634,9 @@ class LaporanKeuanganController extends Controller
     public function exportKartuAkun(Request $request)
     {
         $akun_id   = $request->akun_gl_id;
-        $periode   = $request->periode;
+        $tanggal_awal   = $request->tanggal_awal;
+        $tanggal_akhir   = $request->tanggal_akhir;
+        $periode = date('Y-m', strtotime($request->tanggal_awal));
 
         if (auth()->user()->level === 'entitas') {
             $entitas_id = auth()->user()->entitas_id;
@@ -643,7 +645,7 @@ class LaporanKeuanganController extends Controller
         }
 
         return Excel::download(
-            new KartuAkunExport($akun_id, $entitas_id, $periode),
+            new KartuAkunExport($akun_id, $entitas_id, $tanggal_awal,$tanggal_akhir),
             'Kartu_Akun_'.$periode.'.xlsx'
         );
     }

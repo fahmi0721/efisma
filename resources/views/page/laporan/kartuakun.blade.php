@@ -39,10 +39,13 @@
             </select>
         </div>
         <div class="col-md-2">
-            <input type="text" id="periode" class="form-control form-control flatpickr-input" placeholder="Pilih Periode" style="width: 200px;" />
+            <input type="text" id="tanggal_awal" class="form-control form-control flatpickr-input" placeholder="Tanggal Awal" style="width: 200px;" />
+        </div>
+        <div class="col-md-2">
+            <input type="text" id="tanggal_akhir" class="form-control form-control flatpickr-input" placeholder="Tanggal Akhir" style="width: 200px;" />
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class='btn-group'>
             @canAccess('kartuakun.view')
             <button id='btn-filter' class="btn btn-primary">Tampilkan</button>
@@ -111,7 +114,8 @@ let isLoaded = false;
             data: function (d) {
                 d.entitas_id = $('#filter_entitas').val();
                 d.akun_gl_id = $('#filter_akun').val();
-                d.periode = $('#periode').val();
+                d.tanggal_awal = $('#tanggal_awal').val();
+                d.tanggal_akhir = $('#tanggal_akhir').val();
             }
         },
         columns: [
@@ -175,21 +179,17 @@ let isLoaded = false;
 $(function() {
     $("[data-toggle='tooltip']").tooltip();
        // 🔹 Flatpickr Month Picker dengan default bulan ini
-    const now = new Date();
-    const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    flatpickr("#periode", {
+    flatpickr("#tanggal_awal", {
         altInput: true,
-        altFormat: "F Y",   // tampil misalnya: Oktober 2025
-        dateFormat: "Y-m",  // dikirim ke backend: 2025-10
-        defaultDate: defaultDate,
-        plugins: [
-            new monthSelectPlugin({
-                shorthand: true,
-                dateFormat: "Y-m",
-                altFormat: "F Y"
-            })
-        ],
-        static: true, 
+        altFormat: "d F Y",   // tampilan di input: 10 Juli 2025
+        dateFormat: "Y-m-d",  // format yang dikirim ke backend: 2025-07-10
+        allowInput: false,
+        locale: "id"
+    });
+    flatpickr("#tanggal_akhir", {
+        altInput: true,
+        altFormat: "d F Y",   // tampilan di input: 10 Juli 2025
+        dateFormat: "Y-m-d",  // format yang dikirim ke backend: 2025-07-10
         allowInput: false,
         locale: "id"
     });
@@ -239,7 +239,7 @@ $('#filter_entitas').val('').trigger('change');
  // Reload saat filter berubah
 $('#btn-filter').on('click', function() {
     if (!$('#filter_akun').val()) {
-        alert('Silakan pilih Akun GL terlebih dahulu');
+        // alert('Silakan pilih Akun GL terlebih dahulu');
         return;
     }
     isLoaded = true;
@@ -258,7 +258,8 @@ $('#btnExportExcel').on('click', function () {
         let entitas = "{{ auth()->user()->entitas_id }}";
     @endif
     let akun    = $('#filter_akun').val();
-    let periode = $('#periode').val();
+    let tanggal_awal = $('#tanggal_awal').val();
+    let tanggal_akhir = $('#tanggal_akhir').val();
 
     if (!akun) {
         alert('Pilih akun terlebih dahulu');
@@ -269,7 +270,8 @@ $('#btnExportExcel').on('click', function () {
         "{{ route('laporan.kartuakun.export') }}" +
         "?entitas_id=" + entitas +
         "&akun_gl_id=" + akun +
-        "&periode=" + periode;
+        "&tanggal_akhir=" + tanggal_akhir +
+        "&tanggal_awal=" + tanggal_awal;
 });
 @endcanAccess
 function rupiah(x) {
