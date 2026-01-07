@@ -58,7 +58,7 @@ class JurnalController extends Controller
             }
 
             $query->orderByRaw("CASE WHEN j.status = 'draft' THEN 0 ELSE 1 END")
-                ->orderByDesc('j.id');
+                ->orderByDesc('j.tanggal');
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -716,6 +716,10 @@ class JurnalController extends Controller
                 'created_at'   => now(),
                 'updated_at'   => now(),
             ];
+            if($jenis == "JP"){
+                $dataHeader['no_invoice'] = $request->no_invoice;
+                $dataHeader['tanggal_invoice'] = $request->tanggal_invoice;
+            }
 
             // tambah referensi uang muka jika JN dan ada id JKK
             if ($jenis === 'JN' && $request->filled('jurnal_id_jkk')) {
@@ -837,7 +841,7 @@ class JurnalController extends Controller
             $rules += [
                 'cabang_id'          => 'required|integer',
                 'no_invoice'       => 'required|string',
-                'tanggal_invoice'  => 'required|tanggal_invoice',
+                'tanggal_invoice'  => 'required|date',
                 'partner_id'       => 'required|integer',
             ];$messages += [
                 'cabang_id.required' => 'Cabang wajib diisi.',
@@ -845,7 +849,7 @@ class JurnalController extends Controller
                 'no_invoice.required' => 'No Invoice wajib diisi.',
                 'no_invoice.string'   => 'No Invoice tidak valid.',
                 'tanggal_invoice.required' => 'Tgl Invoice wajib diisi.',
-                'tanggal_invoice.tanggal_invoice'   => 'Tgl Invoice tidak valid.',
+                'tanggal_invoice.date'   => 'Tgl Invoice tidak valid.',
                 'partner_id.required'       => 'Partner/Customer Wajib diisi',
                 'partner_id.integer'   => 'Partner/Customer tidak valid.'
             ];
@@ -997,6 +1001,10 @@ class JurnalController extends Controller
                 'total_kredit' => $totalKredit,
                 'updated_at'   => now(),
             ];
+            if($jenis == "JP"){
+                $data['no_invoice'] = $request->no_invoice;
+                $data['tanggal_invoice'] = $request->tanggal_invoice;
+            }
 
             DB::table('jurnal_header')->where('id', $id)->update($data);
 

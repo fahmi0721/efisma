@@ -78,7 +78,7 @@
                         </div>
 
                         <div class="row mb-3">
-                            <label for="tanggal_invoice" class="col-sm-3 col-form-label">No Invoice <b class='text-danger'>*</b></label>
+                            <label for="tanggal_invoice" class="col-sm-3 col-form-label">Tanggal Invoice <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
                                 <input type="text" value="{{ $data->tanggal_invoice }}"  class="form-control" id="tanggal_invoice" name="tanggal_invoice" placeholder="Tanggal Invoice" />
                             </div>
