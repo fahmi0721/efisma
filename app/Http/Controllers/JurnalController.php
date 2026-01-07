@@ -999,6 +999,7 @@ class JurnalController extends Controller
                 'keterangan'   => $request->keterangan,
                 'total_debit'  => $totalDebit,
                 'total_kredit' => $totalKredit,
+                'created_by'   => Auth::id(),
                 'updated_at'   => now(),
             ];
             if($jenis == "JP"){
