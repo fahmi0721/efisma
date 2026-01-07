@@ -20,7 +20,7 @@ class UangmukaController extends Controller
         // Jika permintaan AJAX (DataTables)
         if ($request->ajax()) {
 
-            $query = DB::table('view_daftar_uang_muka');
+            $query = DB::table('view_uang_muka_per_akun');
 
             // Filter entitas
             if (!empty($entitas_id)) {
