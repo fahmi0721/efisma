@@ -155,7 +155,7 @@ $(document).ready(function() {
         },
         columns: [
             { data: 'DT_RowIndex', className: 'text-center', orderable: false,searchable: false },
-            { data: 'entitas_nama' ,orderable: false },
+            { data: 'entitas_nama' ,orderable: false,searchable: false },
             { data: 'partner_nama' ,orderable: false },
             // { data: 'partner_nama', name: 'partner_nama' },
             { data: 'aging_0_7', name: 'aging_0_7', className: 'text-end' },

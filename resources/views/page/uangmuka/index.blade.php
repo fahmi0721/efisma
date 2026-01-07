@@ -78,6 +78,7 @@
                             <th width="5%">No</th>
                             <th>Kode</th>
                             <th>Entitas</th>
+                            <th>Cabang</th>
                             <th>Partner<br><small>(Vendor/Pegawai)</small></th>
                             <th>Tanggal</th>
                             <th>Nominal</th>
@@ -159,6 +160,7 @@ $(document).ready(function() {
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
             { data: 'kode_jurnal', name: 'kode_jurnal' },
             { data: 'entitas_nama', name: 'entitas_nama' },
+            { data: 'cabang_nama', name: 'cabang_nama' },
             { data: 'partner_nama', name: 'partner_nama' },
             { 
                 data: 'tanggal', 
