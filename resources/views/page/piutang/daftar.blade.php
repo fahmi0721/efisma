@@ -234,7 +234,7 @@ $(document).ready(function() {
     // 📤 Export Excel
     $('#btnExportExcel').click(function() {
         const partner = $('#filter_tipe').val();
-        @if(auth()->user()->level == 'entitas'){
+        @if(auth()->user()->level == 'entitas')
             const entitas = "{{ auth()->user()->entitas_id }}";
         @else
             const entitas = $('#filter_entitas').val();
