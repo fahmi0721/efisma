@@ -248,11 +248,15 @@
 $(document).ready(function() {
 /** Button Cari Uang Muka Open */
     $('#btnCariUangMuka').click(function() {
-        const entitas = $('#entitas_id').val();
-        if (!entitas) {
-            Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
-            return;
-        }
+        @if(auth()->user()->level == "entitas")
+            const entitas = "{{ auth()->user()->entitas_id }}";
+        @else
+            const entitas = $('#entitas_id').val();
+            if (!entitas) {
+                Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
+                return;
+            }
+        @endif
         $('#modalUangMuka').modal('show');
         loadUangMukaTable(entitas);
     });
