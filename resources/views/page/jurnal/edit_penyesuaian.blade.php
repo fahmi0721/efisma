@@ -24,7 +24,7 @@
         <div class="col-12">
             <div class="card card-success card-outline mb-4">
                 <div class="card-header d-flex align-items-center">
-                    <h5 class="mb-0">Update Jurnal Jurnal Penyesuaian </h5>
+                    <h5 class="mb-0">Update Jurnal Jurnal Rupa-Rupa </h5>
                     <div class="ms-auto">
                         <button  id="btnCariInvoice" class="btn btn-outline-primary btn-sm">
                             <i class="fas fa-search fa-regular"></i> Cari Invoice Belum Lunas
@@ -60,7 +60,7 @@
                         </div>
                         @endif
 
-                        <div class="row mb-3">
+                        <div class="row mb-3 @if(!$is_multi_cabang) d-none @endif">
                             <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
                                 <select name="cabang_id" id="cabang_id" class="form-control cabang">
@@ -99,6 +99,9 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 30%">Akun</th>
+                                        @if($is_multi_cabang)
+                                        <th>Cabang</th>
+                                        @endif
                                         <th>Deskripsi</th>
                                         <th class="text-end">Debit</th>
                                         <th class="text-end">Kredit</th>
@@ -125,14 +128,15 @@
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="5">
+                                        <td colspan="@if($is_multi_cabang) 6 @else 5 @endif">
                                             <button type="button" class="btn btn-success btn-sm" id="btnTambahBaris">
                                                 <i class="fas fa-plus"></i> Tambah Baris
                                             </button>
                                         </td>
                                     </tr>
+                                    
                                     <tr class="table-light">
-                                        <th colspan="2" class="text-end">TOTAL</th>
+                                        <th colspan="@if($is_multi_cabang) 3 @else 2 @endif" class="text-end">TOTAL</th>
                                         <th class="text-end" id="totalDebit">0</th>
                                         <th class="text-end" id="totalKredit">0</th>
                                         <th></th>
@@ -162,6 +166,13 @@
                                     <option value="">-- Pilih Akun --</option>
                                 </select>
                             </td>
+                            @if($is_multi_cabang)
+                            <td>
+                                <select class="form-select cabang-row" name="detail[__INDEX__][cabang_id]">
+                                    <option value="">-- Pilih Cabang --</option>
+                                </select>
+                            </td>
+                            @endif
                             <td><input type="text" name="detail[__INDEX__][deskripsi]" class="form-control"></td>
                             <td><input type="text" name="detail[__INDEX__][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
                             <td><input type="text" name="detail[__INDEX__][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="0"></td>
@@ -213,6 +224,10 @@
 @section('js')
 
 <script>
+var isMultiCabang = {{ $is_multi_cabang ? 'true' : 'false' }};
+if (isMultiCabang) {
+    $('#cabang_id').closest('.row').hide();
+}
 var detailData = @json($detail);
 $(document).ready(function() {
      $('#btnCariInvoice').click(function() {
@@ -383,7 +398,28 @@ $(document).ready(function() {
         tbody.html('');
         $.each(detailData, function(i, row) {
             let tr = $('#rowTemplate tr').clone();
-            
+            if (isMultiCabang) {
+            tr.find('.cabang-row').select2({
+                    ajax: {
+                        url: '{{ route("cabang.select") }}',
+                        dataType: 'json',
+                        delay: 250,
+                        processResults: function (data) {
+                            return {
+                                results: data.map(q => ({ id: q.id, text: q.nama }))
+                            };
+                        }
+                    },
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    placeholder: '-- Pilih Cabang --',
+                    allowClear: true
+                });
+            }
+            if (isMultiCabang && row.cabang_id) {
+                let optCab = new Option(row.nama_cabang, row.cabang_id, true, true);
+                tr.find('.cabang-row').append(optCab).trigger('change');
+            }
             // Inisialisasi select2 untuk baris baru saja
             tr.find('.akun-select').select2({
                 ajax: {
@@ -463,6 +499,8 @@ $(document).ready(function() {
     });
 });
 
+
+
 function lockOtherSelectsExcept(rowTr) {
     // Cek jika ada baris data-piutang true
     let tbody = $('#tableDetail tbody');
@@ -491,6 +529,27 @@ $('#btnTambahBaris').click(function() {
 
     // Tambahkan ke tabel utama
     $('#tableDetail tbody').append(row);
+    // ✅ INIT SELECT2 CABANG PER BARIS (MULTI CABANG)
+    if (isMultiCabang) {
+        row.find('.cabang-row').select2({
+            ajax: {
+                url: '{{ route("cabang.select") }}',
+                dataType: 'json',
+                delay: 250,
+                processResults: function (data) {
+                    return {
+                        results: data.map(function(q){
+                            return { id: q.id, text: q.nama };
+                        })
+                    };
+                }
+            },
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: '-- Pilih Cabang --',
+            allowClear: true
+        });
+    }
 
     // Inisialisasi select2 untuk baris baru saja
     row.find('.akun-select').select2({
@@ -690,6 +749,7 @@ function proses_data(){
     $(".cabang").prop("disabled",false);
     $(".partner").prop("disabled",false);
     $(".entitas").prop("disabled",false);
+    $('.cabang-row').prop('disabled', false);
     // Jika ada piutang → baris piutang tetap aktif
     tbody.find('tr[data-piutang="true"] .akun-select')
          .prop('disabled', false)

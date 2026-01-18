@@ -26,6 +26,7 @@ class JurnalController extends Controller
                 ->leftJoin('m_cabang as c', 'j.cabang_id', '=', 'c.id') // join cabang
                 ->select(
                     'j.id',
+                    'j.is_multi_cabang',
                     'j.kode_jurnal',
                     'j.jenis',
                     'j.tanggal',
@@ -104,7 +105,7 @@ class JurnalController extends Controller
                     $url = route('jurnal.' . $pg[$jenis] . '.edit') . "?id=" . $row->id;
                     $html = '<div class="btn-group btn-group-sm">';
                     if(canAccess('pendapatan.view|kas_masuk.view|kas_keluar.view|penyesuaian.view')){
-                        $html .= '<button title="Detail Transaksi" data-toggle="tooltip" class="btn btn-info btn-view" onclick="detail_transaksi(' . $row->id . ')"><i class="fas fa-eye"></i></button>';
+                        $html .= '<button title="Detail Transaksi" data-toggle="tooltip" class="btn btn-info btn-view" onclick="detail_transaksi(' . $row->id . ','. $row->is_multi_cabang .')"><i class="fas fa-eye"></i></button>';
                     }
                     // 🔒 Cek status periode akuntansi
                     $periodeStatus = DB::table('periode_akuntansi')
@@ -315,22 +316,33 @@ class JurnalController extends Controller
         $id = $request->id;
 
         $data = DB::table("jurnal_header")->where("id", $id)->first();
+        $is_multi_cabang = $data->is_multi_cabang ?? 0;
         $entitas_id = DB::table('m_entitas')->where("id", $data->entitas_id)->first();
         $partner_id = DB::table('m_partner')->where("id", $data->partner_id)->first();
         $cabang_id = DB::table('m_cabang')->where("id", $data->cabang_id)->first();
-
         $detail = DB::table('jurnal_detail as d')
             ->join('m_akun_gl as a', 'd.akun_id', '=', 'a.id')
+            ->leftJoin('m_cabang as c', 'c.id', '=', 'd.cabang_id')
             ->where('d.jurnal_id', $id)
             ->select(
                 DB::raw("CONCAT(a.no_akun, ' - ', a.nama) as akun_gl"),
                 'd.deskripsi',
-                'akun_id',
+                'd.akun_id',
                 'd.debit',
                 'd.kredit',
-                'a.kategori' // 🔹 tambahkan ini
+                'a.kategori',
+                'd.cabang_id',
+                'c.nama as nama_cabang'
             )
-            ->get();
+        ->get();
+
+        $cabang_id = null;
+
+        if (!$is_multi_cabang) {
+            $cabang_id = DB::table('m_cabang')
+                ->where('id', $data->cabang_id)
+                ->first();
+        }
 
         // 🔹 Tambahan khusus untuk JKM → Cek apakah jurnal ini melunasi invoice JP
         $pelunasan = null;
@@ -355,7 +367,9 @@ class JurnalController extends Controller
             "cabang_id",
             "partner_id",
             "detail",
-            "pelunasan"
+            "pelunasan",
+            "is_multi_cabang",
+            "cabang_id"
         ));
     }
 
@@ -399,12 +413,14 @@ class JurnalController extends Controller
         $jurnal_id = $request->id;
         $detail = DB::table('jurnal_detail as d')
         ->join('m_akun_gl as a', 'd.akun_id', '=', 'a.id')
+        ->leftJoin('m_cabang as c', 'd.cabang_id', '=', 'c.id')
         ->where('d.jurnal_id', $jurnal_id)
         ->select(
-           DB::raw("CONCAT(a.no_akun, ' - ', a.nama) as akun_gl"),
+            DB::raw("CONCAT(a.no_akun, ' - ', a.nama) as akun_gl"),
             'd.deskripsi',
             'd.debit',
-            'd.kredit'
+            'd.kredit',
+            DB::raw("COALESCE(c.nama, '-') as cabang")
         )
         ->get();
         return response()->json($detail);
@@ -644,6 +660,30 @@ class JurnalController extends Controller
                     $adaPiutang = true;
                 }
             }
+
+            /* =========================================================
+            4) VALIDASI UANG MUKA WAJIB ADA PARTNER  (JKK)
+            ==========================================================*/
+            if ($jenis === 'JKK' && $isUangMuka) {
+                if(empty($request->partner_id)){
+                     return response()->json([
+                        'status' => 'error',
+                        'message' => "Wajib memilih partner jika ada akun uang muka pada detail transaksi"
+                    ], 422);
+                }
+            }
+
+            /* =========================================================
+            4) VALIDASI UANG MUKA WAJIB ADA LEWAT TOMBOL PJ  (JN)
+            ==========================================================*/
+            if ($jenis === 'JN' && $isUangMuka) {
+                if(empty($request->jurnal_id_jkk)){
+                     return response()->json([
+                        'status' => 'error',
+                        'message' => "Pertanggung Jawaban Uang Muka belum di piilh, terdapat akun uang muka pada detail transaksi!"
+                    ], 422);
+                }
+            }
         }
 
         if ($jenis === 'JP' && !$adaPiutang) {
@@ -700,13 +740,18 @@ class JurnalController extends Controller
             $last = DB::table('jurnal_header')->where('kode_jurnal', 'like', $prefix . '%')->max('kode_jurnal');
             $urut = $last ? intval(substr($last, -3)) + 1 : 1;
             $kode = $prefix . '-' . str_pad($urut, 3, '0', STR_PAD_LEFT);
-            
+            $cabang_id = $request->is_multi_cabang ? null  : $request->cabang_id;
+            $is_multi_cabang = '0';
+            if($jenis === "JN"){
+                $is_multi_cabang = $request->is_multi_cabang;
+            }
             $dataHeader = [
                 'kode_jurnal'  => $kode,
+                'is_multi_cabang' => $is_multi_cabang,
                 'jenis'        => $jenis,
                 'tanggal'      => $request->tanggal,
                 'entitas_id'   => $request->entitas_id,
-                'cabang_id'    => $request->cabang_id,
+                'cabang_id'    => $cabang_id,
                 'partner_id'   => $request->partner_id,
                 'keterangan'   => $request->keterangan,
                 'total_debit'  => $totalDebit,
@@ -744,31 +789,22 @@ class JurnalController extends Controller
 
             // detail
             foreach ($request->detail as $row) {
+                $cabangDetail = null;
+                if($jenis === "JN"){
+                    $cabangDetail = $request->is_multi_cabang
+                    ? ($row['cabang_id'] ?? null)
+                    : $request->cabang_id;
+                }
+
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id' => $jurnalId,
+                    'cabang_id' => $cabangDetail,
                     'akun_id'   => $row['akun_id'],
                     'deskripsi' => $row['deskripsi'] ?? "",
                     'debit'      => JurnalService::parseRupiah($row['debit'] ?? 0),
                     'kredit'     => JurnalService::parseRupiah($row['kredit'] ?? 0),
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
-            }
-
-            /* =========================================================
-            INSERT AUTO-UANG MUKA JIKA JKK
-            ==========================================================*/
-            if ($jenis === 'JKK' && $isUangMuka && $nominalUangMuka > 0) {
-
-                DB::table('pelunasan_uang_muka')->insert([
-                    'entitas_id'          => $request->entitas_id,
-                    'partner_id'          => $request->partner_id,
-                    'jurnal_uang_muka_id' => $jurnalId,
-                    'jurnal_biaya_id'     => null,
-                    'akun_biaya_id'       => null,
-                    'jumlah'              => 0,
-                    'created_at'          => now(),
-                    'updated_at'          => now(),
                 ]);
             }
 
@@ -796,7 +832,8 @@ class JurnalController extends Controller
     {
 
         $id = $request->id;
-
+        $header = DB::table('jurnal_header')->where('id', $id)->first();
+        $isMultiCabang = $header->is_multi_cabang ?? 0;
         /* =========================================================
         VALIDASI JENIS JURNAL
         ==========================================================*/
@@ -818,6 +855,9 @@ class JurnalController extends Controller
             'detail'             => 'required|array|min:2',
             'detail.*.akun_id'   => 'required|integer',
         ];
+        if ($isMultiCabang && $jenis =="JN") {
+            $rules['detail.*.cabang_id'] = 'required|integer';
+        } 
         $messages = [
             'tanggal.required'        => 'Tanggal wajib dipilih.',
             'tanggal.date'            => 'Format tanggal tidak valid.',
@@ -835,6 +875,10 @@ class JurnalController extends Controller
             'detail.*.akun_id.integer'  => 'Akun tidak valid.',
             'detail.*.deskripsi.string' => 'Deskripsi harus berupa teks.',
         ];
+
+        if ($isMultiCabang && $jenis =="JN") {
+            $messages['detail.*.cabang_id.required'] = 'Cabang pada detail transaksi belum di pilih';
+        }
 
 
         if ($jenis === 'JP') {
@@ -990,11 +1034,11 @@ class JurnalController extends Controller
         try {
             
             PeriodeHelper::cekPeriodeOpen($request->tanggal);
+            // $old_data =  DB::table("jurnal_header")->where("id",$id)->first();
 
             $data = [
                 'tanggal'      => $request->tanggal,
                 'entitas_id'   => $request->entitas_id,
-                'cabang_id'    => $request->cabang_id,
                 'partner_id'   => $request->partner_id,
                 'keterangan'   => $request->keterangan,
                 'total_debit'  => $totalDebit,
@@ -1002,6 +1046,9 @@ class JurnalController extends Controller
                 'created_by'   => Auth::id(),
                 'updated_at'   => now(),
             ];
+            if (!$isMultiCabang) {
+                $data['cabang_id'] = $request->cabang_id;
+            }   
             if($jenis == "JP"){
                 $data['no_invoice'] = $request->no_invoice;
                 $data['tanggal_invoice'] = $request->tanggal_invoice;
@@ -1035,6 +1082,9 @@ class JurnalController extends Controller
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id'  => $id,
                     'akun_id'    => $row['akun_id'],
+                    'cabang_id' => $isMultiCabang
+                            ? $row['cabang_id']
+                            : $request->cabang_id,
                     'deskripsi'  => $row['deskripsi'] ?? '',
                     'debit'      => JurnalService::parseRupiah($row['debit'] ?? 0),
                     'kredit'     => JurnalService::parseRupiah($row['kredit'] ?? 0),
@@ -1082,6 +1132,7 @@ class JurnalController extends Controller
             // Hapus semua jurnal_detail terkait
             DB::table('jurnal_detail')->where('jurnal_id', $id)->delete();
             DB::table('pelunasan_piutang')->where('jurnal_kas_id', $id)->delete();
+            DB::table('pelunasan_uang_muka')->where('jurnal_biaya_id', $id)->delete();
 
             // Hapus header jurnal
             DB::table('jurnal_header')->where('id', $id)->delete();
@@ -1138,10 +1189,29 @@ class JurnalController extends Controller
 
             // Posting Ke Buku Besar
             $details = DB::table('jurnal_detail as d')
-                ->join('jurnal_header as h', 'd.jurnal_id', '=', 'h.id')
-                ->select('h.id as jurnal_id', 'h.kode_jurnal', 'h.tanggal', 'd.deskripsi', 'h.jenis', 'h.entitas_id', 'h.partner_id', 'd.akun_id', 'd.debit', 'd.kredit','h.cabang_id')
-                ->where('h.id', $id)
-                ->get();
+            ->join('jurnal_header as h', 'd.jurnal_id', '=', 'h.id')
+            ->select(
+                'h.id as jurnal_id',
+                'h.kode_jurnal',
+                'h.tanggal',
+                'h.jenis',
+                'h.entitas_id',
+                'h.partner_id',
+                'd.deskripsi',
+                'd.akun_id',
+                'd.debit',
+                'd.kredit',
+                DB::raw("
+                    CASE 
+                        WHEN h.is_multi_cabang = '1'
+                        THEN d.cabang_id 
+                        ELSE h.cabang_id 
+                    END AS cabang_id
+                ")
+            )
+            ->where('h.id', $id)
+            ->get();
+
             $tes=null;
             foreach ($details as $row) {
                 $debit  = floatval($row->debit);
@@ -1662,6 +1732,7 @@ class JurnalController extends Controller
                         
                         // continue; // skip saldo normal
                     }
+                    $cabang = $jurnal->is_multi_cabang == "1" ? $d->cabang_id : $jurnal->cabang_id;
                     DB::table('buku_besar')->insert([
                         'jurnal_id' => $jurnal->id,
                         'akun_id' => $d->akun_id,
@@ -1672,7 +1743,7 @@ class JurnalController extends Controller
                         'kredit' => $d->kredit,
                         'entitas_id' => $jurnal->entitas_id,
                         'partner_id' => $jurnal->partner_id,
-                        'cabang_id' => $jurnal->cabang_id,
+                        'cabang_id' => $cabang,
                         'jenis' => $jurnal->jenis,
                         'created_at' => now(),
                         'updated_at' => now(),

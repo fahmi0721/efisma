@@ -153,6 +153,24 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#tb_data').DataTable().ajax.reload();
     });
 });
+function parseIDR(val) {
+    if (val === null || val === undefined) return 0;
+
+    if (typeof val === 'number') return val;
+
+    val = val.toString().trim();
+
+    // format: 1.000.000,00 (ID)
+    if (val.includes(',') && val.includes('.')) {
+        val = val.replace(/\./g, '').replace(',', '.');
+    }
+    // format: 1,000,000 (EN)
+    else if (val.includes(',')) {
+        val = val.replace(/,/g, '');
+    }
+
+    return parseFloat(val) || 0;
+}
 @canAccess('kas_keluar.view')
 function detail_transaksi(id){
     $.ajax({
@@ -183,16 +201,10 @@ function detail_transaksi(id){
                     let totKredit=0;
                     res.forEach(function(item) {
                         // pastikan debit & kredit selalu angka valid
-                        let debit = item.debit;
-                        let kredit = item.kredit;
+                        let debit = parseIDR(item.debit);
+                        let kredit = parseIDR(item.kredit);
 
-                        // kalau berbentuk string (misalnya "1.000.000"), ubah ke number
-                        if (typeof debit === 'string') {
-                            debit = parseFloat(debit.replace(/\./g, '').replace(',', '.')) || 0;
-                        }
-                        if (typeof kredit === 'string') {
-                            kredit = parseFloat(kredit.replace(/\./g, '').replace(',', '.')) || 0;
-                        }
+                       
                         html += `
                             <tr>
                                 <td>${no}</td>

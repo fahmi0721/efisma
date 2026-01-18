@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 @canAccess('penyesuaian.view')
-function detail_transaksi(id){
+function detail_transaksi(id,is_multi_cabang=null){
     $.ajax({
         url: "{{ route('jurnal.detail_transaksi') }}?id="+id,
         type: 'GET',
@@ -167,6 +167,9 @@ function detail_transaksi(id){
                     html += "<tr>";
                         html += "<th>No</th>";
                         html += "<th>Akun GL</th>";
+                        if(is_multi_cabang == "1"){
+                            html += "<th>Cabang</th>";    
+                        }
                         html += "<th>Deskripsi</th>";
                         html += "<th>Debet</th>";
                         html += "<th>Kredit</th>";
@@ -182,20 +185,18 @@ function detail_transaksi(id){
                     let totKredit=0;
                     res.forEach(function(item) {
                         // pastikan debit & kredit selalu angka valid
-                        let debit = item.debit;
-                        let kredit = item.kredit;
+                        let debit = parseIDR(item.debit);
+                        let kredit = parseIDR(item.kredit);
 
-                        // kalau berbentuk string (misalnya "1.000.000"), ubah ke number
-                        if (typeof debit === 'string') {
-                            debit = parseFloat(debit.replace(/\./g, '').replace(',', '.')) || 0;
-                        }
-                        if (typeof kredit === 'string') {
-                            kredit = parseFloat(kredit.replace(/\./g, '').replace(',', '.')) || 0;
+                        let cabang =null;
+                        if(is_multi_cabang == "1"){
+                            cabang = "<td>"+item.cabang+"</td>";
                         }
                         html += `
                             <tr>
                                 <td>${no}</td>
                                 <td>${item.akun_gl}</td>
+                                ${cabang}
                                 <td>${item.deskripsi ?? '-'}</td>
                                 <td class="text-end">${Number(item.debit).toLocaleString('id-ID')}</td>
                                 <td class="text-end">${Number(item.kredit).toLocaleString('id-ID')}</td>
@@ -203,21 +204,23 @@ function detail_transaksi(id){
                         `;
                         no++;                        
                         totDebet += debit;
-                        totKredit += kredit;
+                        totKredit = kredit;
                     });
+                    
                 html += "</tbody>";
                 html += "<tfoot>";
                     html += "<tr>";
-                        html += "<th colspan='3' class='text-end'>TOTAL</th>";
-                        html += "<th class='text-end'>"+Number(totDebet).toLocaleString('id-ID')+"</th>";
-                        html += "<th class='text-end'>"+Number(totKredit).toLocaleString('id-ID')+"</th>";
+                        let cols = is_multi_cabang == "1" ? 4 : 3;
+                        html += "<th colspan='"+cols+"' class='text-end'>TOTAL</th>";
+                        html += "<th class='text-end'>"+totDebet.toLocaleString('id-ID')+"</th>";
+                        html += "<th class='text-end'>"+totKredit.toLocaleString('id-ID')+"</th>";
                     html += "</tr>";
                 html += "</tfoot>";
             html += "</table>";
             html += "<div>";
             $("#DetailTransaksiBody").html(html);
             modal.modal("show");
-            console.log(totDebet);
+            console.log(totKredit);
         },
         error: function (err) {
             console.error(err);
@@ -225,10 +228,28 @@ function detail_transaksi(id){
         }
     });
 
-
     
 }
 @endcanAccess
+function parseIDR(val) {
+    if (val === null || val === undefined) return 0;
+
+    if (typeof val === 'number') return val;
+
+    val = val.toString().trim();
+
+    // format: 1.000.000,00 (ID)
+    if (val.includes(',') && val.includes('.')) {
+        val = val.replace(/\./g, '').replace(',', '.');
+    }
+    // format: 1,000,000 (EN)
+    else if (val.includes(',')) {
+        val = val.replace(/,/g, '');
+    }
+
+    return parseFloat(val) || 0;
+}
+
 @canAccess('penyesuaian.delete')
 function hapusData(id) {
     Swal.fire({
@@ -272,14 +293,36 @@ function posting(id){
         cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
-            $.post("{{ route('jurnal.posting') }}", {id: id, _token: '{{ csrf_token() }}'}, function(res) {
-                if (res.status) {
-                    Swal.fire('Berhasil!', res.message, 'success');
-                    $('#tb_data').DataTable().ajax.reload();
-                } else {
-                    Swal.fire('Gagal!', res.message, 'error');
+            $.ajax({
+                url: "{{ route('jurnal.posting') }}",
+                type: "POST",
+                data: {
+                    id: id,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function (res) {
+                    if (res.status) {
+                        Swal.fire('Berhasil!', res.message, 'success');
+                        $('#tb_data').DataTable().ajax.reload(null, false);
+                    } else {
+                        Swal.fire('Gagal!', res.message || 'Posting gagal', 'error');
+                    }
+                },
+                error: function (xhr) {
+                    let message = 'Terjadi kesalahan server';
+
+                    if (xhr.status === 419) {
+                        message = 'Sesi habis, silakan refresh halaman';
+                    } else if (xhr.status === 403) {
+                        message = 'Anda tidak punya akses';
+                    } else if (xhr.responseJSON?.message) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire('Error!', message, 'error');
                 }
             });
+            
         }
     });
 }
