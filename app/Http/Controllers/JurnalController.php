@@ -684,6 +684,15 @@ class JurnalController extends Controller
                     ], 422);
                 }
             }
+
+            if ($jenis === 'JKM' && $isUangMuka) {
+                if(empty($request->jurnal_id_jkk)){
+                     return response()->json([
+                        'status' => 'error',
+                        'message' => "Pengembalian Uang Muka belum di piilh, terdapat akun uang muka pada detail transaksi!"
+                    ], 422);
+                }
+            }
         }
 
         if ($jenis === 'JP' && !$adaPiutang) {
@@ -767,7 +776,7 @@ class JurnalController extends Controller
             }
 
             // tambah referensi uang muka jika JN dan ada id JKK
-            if ($jenis === 'JN' && $request->filled('jurnal_id_jkk')) {
+            if ((in_array($jenis,['JN','JKM'])) && $request->filled('jurnal_id_jkk')) {
                 $dataHeader['jurnal_id_jkk'] = $request->jurnal_id_jkk;
             }
             // header
@@ -782,8 +791,7 @@ class JurnalController extends Controller
                 );
             }
 
-            if (($jenis === 'JN') && $request->filled('jurnal_id_jkk')) {
-
+            if ((in_array($jenis,["JN","JKM"])) && $request->filled('jurnal_id_jkk')) {
                 UangMukaService::validateDraftPelunasan($request);
             }
 
@@ -1170,7 +1178,7 @@ class JurnalController extends Controller
             return response()->json(['status' => false, 'message' => 'Total debit dan kredit tidak balance, tidak bisa diposting!']);
         }
 
-        if (($jurnal->jenis === 'JN')) {
+        if ((in_array($jurnal->jenis,['JKM',"JN"]))) {
             UangMukaService::postingPelunasan($id);
         }
 

@@ -26,7 +26,7 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Update Jurnal Kas Masuk </h5>
                     <div class="ms-auto">
-                        <button  id="btnCariInvoice" class="btn btn-outline-primary btn-sm">
+                        <button  id="btnCariInvoice" class="btn btn-outline-primary btn-sm d-none">
                             <i class="fas fa-search fa-regular"></i> Cari Invoice Belum Lunas
                         </button>
                     </div>
@@ -37,7 +37,7 @@
                     @method("put")
                     <input type="hidden" value="{{ $id }}" id='id' name='id'>
                     <input type="hidden" id='jurnal_piutang_id' name="jurnal_piutang_id" value="{{ !empty($pelunasan) ? $pelunasan->jurnal_piutang_id : '' }}">
-                    
+                    <input type="hidden" id='jurnal_id_jkk' name="jurnal_id_jkk" value="{{ $data->jurnal_id_jkk }}">
                     <div class="card-body">
 
                         <!-- 🔄 Ganti Tahun → Periode -->
@@ -422,8 +422,24 @@ $(document).ready(function() {
                     $('#btnCariInvoice').prop('disabled', true);
                 @endif
             }
+            if (row.kategori === 'uang_muka') {
+                
+                tr.attr('data-piutang', 'true');
+                tr.addClass('table-warning'); 
+                tr.find('.btn-hapus').attr('data-uangmuka', 'ada'); // untuk trigger nanti
+                tr.find('.btn-hapus').attr('data-toggle', 'tooltip'); // untuk trigger nanti
+                tr.find('.btn-hapus').attr('title', 'tidak boleh dihapus'); // untuk trigger nanti
+                tr.find('.btn-hapus').html("<i class='fa fa-times'></i>"); // untuk trigger nanti
+                tr.find('.btn-hapus').addClass('btn-uangmuka').addClass('btn-warning').removeClass("btn-hapus").removeClass("btn-danger");
+                // bisa juga disable tombol cari invoice agar hanya 1 aktif
+                
+                @if(isset($data->jurnal_id_jkk))
+                    $('#btnCariInvoice').prop('disabled', true);
+                @endif
+            }
 
             tbody.append(tr);
+            lockOtherSelectsExcept(tr);
             $("[data-toggle='tooltip']").tooltip();
         });
         hitungTotal();
@@ -436,6 +452,17 @@ $(document).ready(function() {
     });
 });
 
+function lockOtherSelectsExcept(rowTr) {
+    // Cek jika ada baris data-piutang true
+    let tbody = $('#tableDetail tbody');
+
+    // Jika ada piutang → baris piutang tetap aktif
+    tbody.find('tr[data-piutang="true"] .akun-select')
+         .prop('disabled', true)
+         .trigger('change.select2');
+
+    
+}
 // tambah baris baru
 $('#btnTambahBaris').click(function() {
     let idx = $('#tableDetail tbody tr').length;
@@ -653,6 +680,10 @@ function proses_data(confirmSave = false) {
     $(".entitas").prop("disabled",false);
     $(".cabang").prop("disabled",false);
     $(".partner").prop("disabled",false);
+    let tbody = $('#tableDetail tbody');
+    tbody.find('tr[data-piutang="true"] .akun-select')
+         .prop('disabled', false)
+         .trigger('change.select2');
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
     var id = $("#id").val();

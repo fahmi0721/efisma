@@ -82,7 +82,7 @@
                             <th>Partner<br><small>(Vendor/Pegawai)</small></th>
                             <th>Tanggal</th>
                             <th>Nominal</th>
-                            <th>Terpakai</th>
+                            <th>Terpakai/<br>Dikembalikan</br></th>
                             <th>Sisa</th>
                             <th>Umur</th>
                             <th>Status</th>

@@ -26,6 +26,9 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Create New Jurnal Kas Masuk</h5>
                     <div class="ms-auto">
+                        <button id="btnCariUangMuka" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-file-invoice-dollar fa-regular"></i> Pengembalian  Uang Muka
+                        </button>
                         <button id="btnCariInvoice" class="btn btn-outline-primary btn-sm">
                             <i class="fas fa-search fa-regular"></i> Cari Invoice Belum Lunas
                         </button>
@@ -36,6 +39,7 @@
                     @csrf
                     @method("post")
                     <input type="hidden" name='jurnal_id_jp' id="jurnal_id_jp">
+                    <input type="hidden" name='jurnal_id_jkk' id="jurnal_id_jkk">
                     <div class="card-body">
 
                         <!-- 🔄 Ganti Tahun → Periode -->
@@ -204,6 +208,41 @@
   </div>
 </div>
 
+<!-- 🧾 Modal Cari Uang MUka -->
+<div class="modal fade" id="modalUangMuka" tabindex="-1" aria-labelledby="modalUangMuka" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h6 class="modal-title" id="modalUangMuka">Daftar Invoice Belum Lunas</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+        <div class="table-responsive">
+          <table id="tb_uang_muka" class="table table-bordered table-striped">
+            <thead class="table-light">
+              <tr class="text-center">
+                <th width="5%">#</th>
+                <th>Kode Jurnal</th>
+                <th>Entitas</th>
+                <th>Partner<br /><small>(Vendor/Pegawai)</small></th>
+                <th>Akun Uang Muka</th>
+                <th>Tanggal</th>
+                <th>Nominal</th>
+                <th>Terpakai</th>
+                <th>Sisa</th>
+                <th>Umur</th>
+                <th width="5%">Aksi</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 @endsection
 
 @section('js')
@@ -211,13 +250,29 @@
 <script>
 $(document).ready(function() {
     $(".cabang").prop("disabled",false);
+    /** Button Cari Uang Muka Open */
+    $('#btnCariUangMuka').click(function() {
+        @if(auth()->user()->level == "entitas")
+            const entitas = "{{ auth()->user()->entitas_id }}";
+        @else
+            const entitas = $('#entitas_id').val();
+            if (!entitas) {
+                Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
+                return;
+            }
+        @endif
+        $('#modalUangMuka').modal('show');
+        loadUangMukaTable(entitas);
+    });
     $('#btnCariInvoice').click(function() {
         const partner = $('#partner_id').val();
+        @if(auth()->user()->level != "entitas")
         const entitas = $('#entitas_id').val();
         if (!entitas) {
             Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
             return;
         }
+        @endif
         if (!partner) {
             Swal.fire('Oops', 'Pilih partner terlebih dahulu!', 'warning');
             return;
@@ -378,6 +433,61 @@ $(document).ready(function() {
     });
 });
 
+
+/** Load Datatable Uang Muka */
+function loadUangMukaTable(entitas_id) {
+    if ($.fn.DataTable.isDataTable('#tb_uang_muka')) {
+        $('#tb_uang_muka').DataTable().destroy();
+    }
+
+    $('#tb_uang_muka').DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        ajax: {
+            url: "{{ route('jurnal.uangmuka.datatable') }}",
+            data: { entitas_id: entitas_id },
+        },
+        columns: [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', className: 'text-center', orderable: false, searchable: false },
+            { 
+                data: 'kode_jurnal', 
+                name: 'kode_jurnal',
+                render: function(data,type, row) {
+                     if (type === 'display') {
+                        let html = row.kode_jurnal;
+                        if (row.no_invoice) {
+                            html += `<br><b><small>No Ref : ${row.no_invoice}</small></b>`;
+                        }
+                        return html;
+                    }
+
+                    // 🔹 Untuk search / export — pakai teks polos gabungan
+                    return `${row.kode_jurnal} ${row.no_invoice ?? ''}`;
+                },orderable:false, 
+            },
+            { data: 'entitas_nama', name: 'entitas_nama' },
+            { data: 'partner_nama', name: 'partner_nama' },
+            { data: 'akun_uang_muka', name: 'akun_uang_muka' },
+            { data: 'tanggal', name: 'tanggal' },
+            { data: 'nominal', name: 'nominal', className: 'text-end',orderable: false, searchable: false,
+                render: data => new Intl.NumberFormat('id-ID').format(data)
+            },
+            { data: 'terpakai', name: 'terpakai', className: 'text-end',orderable: false, searchable: false,
+                render: data => new Intl.NumberFormat('id-ID').format(data)
+            },
+            { data: 'sisa', name: 'sisa', className: 'text-end',orderable: false, searchable: false,
+                render: data => new Intl.NumberFormat('id-ID').format(data)
+            },
+            { data: 'umur', name: 'umur', 
+                render: data => data + " Hari"
+            },
+            { data: 'aksi', name: 'aksi', orderable: false, searchable: false }
+        ],
+        // order: [[, 'asc']]
+    });
+}
+
 function loadInvoiceTable(partner_id) {
     if ($.fn.DataTable.isDataTable('#tb_invoice')) {
         $('#tb_invoice').DataTable().destroy();
@@ -438,6 +548,41 @@ function hitungTotal() {
     $('#totalDebit').text(totalDebit.toLocaleString('id-ID'));
     $('#totalKredit').text(totalKredit.toLocaleString('id-ID'));
 }
+$(document).on('click','.pilihUangMuka', function() {
+    const data = $(this).data();
+    const id_jkk = $("#jurnal_id_jkk").val();
+    if (id_jkk && id_jkk.trim() !== "") {
+        Swal.fire('Oops', 'Anda sudah memilih satu uang muka!, Hapus dulu dari data detail jurnal', 'warning');
+        return;
+    }
+    $("#jurnal_id_jkk").val(data.id);
+    var option = new Option(data.cabang, data.cabang_id, true, true);
+    $(".cabang").append(option).trigger('change');
+    $(".cabang").prop("disabled",true);
+
+    var option = new Option(data.partner, data.partner_id, true, true);
+    $(".partner").append(option).trigger('change');
+    $(".partner").prop("disabled",true);
+    $(".entitas").prop("disabled",true);
+
+    // Simpan cabang JKK (referensi)
+    window.CABANG_JKK = data.cabang_id;
+
+    // Kirim ke fungsi pembuat baris jurnal
+    insertDetailJurnalUangMuka({
+        id: data.id,
+        cabang: data.cabang,
+        cabang_id:data.cabang_id,
+        kode: data.kode,
+        tanggal: data.tanggal,
+        total: data.total,
+        sisa: data.sisa,
+        akun_id: data.akun_id,
+        akun_nama: data.akun_nama
+    });
+    $("#btnCariInvoice").prop("disabled",true);
+    $('#modalUangMuka').modal('hide');
+});
 
 $(document).on('click', '.btn-pilih-invoice', function() {
     const data = $(this).data();
@@ -472,6 +617,44 @@ $(document).on('click', '.btn-pilih-invoice', function() {
 
     $('#modalInvoice').modal('hide');
 });
+
+function insertDetailJurnalUangMuka(data) {
+    
+    function formatIDR(angka) {
+        if (!angka || isNaN(angka)) return '0';
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(angka).replace('Rp', '').trim(); // tanpa simbol "Rp"
+    }
+    // Ambil index baris terakhir
+    const idx = $('#tableDetail tbody tr').length;
+    // 🔹 Baris kedua: Piutang (Kredit)
+    let rowPiutang = `
+        <tr>
+            <td>
+                <select class="form-select akun-select" name="detail[${idx}][akun_id]" required>
+                    <option value="${data.akun_id ?? ''}">
+                        ${data.akun_nama ?? '(Akun Uang Muka)'}
+                    </option>
+                </select>
+            </td>
+            <td><input readonly type="text" name="detail[${idx}][deskripsi]" value='PJ Uang Muka ${data.kode}' class="form-control"></td>
+            <td><input type="text" readonly name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
+            <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
+            <td class="text-center">
+                <button type="button" data-toggle='tooltip' title='tidak boleh dihapus' data-piutang='ada' class="btn btn-warning btn-sm btn-piutang"><i class="fas fa-times"></i></button>
+            </td>
+        </tr>
+    `;
+
+    // Masukkan ke tabel
+    $('#tableDetail tbody').append(rowPiutang);
+    $("[data-toggle='tooltip']").tooltip();
+    // Hitung ulang total
+    hitungTotal();
+}
 
 function insertDetailJurnal(data) {
     
