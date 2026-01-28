@@ -24,6 +24,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 use App\Http\Controllers\DashboardController;
 Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/home', [DashboardController::class, 'index'])->name('home');
 
     // API untuk chart / widget (dipanggil via AJAX)
     Route::get('/dashboard/keuangan/summary', [DashboardController::class, 'apiSummary'])->name('dashboard.keuangan.summary');
