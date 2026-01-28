@@ -1363,7 +1363,7 @@ class JurnalController extends Controller
             }
         }
 
-        if($jurnal->jenis === "JN"){
+        if(in_array($jurnal->jenis,["JN","JKM"])){
             UangMukaService::unpostingPelunasan($id);
         }
 
@@ -1692,7 +1692,7 @@ class JurnalController extends Controller
 
             foreach ($jurnalList as $jurnal) {
                 PeriodeHelper::cekPeriodeOpen($jurnal->tanggal);
-                if (($jurnal->jenis === 'JN')) {
+                if (in_array($jurnal->jenis, ['JN','JKM'])) {
                     UangMukaService::postingPelunasan($jurnal->id);
                 }
                 // Ambil detail jurnal
@@ -1884,6 +1884,9 @@ class JurnalController extends Controller
                             }
                         }
                     }
+                }
+                if(in_array($jurnal->jenis,["JN","JKM"])){
+                    UangMukaService::unpostingPelunasan($jurnal->id);
                 }
                 DB::table('buku_besar')
                     ->where('jurnal_id', $jurnal->id)
