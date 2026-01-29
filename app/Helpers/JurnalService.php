@@ -136,4 +136,22 @@ class JurnalService
 
         return ['is' => false, 'akun_id' => null, 'nominal' => 0];
     }
+
+    /* =========================================================
+       DETEKSI UANG MUKA DALAM DETAIL
+    ==========================================================*/
+    public static function detectPiutang($row)
+    {
+        $akun = self::getAkun($row['akun_id']);
+
+        if ($akun && $akun->kategori === 'piutang') {
+            return [
+                'is'      => true,
+                'akun_id' => $akun->id,
+                'nominal' => floatval(str_replace('.', '', $row['kredit'] ?? 0)),
+            ];
+        }
+
+        return ['is' => false, 'akun_id' => null, 'nominal' => 0];
+    }
 }

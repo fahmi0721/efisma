@@ -606,6 +606,11 @@ class JurnalController extends Controller
         $akunUangMukaId = null;
         $nominalUangMuka = 0;
 
+        // FLAG piutang
+        $isPiutang = false;
+        $akunPiutangId = null;
+        $nominalPiutang = 0;
+
         foreach ($request->detail as $row) {
 
             $akun = JurnalService::getAkun($row['akun_id']);
@@ -620,6 +625,18 @@ class JurnalController extends Controller
                 $isUangMuka     = true;
                 $akunUangMukaId = $um['akun_id'];
                 $nominalUangMuka = $um['nominal'];
+            }
+
+            /* =========================================================
+            3) DETEKSI PIUTANG
+            ==========================================================*/
+            if ($jenis === 'JKM') {
+                $piut = JurnalService::detectPiutang($row);
+                if ($piut['is']) {
+                    $isPiutang    = true;
+                    $akunPiutangId = $piut['akun_id'];
+                    $nominalPiutang = $piut['nominal'];
+                }
             }
 
             /* =========================================================
@@ -724,12 +741,20 @@ class JurnalController extends Controller
         // VALIDASI PELUNASAN PIUTANG (JKM / JN)
         // =========================================================
         if (($jenis === 'JKM' || $jenis === 'JN') && $request->filled('jurnal_id_jp')) {
-
-            $valid = PelunasanPiutangService::validatePelunasanWithDate(
-                $request->jurnal_id_jp, // ID JP
-                $totalDebit,             // pelunasan baru
-                $request->tanggal   // tanggal jurnal kas (JKM / JN)
-            );
+            if($jenis === "JKM"){
+                $valid = PelunasanPiutangService::validatePelunasanWithDate(
+                    $request->jurnal_id_jp, // ID JP
+                    $nominalPiutang,             // pelunasan baru
+                    $request->tanggal   // tanggal jurnal kas (JKM / JN)
+                ); 
+            }else{
+                $valid = PelunasanPiutangService::validatePelunasanWithDate(
+                    $request->jurnal_id_jp, // ID JP
+                    $totalDebit,             // pelunasan baru
+                    $request->tanggal   // tanggal jurnal kas (JKM / JN)
+                );    
+            }
+            
 
             if (!$valid['status']) {
                 return response()->json([
@@ -787,12 +812,20 @@ class JurnalController extends Controller
             $jurnalId = DB::table('jurnal_header')->insertGetId($dataHeader);
 
             if (($jenis === 'JKM' || $jenis === 'JN') && $request->filled('jurnal_id_jp')) {
-
-                PelunasanPiutangService::insertPelunasan(
-                    $jurnalId,
-                    $request->jurnal_id_jp,
-                    $totalDebit
-                );
+                if($jenis === "JKM"){
+                    PelunasanPiutangService::insertPelunasan(
+                        $jurnalId,
+                        $request->jurnal_id_jp,
+                        $nominalPiutang
+                    );
+                }else{
+                    PelunasanPiutangService::insertPelunasan(
+                        $jurnalId,
+                        $request->jurnal_id_jp,
+                        $totalDebit
+                    );
+                }
+                
             }
 
             if ((in_array($jenis,["JN","JKM"])) && $request->filled('jurnal_id_jkk')) {
@@ -954,6 +987,11 @@ class JurnalController extends Controller
         $akunUangMukaId = null;
         $nominalUangMuka = 0;
 
+        // flag piutang
+        $isPiutang    = false;
+        $akunPiutangId = null;
+        $nominalPiutang = 0;
+
         foreach ($request->detail as $row) {
 
             $akun = JurnalService::getAkun($row['akun_id']);
@@ -977,8 +1015,16 @@ class JurnalController extends Controller
                 $nominalUangMuka = $um['nominal'];
             }
 
-            
+            if ($jenis === 'JKM') {
+                $piut = JurnalService::detectPiutang($row);
+                if ($piut['is']) {
+                    $isPiutang    = true;
+                    $akunPiutangId = $piut['akun_id'];
+                    $nominalPiutang = $piut['nominal'];
+                }
+            }
 
+            
             /* =========================================================
             3) VALIDASI SALDO NORMAL (JP)
             ==========================================================*/
@@ -1019,24 +1065,7 @@ class JurnalController extends Controller
             ]);
         }
 
-        /* =========================================================
-        VALIDASI PELUNASAN PIUTANG (JKM / JN)
-        ==========================================================*/
-        if (in_array($jenis, ['JKM','JN']) && $request->filled('jurnal_piutang_id')) {
-
-            $valid = PelunasanPiutangService::validatePelunasanWithDate(
-                $request->jurnal_piutang_id,
-                $totalDebit,
-                $request->tanggal
-            );
-
-            if (!$valid['status']) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $valid['message']
-                ], 422);
-            }
-        }
+        
         if (($jenis === 'JN') && $request->filled('jurnal_id_jkk')) {
 
             UangMukaService::validateDraftPelunasan($request);
@@ -1080,11 +1109,20 @@ class JurnalController extends Controller
                 DB::table('pelunasan_piutang')->where('jurnal_kas_id', $id)->delete();
 
                 if ($request->filled('jurnal_piutang_id')) {
-                    PelunasanPiutangService::insertPelunasan(
-                        $id,
-                        $request->jurnal_piutang_id,
-                        $totalDebit
-                    );
+                    if($jenis === "JKM"){
+                        PelunasanPiutangService::insertPelunasan(
+                            $id,
+                            $request->jurnal_piutang_id,
+                            $nominalPiutang
+                        );
+                    }else{
+                        PelunasanPiutangService::insertPelunasan(
+                            $id,
+                            $request->jurnal_piutang_id,
+                            $totalDebit
+                        );
+                    }
+                    
                 }
             }
 

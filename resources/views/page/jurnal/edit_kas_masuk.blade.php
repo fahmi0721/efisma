@@ -416,6 +416,8 @@ $(document).ready(function() {
                 tr.find('.btn-hapus').html("<i class='fa fa-times'></i>"); // untuk trigger nanti
                 tr.find('.btn-danger').removeClass('btn-danger').addClass('btn-warning');
                 tr.find('.btn-hapus').removeClass('btn-hapus').addClass('btn-piutang');
+                tr.find('input[name="detail['+i+'][kredit]"]').prop("disabled",true);
+                tr.find('input[name="detail['+i+'][kredit]"]').addClass("piutang_debit");
 
                 // bisa juga disable tombol cari invoice agar hanya 1 aktif
                 @if(isset($pelunasan))
@@ -684,6 +686,8 @@ function proses_data(confirmSave = false) {
     tbody.find('tr[data-piutang="true"] .akun-select')
          .prop('disabled', false)
          .trigger('change.select2');
+    tbody.find('tr[data-piutang="true"] .piutang_debit')
+         .prop('disabled', false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
     var id = $("#id").val();
