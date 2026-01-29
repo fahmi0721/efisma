@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('kode_jurnal', 30)->unique();
             $table->enum('jenis', ['JP', 'JKM', 'JKK', 'JN'])->comment('JP=Pendapatan, JKM=Kas Masuk, JKK=Kas Keluar, JN=Penyesuaian');
             $table->date('tanggal');
+            $table->text('no_resi')->nullable();
             $table->text('keterangan')->nullable();
 
             $table->unsignedBigInteger('entitas_id')->index();

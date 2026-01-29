@@ -18,6 +18,7 @@ return new class extends Migration
             $table->date('tanggal');
             $table->string('kode_jurnal', 30);
             $table->text('keterangan')->nullable();
+            $table->text('no_resi')->nullable();
             $table->decimal('debit', 18, 2)->default(0);
             $table->decimal('kredit', 18, 2)->default(0);
             $table->unsignedBigInteger('entitas_id')->index();

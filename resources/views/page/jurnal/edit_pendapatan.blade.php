@@ -85,6 +85,13 @@
                         </div>
 
                         <div class="row mb-3">
+                            <label for="no_resi" class="col-sm-3 col-form-label">Resi Pengiriman <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <input type="text" value="{{ $data->no_resi }}"  class="form-control" id="no_resi" name="no_resi" placeholder="Resi Pengiriman" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <label for="keterangan" class="col-sm-3 col-form-label">Keterangan </label>
                             <div class="col-sm-9">
                                 <input type="text" value="{{ $data->keterangan }}"  class="form-control" id="keterangan" name="keterangan" placeholder="Keterangan" />

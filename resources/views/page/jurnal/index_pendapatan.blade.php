@@ -95,6 +95,7 @@
                                 <th>Cabang</th>
                                 <th>Total</th>
                                 <th>Status</th>
+                                <th>Resi Pengiriman</th>
                                 <th>Keterangan</th>
                                 
                             </tr>
@@ -534,6 +535,7 @@ function load_data() {
                 },orderable:false, 
             },
             { data: 'status', name: 'status',orderable:false,  },
+            { data: 'no_resi', name: 'no_resi', orderable:false },
             { data: 'keterangan', name: 'keterangan', orderable:false }
            
         ],

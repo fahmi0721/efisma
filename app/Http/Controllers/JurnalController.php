@@ -26,6 +26,7 @@ class JurnalController extends Controller
                 ->leftJoin('m_cabang as c', 'j.cabang_id', '=', 'c.id') // join cabang
                 ->select(
                     'j.id',
+                    'j.no_resi',
                     'j.is_multi_cabang',
                     'j.kode_jurnal',
                     'j.jenis',
@@ -563,6 +564,7 @@ class JurnalController extends Controller
                 'no_invoice'       => 'required|string',
                 'tanggal_invoice'  => 'required|date',
                 'partner_id'       => 'required|integer',
+                'no_resi'       => 'required',
             ];$messages += [
                 'cabang_id.required'      => 'Cabang wajib dipilih.',
                 'cabang_id.integer'       => 'Cabang tidak valid.',
@@ -572,6 +574,7 @@ class JurnalController extends Controller
                 'tanggal_invoice.date'   => 'Tgl Invoice tidak valid.',
                 'partner_id.required'      => 'Partner wajib dipilih.',
                 'partner_id.integer'       => 'Partner tidak valid.',
+                'no_resi.required'      => 'Resi Pengiriman wajib diisi.',
                     
             ];
 
@@ -773,6 +776,7 @@ class JurnalController extends Controller
             if($jenis == "JP"){
                 $dataHeader['no_invoice'] = $request->no_invoice;
                 $dataHeader['tanggal_invoice'] = $request->tanggal_invoice;
+                $dataHeader['no_resi'] = $request->no_resi;
             }
 
             // tambah referensi uang muka jika JN dan ada id JKK
@@ -895,6 +899,7 @@ class JurnalController extends Controller
                 'no_invoice'       => 'required|string',
                 'tanggal_invoice'  => 'required|date',
                 'partner_id'       => 'required|integer',
+                'no_resi'       => 'required',
             ];$messages += [
                 'cabang_id.required' => 'Cabang wajib diisi.',
                 'cabang_id.integer'   => 'Cabang Invoice tidak valid.',
@@ -903,7 +908,8 @@ class JurnalController extends Controller
                 'tanggal_invoice.required' => 'Tgl Invoice wajib diisi.',
                 'tanggal_invoice.date'   => 'Tgl Invoice tidak valid.',
                 'partner_id.required'       => 'Partner/Customer Wajib diisi',
-                'partner_id.integer'   => 'Partner/Customer tidak valid.'
+                'partner_id.integer'   => 'Partner/Customer tidak valid.',
+                'no_resi.required'       => 'Resi Pengiriman Wajib diisi'
             ];
 
 
@@ -1060,6 +1066,7 @@ class JurnalController extends Controller
             if($jenis == "JP"){
                 $data['no_invoice'] = $request->no_invoice;
                 $data['tanggal_invoice'] = $request->tanggal_invoice;
+                $data['no_resi'] = $request->no_resi;
             }
 
             DB::table('jurnal_header')->where('id', $id)->update($data);
