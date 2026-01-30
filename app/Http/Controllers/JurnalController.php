@@ -1168,16 +1168,7 @@ class JurnalController extends Controller
                         );
                     }
                 }
-                // $jurnal_id_secound = $isMultiCabang
-                //             ? $row['jurnal_id']
-                //             : $id;
-                // if($isMultiCabang){
-                //         PelunasanPiutangService::insertPelunasan(
-                //         $id,
-                //         $jurnal_id_secound,
-                //         JurnalService::parseRupiah($row['kredit'] ?? 0)
-                //     );
-                // }
+               
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id'  => $id,
                     'akun_id'    => $row['akun_id'],
@@ -1198,7 +1189,7 @@ class JurnalController extends Controller
             DB::commit();
             return response()->json([
                 'status' => 'success',
-                'message' => 'Jurnal berhasil diperbarui.ok'.$isMultiCabang
+                'message' => 'Jurnal berhasil diperbarui.'
             ]);
 
         } catch (\Exception $e) {
