@@ -767,6 +767,7 @@ function proses_data(confirmSave = false) {
                 });
                 return;
             }
+            console.log(resullt)
 
             // ✅ Jika sukses
             if (result.status === "success") {

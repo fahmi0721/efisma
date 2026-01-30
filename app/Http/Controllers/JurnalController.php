@@ -897,7 +897,7 @@ class JurnalController extends Controller
 
         $id = $request->id;
         $header = DB::table('jurnal_header')->where('id', $id)->first();
-        $isMultiCabang = $header->is_multi_cabang ?? 0;
+        $isMultiCabang = $header->is_multi_cabang;
         /* =========================================================
         VALIDASI JENIS JURNAL
         ==========================================================*/
@@ -1127,7 +1127,7 @@ class JurnalController extends Controller
                 // hapus pelunasan lama
                 DB::table('pelunasan_piutang')->where('jurnal_kas_id', $id)->delete();
 
-                if ($request->filled('jurnal_piutang_id') && !empty($request->jurnal_piutang_id)) {
+                if ($request->filled('jurnal_piutang_id') && !$isMultiCabang) {
                     if($jenis === "JKM"){
                         PelunasanPiutangService::insertPelunasan(
                             $id,
@@ -1151,6 +1151,33 @@ class JurnalController extends Controller
             DB::table('jurnal_detail')->where('jurnal_id', $id)->delete();
 
             foreach ($request->detail as $row) {
+                $cabangDetail = null;
+                $jurnal_id_secound=null;
+                if($jenis === "JKM"){
+                    $cabangDetail = $isMultiCabang
+                    ? ($row['cabang_id'] ?? null)
+                    : $request->cabang_id;
+                    $jurnal_id_secound = $isMultiCabang
+                    ? ($row['jurnal_id'] ?? $id)
+                    : $id;
+                    if($isMultiCabang){
+                         PelunasanPiutangService::insertPelunasan(
+                            $jurnalId,
+                            $jurnal_id_secound,
+                            JurnalService::parseRupiah($row['kredit'] ?? 0)
+                        );
+                    }
+                }
+                // $jurnal_id_secound = $isMultiCabang
+                //             ? $row['jurnal_id']
+                //             : $id;
+                // if($isMultiCabang){
+                //         PelunasanPiutangService::insertPelunasan(
+                //         $id,
+                //         $jurnal_id_secound,
+                //         JurnalService::parseRupiah($row['kredit'] ?? 0)
+                //     );
+                // }
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id'  => $id,
                     'akun_id'    => $row['akun_id'],
@@ -1171,7 +1198,7 @@ class JurnalController extends Controller
             DB::commit();
             return response()->json([
                 'status' => 'success',
-                'message' => 'Jurnal berhasil diperbarui.'
+                'message' => 'Jurnal berhasil diperbarui.ok'.$isMultiCabang
             ]);
 
         } catch (\Exception $e) {
