@@ -1162,7 +1162,7 @@ class JurnalController extends Controller
                     : $id;
                     if($isMultiCabang){
                          PelunasanPiutangService::insertPelunasan(
-                            $jurnalId,
+                            $id,
                             $jurnal_id_secound,
                             JurnalService::parseRupiah($row['kredit'] ?? 0)
                         );
