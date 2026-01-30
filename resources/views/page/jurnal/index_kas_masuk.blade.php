@@ -164,7 +164,7 @@ function parseIDR(val) {
 
     return parseFloat(val) || 0;
 }
-function detail_transaksi(id){
+function detail_transaksi(id,is_multi_cabang=null){
     $.ajax({
         url: "{{ route('jurnal.detail_transaksi') }}?id="+id,
         type: 'GET',
@@ -178,6 +178,9 @@ function detail_transaksi(id){
                     html += "<tr>";
                         html += "<th>No</th>";
                         html += "<th>Akun GL</th>";
+                        if(is_multi_cabang == "1"){
+                            html += "<th>Cabang</th>";    
+                        }
                         html += "<th>Deskripsi</th>";
                         html += "<th>Debet</th>";
                         html += "<th>Kredit</th>";
@@ -195,12 +198,16 @@ function detail_transaksi(id){
                         // pastikan debit & kredit selalu angka valid
                         let debit = parseIDR(item.debit);
                         let kredit = parseIDR(item.kredit);
-
+                        let cabang = null;
+                        if(is_multi_cabang == "1"){
+                            cabang = "<td>"+item.cabang+"</td>";
+                        }
                         
                         html += `
                             <tr>
                                 <td>${no}</td>
                                 <td>${item.akun_gl}</td>
+                                ${cabang}
                                 <td>${item.deskripsi ?? '-'}</td>
                                 <td class="text-end">${Number(item.debit).toLocaleString('id-ID')}</td>
                                 <td class="text-end">${Number(item.kredit).toLocaleString('id-ID')}</td>
@@ -213,7 +220,8 @@ function detail_transaksi(id){
                 html += "</tbody>";
                 html += "<tfoot>";
                     html += "<tr>";
-                        html += "<th colspan='3' class='text-end'>TOTAL</th>";
+                        let cols = is_multi_cabang == "1" ? 4 : 3;
+                        html += "<th colspan='"+cols+"' class='text-end'>TOTAL</th>";
                         html += "<th class='text-end'>"+Number(totDebet).toLocaleString('id-ID')+"</th>";
                         html += "<th class='text-end'>"+Number(totKredit).toLocaleString('id-ID')+"</th>";
                     html += "</tr>";

@@ -84,7 +84,7 @@
                             </div>
                         </div>
                         {{-- 🔹 Di sinilah kamu taruh notifikasi pelunasan --}}
-                            @if(isset($pelunasan))
+                            @if(isset($pelunasan) && !$is_multi_cabang)
                                 <div class="alert alert-info" id="alert-info">
                                     Pelunasan dari Jurnal Pendapatan <strong>{{ $pelunasan->kode_invoice }}</strong><br>
                                     Jumlah dibayar: Rp {{ number_format($pelunasan->jumlah,0,',','.') }}
@@ -107,6 +107,9 @@
                                     <tr>
                                         <th style="width: 30%">Akun</th>
                                         <th>Deskripsi</th>
+                                        @if($is_multi_cabang)
+                                        <th>Cabang</th>
+                                        @endif
                                         <th class="text-end">Debit</th>
                                         <th class="text-end">Kredit</th>
                                         <th style="width: 5%"></th>
@@ -132,7 +135,7 @@
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="5">
+                                        <td colspan="@if($is_multi_cabang) 6 @else 5 @endif">
                                             <button type="button" class="btn btn-success btn-sm" id="btnTambahBaris">
                                                 <i class="fas fa-plus"></i> Tambah Baris
                                             </button>
@@ -170,6 +173,14 @@
                                 </select>
                             </td>
                             <td><input type="text" name="detail[__INDEX__][deskripsi]" class="form-control"></td>
+                            @if($is_multi_cabang)
+                            <td>
+                                <input type="hidden" name="detail[__INDEX__][jurnal_id]" class="form-control">
+                                <select class="form-select cabang-row" name="detail[__INDEX__][cabang_id]">
+                                    <option value="">-- Pilih Cabang --</option>
+                                </select>
+                            </td>
+                            @endif
                             <td><input type="text" name="detail[__INDEX__][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
                             <td><input type="text" name="detail[__INDEX__][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="0"></td>
                             <td class="text-center">
@@ -219,6 +230,10 @@
 @section('js')
 
 <script>
+var isMultiCabang = {{ $is_multi_cabang ? 'true' : 'false' }};
+if (isMultiCabang) {
+    $('#cabang_id').closest('.row').hide();
+}
 var detailData = @json($detail);
 $(document).ready(function() {
     $(".cabang").prop("disabled",false);
@@ -373,6 +388,29 @@ $(document).ready(function() {
         tbody.html('');
         $.each(detailData, function(i, row) {
             let tr = $('#rowTemplate tr').clone();
+            if (isMultiCabang) {
+            tr.find('.cabang-row').select2({
+                    ajax: {
+                        url: '{{ route("cabang.select") }}',
+                        dataType: 'json',
+                        delay: 250,
+                        processResults: function (data) {
+                            return {
+                                results: data.map(q => ({ id: q.id, text: q.nama }))
+                            };
+                        }
+                    },
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    placeholder: '-- Pilih Cabang --',
+                    allowClear: true
+                });
+            }
+            if (isMultiCabang && row.cabang_id) {
+                let optCab = new Option(row.nama_cabang, row.cabang_id, true, true);
+                tr.find('.cabang-row').append(optCab).trigger('change');
+                tr.find('.cabang-row').prop("disabled",true);
+            }
             // Inisialisasi select2 untuk baris baru saja
             tr.find('.akun-select').select2({
                 ajax: {
@@ -400,6 +438,7 @@ $(document).ready(function() {
 
             // set nilai input
             tr.find('input[name="detail['+i+'][deskripsi]"]').val(row.deskripsi);
+            tr.find('input[name="detail['+i+'][jurnal_id]"]').val(row.jurnal_id_secound);
             tr.find('input[name="detail['+i+'][debit]"]').val(formatRupiahB(row.debit));
             tr.find('input[name="detail['+i+'][kredit]"]').val(formatRupiahB(row.kredit));
 
@@ -688,6 +727,7 @@ function proses_data(confirmSave = false) {
          .trigger('change.select2');
     tbody.find('tr[data-piutang="true"] .piutang_debit')
          .prop('disabled', false);
+    $(".cabang-row").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
     var id = $("#id").val();

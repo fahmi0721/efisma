@@ -61,6 +61,17 @@
                         </div>
                         @endif
                         <div class="row mb-3">
+                            <label class="col-sm-3 col-form-label">Multi Invoice</label>
+                            <div class="col-sm-9">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_multi_invoice" name="is_multi_invoice" value="1">
+                                    <label class="form-check-label" for="is_multi_invoice">
+                                        Jurnal ini melibatkan lebih dari satu invoice
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3 cabang_utama">
                             <label for="cabang_id" class="col-sm-3 col-form-label">Cabang <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
                                 <select name="cabang_id" id="cabang_id" class="form-control cabang">
@@ -77,11 +88,7 @@
                             </div>
                         </div>
 
-                         
-
-                        
-
-                        <div class="row mb-3">
+                        <div class="row mb-3 col_no_ref">
                             <label for="no_invoice" class="col-sm-3 col-form-label">No Ref </label>
                             <div class="col-sm-9">
                                 <input type="text"  class="form-control"  id="no_invoice_t" placeholder="No Ref" />
@@ -102,6 +109,7 @@
                                     <tr>
                                         <th style="width: 30%">Akun</th>
                                         <th>Deskripsi</th>
+                                        <th class="col-cabang d-none">Cabang</th>
                                         <th class="text-end">Debit</th>
                                         <th class="text-end">Kredit</th>
                                         <th style="width: 5%"></th>
@@ -118,6 +126,10 @@
                                             </select>
                                         </td>
                                         <td><input type="text" name="detail[0][deskripsi]" class="form-control"></td>
+                                        <td class="col-cabang d-none">
+                                            <input type="hidden"  name="detail[0][jurnal_id]" class="form-control" value="">
+                                            <select name="detail[0][cabang_id]" class="form-control cabang-line"></select>
+                                        </td>
                                         <td><input type="text"  name="detail[0][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
                                         <td><input type="text"  name="detail[0][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="0"></td>
                                         <td class="text-center">
@@ -134,7 +146,7 @@
                                         </td>
                                     </tr>
                                     <tr class="table-light">
-                                        <th colspan="2" class="text-end">TOTAL</th>
+                                        <th class='cek_col' colspan="2" class="text-end">TOTAL</th>
                                         <th class="text-end" id="totalDebit">0</th>
                                         <th class="text-end" id="totalKredit">0</th>
                                         <th></th>
@@ -165,6 +177,10 @@
                                 </select>
                             </td>
                             <td><input type="text" name="detail[__INDEX__][deskripsi]" class="form-control"></td>
+                            <td class="col-cabang d-none">
+                                <input type="hidden"  name="detail[__INDEX__][jurnal_id]" class="form-control" value="">
+                                <select name="detail[__INDEX__][cabang_id]" class="form-control cabang-line"></select>
+                            </td>
                             <td><input type="text" name="detail[__INDEX__][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
                             <td><input type="text" name="detail[__INDEX__][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="0"></td>
                             <td class="text-center">
@@ -380,6 +396,49 @@ $(document).ready(function() {
         e.preventDefault();
         proses_data(false);
     });
+    function initCabangLine(context = document) {
+        $(context).find('.cabang-line').each(function () {
+            if (!$(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2({
+                    ajax: {
+                        url: '{{ route("cabang.select") }}',
+                        dataType: 'json',
+                        delay: 250,
+                        processResults: function (data) {
+                            return {
+                                results: data.map(q => ({
+                                    id: q.id,
+                                    text: q.nama
+                                }))
+                            };
+                        }
+                    },
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    placeholder: '-- Pilih Cabang --',
+                    allowClear: true
+                });
+            }
+        });
+    }
+    $('#is_multi_invoice').on('change', function () {
+        if (this.checked) {
+            $('.col-cabang').removeClass('d-none');
+            $('#cabang_id').prop('required', false);
+            $(".cabang_utama").addClass('d-none');
+            $(".cek_col").attr("colspan",3);
+
+            // 🔥 INIT SEMUA YANG SUDAH ADA
+            initCabangLine($('#tableDetail'));
+        } else {
+            $('.col-cabang').addClass('d-none');
+            $('#cabang_id').prop('required', true);
+            $(".cabang_utama").removeClass('d-none');
+            $(".cek_col").attr("colspan",2);
+            // optional: clear value
+            $('.cabang-line').val(null).trigger('change');
+        }
+    });
 
     // 🔹 Tambah baris baru
     $('#btnTambahBaris').click(function() {
@@ -409,7 +468,10 @@ $(document).ready(function() {
             placeholder: "-- Pilih Akun GL --",
             allowClear: true
         });
-
+        // 🔥 cabang hanya jika multi cabang aktif
+        if ($('#is_multi_invoice').is(':checked')) {
+            initCabangLine(row);
+        }
         reIndexRows();
     });
 
@@ -496,6 +558,7 @@ function loadInvoiceTable(partner_id) {
     $('#tb_invoice').DataTable({
         processing: true,
         serverSide: true,
+        responsive:true,
         ajax: {
             url: "{{ route('jurnal.piutang.datatable') }}",
             data: { partner_id: partner_id },
@@ -586,34 +649,53 @@ $(document).on('click','.pilihUangMuka', function() {
 
 $(document).on('click', '.btn-pilih-invoice', function() {
     const data = $(this).data();
-    // Jika sudah ada invoice di form, blokir
-    const id_jp = $("#jurnal_id_jp").val();
-    if (id_jp && id_jp.trim() !== "") {
-        Swal.fire('Oops', 'Anda sudah memilih satu invoice!, Hapus dulu dari data detail jurnal', 'warning');
-        return;
-    }
-
-    $("#jurnal_id_jp").val(data.id);
-    var option = new Option(data.cabang, data.cabang_id, true, true);
-    $(".cabang").append(option).trigger('change');
-    $(".cabang").prop("disabled",true);
     $(".entitas").prop("disabled",true);
     $(".partner").prop("disabled",true);
+    if($('#is_multi_invoice').is(":checked")){
+        $(".col_no_ref").addClass("d-none");
+        // Kirim ke fungsi pembuat baris jurnal
+        insertDetailJurnal({
+            id: data.id,
+            kode: data.kode,
+            tanggal: data.tanggal,
+            total: data.total,
+            sisa: data.sisa,
+            akun_piutang_id: data.akun_piutang_id,
+            akun_piutang_nama: data.akun_piutang_nama,
+            cabang_name:data.cabang,
+            cabang_id:data.cabang_id
+        });
+    }else{
+        // Jika sudah ada invoice di form, blokir
+        const id_jp = $("#jurnal_id_jp").val();
+        if (id_jp && id_jp.trim() !== "") {
+            Swal.fire('Oops', 'Anda sudah memilih satu invoice!, Hapus dulu dari data detail jurnal', 'warning');
+            return;
+        }
 
+        $("#jurnal_id_jp").val(data.id);
+        var option = new Option(data.cabang, data.cabang_id, true, true);
+        $(".cabang").append(option).trigger('change');
+        $(".cabang").prop("disabled",true);
+        
 
-    $("#no_invoice").val(data.no_invoice);
-    $("#no_invoice_t").val(data.no_invoice);
-    $("#no_invoice_t").prop("disabled",true);
-    // Kirim ke fungsi pembuat baris jurnal
-    insertDetailJurnal({
-        id: data.id,
-        kode: data.kode,
-        tanggal: data.tanggal,
-        total: data.total,
-        sisa: data.sisa,
-        akun_piutang_id: data.akun_piutang_id,
-        akun_piutang_nama: data.akun_piutang_nama
-    });
+        $(".col_no_ref").addClass("d-none")
+        $("#no_invoice").val(data.no_invoice);
+        $("#no_invoice_t").val(data.no_invoice);
+        $("#no_invoice_t").prop("disabled",true);
+        // Kirim ke fungsi pembuat baris jurnal
+        insertDetailJurnal({
+            id: data.id,
+            kode: data.kode,
+            tanggal: data.tanggal,
+            total: data.total,
+            sisa: data.sisa,
+            akun_piutang_id: data.akun_piutang_id,
+            akun_piutang_nama: data.akun_piutang_nama,
+            cabang_name:data.cabang,
+            cabang_id:data.cabang_id
+        });
+    }
 
     $('#modalInvoice').modal('hide');
 });
@@ -668,25 +750,51 @@ function insertDetailJurnal(data) {
     }
     // Ambil index baris terakhir
     let idx = $('#tableDetail tbody tr').length;
-
-    // 🔹 Baris kedua: Piutang (Kredit)
     let rowPiutang = `
-        <tr>
-            <td>
-                <select class="form-select akun-select" name="detail[${idx}][akun_id]" required>
-                    <option value="${data.akun_piutang_id ?? ''}">
-                        ${data.akun_piutang_nama ?? '(Akun Piutang)'}
-                    </option>
-                </select>
-            </td>
-            <td><input readonly type="text" name="detail[${idx}][deskripsi]" value='Pelunasan Invoice ${data.kode}' class="form-control"></td>
-            <td><input type="text" name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
-            <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
-            <td class="text-center">
-                <button type="button" title='Tidak Boleh Di Hapus' data-toggle='tooltip' data-piutang='ada' class="btn btn-warning btn-sm"><i class="fas fa-times"></i></button>
-            </td>
-        </tr>
-    `;
+            <tr>
+                <td>
+                    <select class="form-select akun-select" name="detail[${idx}][akun_id]" disabled>
+                        <option value="${data.akun_piutang_id ?? ''}">
+                            ${data.akun_piutang_nama ?? '(Akun Piutang)'}
+                        </option>
+                    </select>
+                </td>
+                <td><input readonly type="text" name="detail[${idx}][deskripsi]" value='Pelunasan Invoice ${data.kode}' class="form-control"></td>
+                <td><input type="text" name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
+                <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
+                <td class="text-center">
+                    <button type="button" title='Tidak Boleh Di Hapus' data-toggle='tooltip' data-piutang='ada' class="btn btn-warning btn-sm"><i class="fas fa-times"></i></button>
+                </td>
+            </tr>
+        `;
+    // 🔹 Baris kedua: Piutang (Kredit)
+    if($('#is_multi_invoice').is(":checked")){
+        rowPiutang = `
+            <tr>
+                <td>
+                    <select class="form-select akun-select" name="detail[${idx}][akun_id]" disabled>
+                        <option value="${data.akun_piutang_id ?? ''}">
+                            ${data.akun_piutang_nama ?? '(Akun Piutang)'}
+                        </option>
+                    </select>
+                </td>
+                <td><input readonly type="text" name="detail[${idx}][deskripsi]" value='Pelunasan Invoice ${data.kode}' class="form-control"></td>
+                <td>
+                    <input type="hidden"  name="detail[${idx}][jurnal_id]" value="${data.id}" class="form-control" value="">
+                    <select name="detail[${idx}][cabang_id]" class="form-control cabang-line" disabled>
+                        <option value="${data.cabang_id ?? ''}">
+                            ${data.cabang_name ?? '(Cabang)'}
+                        </option>
+                    </select>
+                </td>
+                <td><input type="text" name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
+                <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
+                <td class="text-center">
+                    <button type="button" data-piutang='' class="btn btn-danger btn-sm btn-hapus"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }
 
     // Masukkan ke tabel
     $('#tableDetail tbody').append(rowPiutang);
@@ -713,6 +821,8 @@ function proses_data(confirmSave = false) {
     $(".cabang").prop("disabled",false);
     $(".entitas").prop("disabled",false);
     $(".partner").prop("disabled",false);
+    $(".akun-select").prop("disabled",false);
+    $(".cabang-line").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
 

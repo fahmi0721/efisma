@@ -333,6 +333,7 @@ class JurnalController extends Controller
                 'd.kredit',
                 'a.kategori',
                 'd.cabang_id',
+                'd.jurnal_id_secound',
                 'c.nama as nama_cabang'
             )
         ->get();
@@ -781,6 +782,8 @@ class JurnalController extends Controller
             $is_multi_cabang = '0';
             if($jenis === "JN"){
                 $is_multi_cabang = $request->is_multi_cabang;
+            }elseif($jenis === "JKM"){
+                $is_multi_cabang = $request->is_multi_invoice;
             }
             $dataHeader = [
                 'kode_jurnal'  => $kode,
@@ -835,14 +838,30 @@ class JurnalController extends Controller
             // detail
             foreach ($request->detail as $row) {
                 $cabangDetail = null;
+                $jurnal_id_secound=null;
                 if($jenis === "JN"){
                     $cabangDetail = $request->is_multi_cabang
                     ? ($row['cabang_id'] ?? null)
                     : $request->cabang_id;
+                }elseif($jenis === "JKM"){
+                    $cabangDetail = $request->is_multi_invoice
+                    ? ($row['cabang_id'] ?? null)
+                    : $request->cabang_id;
+                    $jurnal_id_secound = $request->is_multi_invoice
+                    ? ($row['jurnal_id'] ?? $jurnalId)
+                    : $jurnalId;
+                    if($request->is_multi_invoice){
+                         PelunasanPiutangService::insertPelunasan(
+                            $jurnalId,
+                            $jurnal_id_secound,
+                            JurnalService::parseRupiah($row['kredit'] ?? 0)
+                        );
+                    }
                 }
 
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id' => $jurnalId,
+                    'jurnal_id_secound' => $jurnal_id_secound,
                     'cabang_id' => $cabangDetail,
                     'akun_id'   => $row['akun_id'],
                     'deskripsi' => $row['deskripsi'] ?? "",
@@ -921,7 +940,7 @@ class JurnalController extends Controller
             'detail.*.deskripsi.string' => 'Deskripsi harus berupa teks.',
         ];
 
-        if ($isMultiCabang && $jenis =="JN") {
+        if ($isMultiCabang && in_array($jenis,["JN","JKM"])) {
             $messages['detail.*.cabang_id.required'] = 'Cabang pada detail transaksi belum di pilih';
         }
 
@@ -1108,7 +1127,7 @@ class JurnalController extends Controller
                 // hapus pelunasan lama
                 DB::table('pelunasan_piutang')->where('jurnal_kas_id', $id)->delete();
 
-                if ($request->filled('jurnal_piutang_id')) {
+                if ($request->filled('jurnal_piutang_id') && !empty($request->jurnal_piutang_id)) {
                     if($jenis === "JKM"){
                         PelunasanPiutangService::insertPelunasan(
                             $id,
@@ -1135,6 +1154,9 @@ class JurnalController extends Controller
                 DB::table('jurnal_detail')->insert([
                     'jurnal_id'  => $id,
                     'akun_id'    => $row['akun_id'],
+                    'jurnal_id_secound' => $isMultiCabang
+                            ? $row['jurnal_id']
+                            : $id,
                     'cabang_id' => $isMultiCabang
                             ? $row['cabang_id']
                             : $request->cabang_id,
@@ -1253,6 +1275,7 @@ class JurnalController extends Controller
                 'd.deskripsi',
                 'h.no_resi',
                 'd.akun_id',
+                'd.jurnal_id_secound',
                 'd.debit',
                 'd.kredit',
                 DB::raw("
@@ -1312,6 +1335,7 @@ class JurnalController extends Controller
                     'entitas_id' => $row->entitas_id,
                     'partner_id' => $row->partner_id,
                     'cabang_id' => $row->cabang_id,
+                    'jurnal_id_secound' => $row->jurnal_id_secound,
                     'jenis' => $row->jenis,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -1800,6 +1824,7 @@ class JurnalController extends Controller
                         'entitas_id' => $jurnal->entitas_id,
                         'partner_id' => $jurnal->partner_id,
                         'cabang_id' => $cabang,
+                        'jurnal_id_secound' => $d->jurnal_id_secound,
                         'jenis' => $jurnal->jenis,
                         'created_at' => now(),
                         'updated_at' => now(),
