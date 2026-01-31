@@ -137,6 +137,7 @@ $(document).ready(function() {
     const tb = $('#tb_data').DataTable({
         processing: true,
         serverSide: true,
+        responsive:true,
          ajax: {
             url: "{{ route('piutang.aging') }}",
             data: function (d) {
