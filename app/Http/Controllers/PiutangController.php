@@ -28,9 +28,7 @@ class PiutangController extends Controller
                     if (!empty($entitas_id)) {
                         $query->where('entitas_id', $entitas_id);
                     }
-                    if (!empty($cabang_id)) {
-                        $query->where('cabang_id', $cabang_id);
-                    }
+                   
                     /*
                     |--------------------------------------------------------------------------
                     | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
@@ -86,10 +84,6 @@ class PiutangController extends Controller
 
         if (!empty($entitas_id)) {
             $query->where('entitas_id', $entitas_id);
-        }
-
-        if (!empty($cabang_id)) {
-            $query->where('cabang_id', $cabang_id);
         }
 
         $data = $query->get();
