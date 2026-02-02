@@ -71,6 +71,7 @@
                                     <option value="investasi">Investasi</option>
                                     <option value="pendanaan">Pendanaan</option>
                                     <option value="uang_muka">Uang Muka</option>
+                                    <option value="hutang">Hutang</option>
                                     <option value="deposito_customer">Deposito Customer</option>
                                     <option value="pendapatan_operasional">Pendapatan Operasional</option>
                                     <option value="beban_operasional">Beban Operasional</option>

@@ -211,6 +211,35 @@
                 </ul>
             </li>
             @endcanAccess
+            @canAccess('hutang.aging.view|hutang.daftar.view')
+            <li class="nav-item {{ setActive(['hutang.aging','hutang.daftar'], 'menu-open')  }}">
+                <a href="#" class="nav-link {{ setActive(['hutang.aging','hutang.daftar'], 'active')  }}">
+                    <i class="nav-icon fa fa-book"></i>
+                    <p>
+                    Hutang
+                    <i class="nav-arrow bi bi-chevron-right"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview">
+                    @canAccess('hutang.aging.view')
+                    <li class="nav-item">
+                    <a href="{{ route('hutang.aging') }}" class="nav-link {{  setActive(['hutang.aging'], 'active')  }}">
+                        <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
+                        <p>Aging  Hutang</p>
+                    </a>
+                    </li>
+                    @endcanAccess
+                    @canAccess('hutang.daftar.view')
+                    <li class="nav-item">
+                    <a href="{{ route('hutang.daftar') }}" class="nav-link {{  setActive(['hutang.daftar'], 'active')  }}">
+                        <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
+                        <p>Daftar Hutang</p>
+                    </a>
+                    </li>
+                    @endcanAccess
+                </ul>
+            </li>
+            @endcanAccess
             @canAccess('uangmuka.aging.view|uangmuka.daftar.view')
             <li class="nav-item {{ setActive(['uangmuka.aging','uangmuka.daftar'], 'menu-open')  }}">
                 <a href="#" class="nav-link {{ setActive(['uangmuka.aging','uangmuka.daftar'], 'active')  }}">

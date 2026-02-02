@@ -276,6 +276,18 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
 });
 
 /**
+ * Route Hutang
+ */
+use App\Http\Controllers\HutangController;
+Route::group(['middleware' => ['auth','entitas_scope']], function () {
+    Route::get('/hutang/aging', [HutangController::class, 'index'])->name('hutang.aging')->middleware('permission:hutang.aging.view');
+    Route::get('/hutang/aging/export', [HutangController::class, 'agingHutangExport'])->name('hutang.aging.export')->middleware('permission:hutang.aging.export');
+    Route::get('/hutang/daftar', [HutangController::class, 'daftar'])->name('hutang.daftar')->middleware('permission:hutang.daftar.view');
+    Route::get('/hutang/select', [HutangController::class, 'select'])->name('hutang.select');
+    Route::get('/hutang/daftarexport', [HutangController::class, 'exportExcel'])->name('hutang.daftar.export')->middleware('permission:hutang.daftar.export');
+});
+
+/**
  * Route Uang Muka
  */
 use App\Http\Controllers\UangmukaController;

@@ -19,7 +19,7 @@ return new class extends Migration
                 is_vendor,
                 is_customer,
                 entitas_id,
-                cabang_id,   -- ✅ tambahkan cabang di sini
+                
 
                 SUM(CASE WHEN umur_piutang BETWEEN 0  AND 14 THEN sisa_piutang ELSE 0 END) AS aging_0_14,
                 SUM(CASE WHEN umur_piutang BETWEEN 15 AND 30 THEN sisa_piutang ELSE 0 END) AS aging_15_30,
@@ -37,7 +37,7 @@ return new class extends Migration
                 is_vendor, 
                 is_customer, 
                 entitas_id,
-                cabang_id     -- ✅ wajib ditambahkan di GROUP BY
+                
         ");
 
     }
