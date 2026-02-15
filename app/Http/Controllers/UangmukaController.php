@@ -63,7 +63,11 @@ class UangmukaController extends Controller
                     }
                     return "<span class='badge bg-success'>CLOSED</span>";
                 })
-
+                 ->with('totalFooter', [
+                    'total_uangmuka'   => $query->sum('nominal'),
+                    'total_terpakai'  => $query->sum('terpakai'),
+                    'sisa_uangmuka'  => $query->sum('sisa'),
+                ])
                 ->rawColumns(['sisa', 'status'])
                 ->make(true);
         }

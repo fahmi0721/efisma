@@ -90,6 +90,16 @@
                         </tr>
                     </thead>
                     <tbody></tbody>
+                    <tfoot class="table-light fw-bold text-end">
+                    <tr>
+                        <th colspan="6" class="text-center">TOTAL</th>
+                        <th id="total_uangmuka">0</th>
+                        <th id="total_terpakai">0</th>
+                        <th id="sisa_uangmuka">0</th>
+                        <th></th>
+                        <th></th>   
+                    </tr>
+                </tfoot>
                 </table>
             </div>
         </div>
@@ -186,6 +196,19 @@ $(document).ready(function() {
             // { data: 'total_piutang', name: 'total_piutang', className: 'text-end fw-bold' },
         ],
         order: [[1, 'asc']],
+        drawCallback: function(settings) {
+            let api = this.api();
+            let json = api.ajax.json(); // Mengambil data tambahan dari server
+            
+            if (json.totalFooter) {
+                let res = json.totalFooter;
+                let format = new Intl.NumberFormat('id-ID');
+
+                $(api.column(6).footer()).html(format.format(res.total_uangmuka));
+                $(api.column(7).footer()).html(format.format(res.total_terpakai));
+                $(api.column(8).footer()).html(format.format(res.sisa_uangmuka));
+            }
+        },
         language: {
             searchPlaceholder: 'Cari partner...',
             processing: '<i class="fa fa-spinner fa-spin"></i> Loading...'
