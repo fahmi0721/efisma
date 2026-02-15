@@ -48,6 +48,8 @@ class JurnalController extends Controller
             */
             if ($request->entitas_scope) {
                 $query->where('j.entitas_id', $request->entitas_scope);
+            }elseif($request->filled('entitas_id')){
+                $query->where('j.entitas_id', $request->entitas_id);
             }
             // 🔹 Filter tanggal
             if ($request->filled('from') && $request->filled('to')) {
@@ -169,6 +171,10 @@ class JurnalController extends Controller
                     $html .= '</div>';
                     return $html;
                 })
+                ->with('totalFooter', [
+                    'total_debit'   => $query->sum('total_debit'),
+                    'total_kredit'   => $query->sum('total_kredit'),
+                ])
                 ->rawColumns(['aksi', 'status'])
                 ->make(true);
         }

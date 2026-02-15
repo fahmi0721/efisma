@@ -53,15 +53,22 @@
                                 <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
                             </div>
                         </div>
-                        <div class="col-md-2">
-                            <button id="btnFilter" class="btn btn-primary w-100 mt-2">
-                                <i class="fas fa-filter"></i> Filter
-                            </button>
+                        @if(auth()->user()->level != "entitas")
+                        <div class="col-md-3">
+                            <select id="filter_entitas" class="form-select form-select entitas">
+                                <option value="">Semua Entitas</option>
+                            </select>
                         </div>
+                        @endif
                         <div class="col-md-2">
-                            <button id="btnReset" class="btn btn-secondary w-100 mt-2">
+                            <div class='btn-group'>
+                                <button id="btnFilter" class="btn btn-primary mt-2">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <button id="btnReset" class="btn btn-secondary mt-2">
                                 <i class="fas fa-undo"></i> Reset
                             </button>
+                            </div>
                         </div>
                     </div>
 
@@ -73,14 +80,25 @@
                                 <th width="5%">Aksi</th>
                                 <th>Kode</th>
                                 <th>Tanggal</th>
+                                <th>Total</th>
                                 <th>Entitas</th>
                                 <th>Partner</th>
                                 <th>Cabang</th>
-                                <th>Total</th>
                                 <th>Status</th>
                                 <th>Keterangan</th>
                             </tr>
                         </thead>
+                        <tfoot>
+                            <tr class="bg-light fw-bold">
+                                <th colspan="4" class="text-center">TOTAL</th>
+                                <th class="text-end"></th>
+                                <th class="text-end"></th>
+                                <th class="text-end"></th>
+                                <th class="text-end"></th>
+                                <th class="text-end"></th>
+                                <th class="text-end"></th>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>  
@@ -143,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const picker1 = document.querySelector('#filter_from')._flatpickr;
         picker.clear(); // ✅ Kosongkan nilai flatpickr dengan benar
         picker1.clear(); // ✅ Kosongkan nilai flatpickr dengan benar
+        $("#filter_entitas").val("").trigger("change");
         $('#tb_data').DataTable().ajax.reload();
     });
 });
@@ -316,7 +335,29 @@ function unposting(id){
         }
     });
 }
-
+@if(auth()->user()->level != "entitas")
+    $('.entitas').select2({
+        ajax: {
+            url: '{{ route("entitas.select") }}',
+            dataType: 'json',
+            delay: 250,
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
+        // dropdownParent: $('.card-header'), // pastikan dropdown tidak nyasar
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true
+    });
+@endif
 // DataTables
 function load_data() {
     $('#tb_data').DataTable({
@@ -328,6 +369,11 @@ function load_data() {
             data: function (d) {
                 d.from = $('#filter_from').val(); // kirim periode ke backend
                 d.to = $('#filter_to').val(); // kirim periode ke backend
+                @if(auth()->user()->level != "entitas")
+                    d.entitas_id = $("#filter_entitas").val();
+                @else
+                    d.entitas_id = null;
+                @endif
             }
         },
         columns: [
@@ -335,9 +381,6 @@ function load_data() {
             { data: 'aksi', name: 'aksi', orderable:false, searchable:false },
             { data: 'kode_jurnal', name: 'kode_jurnal' },
             { data: 'tanggal', name: 'tanggal' },
-            { data: 'entitas', name: 'entitas',orderable:false, },
-            { data: 'partner', name: 'partner',orderable:false, },
-            { data: 'cabang', name: 'cabang',orderable:false, },
             { 
                 data: 'total_debit', 
                 name: 'total_debit',
@@ -347,10 +390,24 @@ function load_data() {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0, }).format(data);
                 },orderable:false, 
             },
+            { data: 'entitas', name: 'entitas',orderable:false, },
+            { data: 'partner', name: 'partner',orderable:false, },
+            { data: 'cabang', name: 'cabang',orderable:false, },
             { data: 'status', name: 'status',orderable:false,  },
             { data: 'keterangan', name: 'keterangan',orderable:false, },
             
         ],
+        drawCallback: function(settings) {
+            let api = this.api();
+            let json = api.ajax.json(); // Mengambil data tambahan dari server
+            
+            if (json.totalFooter) {
+                let res = json.totalFooter;
+                let format = new Intl.NumberFormat('id-ID');
+
+                $(api.column(4).footer()).html("Rp. "+format.format(res.total_debit));
+            }
+        },
         // order: [[2, 'desc']],
     });
     // Init tooltip setiap setelah table redraw
