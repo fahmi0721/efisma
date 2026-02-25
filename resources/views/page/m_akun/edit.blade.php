@@ -67,6 +67,7 @@
                             <div class="col-sm-9">
                                 <select name="kategori" id="kategori" class="form-control kategori">
                                     <option value="">-- Pilih Kategori --</option>
+                                    <option value="header" @if($data->kategori == 'header') selected @endif>Header</option>
                                     <option value="kas_bank" @if($data->kategori == 'kas_bank') selected @endif>Kas / Bank</option>
                                     <option value="piutang" @if($data->kategori == 'piutang') selected @endif>Piutang</option>
                                     <option value="investasi" @if($data->kategori == 'investasi') selected @endif>Investasi</option>

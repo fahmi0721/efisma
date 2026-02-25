@@ -66,6 +66,7 @@
                             <div class="col-sm-9">
                                 <select name="kategori" id="kategori" class="form-control kategori">
                                     <option value="">-- Pilih Kategori --</option>
+                                    <option value="header">Header</option>
                                     <option value="kas_bank">Kas / Bank</option>
                                     <option value="piutang">Piutang</option>
                                     <option value="investasi">Investasi</option>
