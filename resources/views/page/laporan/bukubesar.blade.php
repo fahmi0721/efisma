@@ -76,6 +76,7 @@
                     <th>Akun GL</th>
                     <th>Entitas</th>
                     <th>Partner</th>
+                    <th>Cabang</th>
                     <th>Keterangan</th>
                     <th>Tanggal</th>
                     <th>Debet</th>
@@ -196,6 +197,7 @@ function rupiah(x) {
             { data: 'akun_gl', name: 'akun_gl', orderable:false },
             { data: 'entitas', name: 'entitas' },
             { data: 'partner', name: 'partner' },
+            { data: 'cabang', name: 'cabang' },
             { data: 'keterangan', name: 'keterangan' },
             { data: 'tanggal', name: 'tanggal' },
             { 

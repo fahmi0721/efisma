@@ -443,12 +443,14 @@ class LaporanKeuanganController extends Controller
                  ->leftJoin('m_akun_gl as a', 'a.id', '=', 'b.akun_id')
                 ->leftJoin('m_entitas as e', 'e.id', '=', 'b.entitas_id')
                 ->leftJoin('m_partner as p', 'p.id', '=', 'b.partner_id')
+                ->leftJoin('m_cabang as c', 'c.id', '=', 'b.cabang_id')
                 ->select(
                     'b.id',
                     'b.kode_jurnal',
                     DB::raw("CONCAT(a.no_akun,' - ',a.nama) AS akun_gl"),
                     'e.nama as entitas',
                     'p.nama as partner',
+                    'c.nama as cabang',
                     'b.keterangan',
                     'b.tanggal',
                     'b.debit',
@@ -477,6 +479,10 @@ class LaporanKeuanganController extends Controller
 
                 ->filterColumn('partner', function ($q, $keyword) {
                     $q->where('p.nama', 'LIKE', "%{$keyword}%");
+                })
+
+                ->filterColumn('cabang', function ($q, $keyword) {
+                    $q->where('c.nama', 'LIKE', "%{$keyword}%");
                 })
 
             ->make(true);

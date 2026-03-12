@@ -29,11 +29,13 @@ class BukuBesarExport implements FromView
             ->leftJoin('m_akun_gl as a', 'a.id', '=', 'b.akun_id')
             ->leftJoin('m_entitas as e', 'e.id', '=', 'b.entitas_id')
             ->leftJoin('m_partner as p', 'p.id', '=', 'b.partner_id')
+            ->leftJoin('m_cabang as c', 'c.id', '=', 'b.cabang_id')
             ->select(
                 'b.kode_jurnal',
                 DB::raw("CONCAT(a.no_akun,' - ',a.nama) AS akun_gl"),
                 'e.nama AS entitas',
                 'p.nama as partner',
+                'c.nama as cabang',
                 'b.keterangan',
                 'b.tanggal',
                 'b.debit',

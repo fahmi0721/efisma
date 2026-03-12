@@ -17,6 +17,7 @@
             <th>Akun</th>
             <th>Entitas</th>
             <th>Partner</th>
+            <th>Cabang</th>
             <th>Keterangan</th>
             <th>Tanggal</th>
             <th>Debit</th>
@@ -32,6 +33,7 @@
             <td>{{ $row->akun_gl }}</td>
             <td>{{ $row->entitas }}</td>
             <td>{{ $row->partner }}</td>
+            <td>{{ $row->cabang }}</td>
             <td>{{ $row->keterangan }}</td>
             <td>{{ \Carbon\Carbon::parse($row->tanggal)->format('d-m-Y') }}</td>
             <td>{{ $row->debit }}</td>
