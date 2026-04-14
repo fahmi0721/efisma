@@ -27,22 +27,27 @@
     <!-- FILTER -->
     <div class="row g-2 mb-4">
         @if(auth()->user()->level != "entitas")
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select id="filter_entitas" name="entitas" class="form-select">
                 <option value="">Semua Entitas</option>
             </select>
         </div>
         @endif
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select id="filter_cabang" name="cabang" class="form-select">
                 <option value="">Semua Cabang</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select id="filter_akun" name="akun" class="form-select">
+                <option value="">Semua Akun</option>
             </select>
         </div>
         <div class="col-md-2">
             <input type="text" id="periode" class="form-control form-control flatpickr-input" placeholder="Pilih Periode" style="width: 200px;" />
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class='btn-group'>
             @canAccess('buku_besar.index')
             <button id='btn-filter' class="btn btn-primary">Tampilkan</button>
@@ -132,6 +137,29 @@ $(function() {
         minimumResultsForSearch: 0, // -1 = search box selalu disembunyikan
         escapeMarkup: markup => markup
     });
+
+    $('#filter_akun').select2({
+        ajax: {
+            url: '{{ route("m_akun.select_transaksi") }}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    search: params.term
+                };
+            },
+            processResults: data => ({
+                results: data.map(q => ({ id: q.id, text: q.no_akun + " - " + q.nama }))
+            }),
+            cache: true
+        },
+        theme: 'bootstrap4',
+        width: 'resolve',
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true,
+        minimumResultsForSearch: 0, // -1 = search box selalu disembunyikan
+        escapeMarkup: markup => markup
+    });
     @if(auth()->user()->level != "entitas")
     $('#filter_entitas').select2({
         ajax: {
@@ -155,6 +183,7 @@ $(function() {
 @canAccess('buku_besar.index')
 $('#filter_entitas').val('').trigger('change');
 $('#filter_cabang').val('').trigger('change');
+$('#filter_akun').val('').trigger('change');
 
  // Reload saat filter berubah
 $('#btn-filter').on('click', function() {
@@ -166,11 +195,12 @@ $('#btn-filter').on('click', function() {
 $('#btnExportExcel').click(function() {
     let entitas = $('#filter_entitas').val();
     let cabang_id = $('#filter_cabang').val();
+    let akun_id = $('#filter_akun').val();
     let periode = $('#periode').val();
     @if(auth()->user()->level != "entitas")
-        window.location.href = "{{ route('laporan.bukubesar.export') }}?entitas_id=" + entitas + "&periode=" + periode + "&cabang_id=" + cabang_id;
+        window.location.href = "{{ route('laporan.bukubesar.export') }}?entitas_id=" + entitas + "&periode=" + periode + "&cabang_id=" + cabang_id + "&akun_id=" + akun_id;
     @else
-        window.location.href = "{{ route('laporan.bukubesar.export') }}?entitas_id=&periode=" + periode + "&cabang_id=" + cabang_id;
+        window.location.href = "{{ route('laporan.bukubesar.export') }}?entitas_id=&periode=" + periode + "&cabang_id=" + cabang_id + "&akun_id=" + akun_id;
     @endif
 });
 @endcanAccess
@@ -188,6 +218,7 @@ function rupiah(x) {
             data: function (d) {
                 d.entitas_id = $('#filter_entitas').val();
                 d.cabang_id = $('#filter_cabang').val();
+                d.akun_id = $('#filter_akun').val();
                 d.periode = $('#periode').val();
             }
         },

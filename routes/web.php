@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -185,6 +186,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/m_akun/save', [M_AkunGLController::class, 'store'])->name('m_akun.save')->middleware('permission:m_akun.create');
     Route::get('/m_akun/edit', [M_AkunGLController::class, 'edit'])->name('m_akun.edit')->middleware('permission:m_akun.edit');
     Route::put('/m_akun/update/{id}', [M_AkunGLController::class, 'update'])->name('m_akun.update')->middleware('permission:m_akun.edit');
+    Route::get('/m_akun/select-transaksi', [M_AkunGLController::class, 'select_transaksi'])->name('m_akun.select_transaksi');
     Route::delete('/m_akun/delete/{id}', [M_AkunGLController::class, 'destroy'])->name('m_akun.destroy')->middleware('permission:m_akun.delete');
     
 });

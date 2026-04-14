@@ -436,6 +436,7 @@ class LaporanKeuanganController extends Controller
         $tglAwal  = $periode . '-01';
         $tglAkhir = date('Y-m-t', strtotime($periode . '-01'));
         $cabang_id = $request->cabang_id;
+        $akun_id = $request->akun_id;
 
         if ($request->ajax()) {
 
@@ -459,6 +460,7 @@ class LaporanKeuanganController extends Controller
                 ->whereBetween('b.tanggal', [$tglAwal, $tglAkhir])
                 ->when($entitas, fn($q) => $q->where('b.entitas_id', $entitas))
                 ->when($cabang_id, fn($q) => $q->where('b.cabang_id', $cabang_id))
+                ->when($akun_id, fn($q) => $q->where('b.akun_id', $akun_id))
                 ->orderBy('b.tanggal', 'asc');
 
             return DataTables::of($query)
@@ -499,6 +501,7 @@ class LaporanKeuanganController extends Controller
             $entitas = $request->entitas_id; // filter dari dropdown jika admin/pusat
         }
         $periode = $request->periode ?? date('Y-m');
+        $akun_id = $request->akun_id;
         $cabang_id = $request->cabang_id;
         $tglAwal = $periode . '-01';
         $tglAkhir = date('Y-m-t', strtotime($periode));
@@ -506,7 +509,7 @@ class LaporanKeuanganController extends Controller
         $filename = "Buku-Besar-{$periode}.xlsx";
 
         return Excel::download(
-            new BukuBesarExport($entitas, $periode,$cabang_id),
+            new BukuBesarExport($entitas, $periode,$cabang_id,$akun_id),
             $filename
         );
     }

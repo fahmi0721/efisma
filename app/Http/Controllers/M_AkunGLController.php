@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use App\Helpers\GlService;
 use Validator;
 class M_AkunGLController extends Controller
 {
@@ -65,6 +66,16 @@ class M_AkunGLController extends Controller
             return  Datatables::of($query)->make(true);
         }else{
             return view("page.m_akun.transaksi");
+        }
+    }
+
+    public function select_transaksi(Request $request){
+        $search = $request->search;
+        $data = GlService::getGlTransaksi($search);
+        if(!$data['status']){
+            return null;
+        }else{
+            return response()->json($data['data']);
         }
     }
 
