@@ -25,7 +25,7 @@
             <div class="card card-success card-outline mb-4">
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Update Jurnal Jurnal Rupa-Rupa </h5>
-                    <div class="ms-auto">
+                    <div class="ms-auto d-none">
                         <button  id="btnCariInvoice" class="btn btn-outline-primary btn-sm">
                             <i class="fas fa-search fa-regular"></i> Cari Invoice Belum Lunas
                         </button>
@@ -69,7 +69,7 @@
                             </div>
                         </div>
 
-                        <div class="row mb-3">
+                        <div class="row mb-3 @if($is_multi_cabang) d-none @endif">
                             <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
                                 <select  name="partner_id" id="partner_id" class="form-control partner">
@@ -168,6 +168,7 @@
                             </td>
                             @if($is_multi_cabang)
                             <td>
+                                <input type="hidden"  name="detail[__INDEX__][jurnal_id]" class="form-control" value="">
                                 <select class="form-select cabang-row" name="detail[__INDEX__][cabang_id]">
                                     <option value="">-- Pilih Cabang --</option>
                                 </select>
@@ -397,6 +398,7 @@ $(document).ready(function() {
         let tbody = $('#tableDetail tbody');
         tbody.html('');
         $.each(detailData, function(i, row) {
+            console.log(row);
             let tr = $('#rowTemplate tr').clone();
             if (isMultiCabang) {
             tr.find('.cabang-row').select2({
@@ -419,6 +421,7 @@ $(document).ready(function() {
             if (isMultiCabang && row.cabang_id) {
                 let optCab = new Option(row.nama_cabang, row.cabang_id, true, true);
                 tr.find('.cabang-row').append(optCab).trigger('change');
+                
             }
             // Inisialisasi select2 untuk baris baru saja
             tr.find('.akun-select').select2({
@@ -446,6 +449,7 @@ $(document).ready(function() {
             });
 
             // set nilai input
+            tr.find('input[name="detail['+i+'][jurnal_id]"]').val(row.jurnal_id_secound);
             tr.find('input[name="detail['+i+'][deskripsi]"]').val(row.deskripsi);
             tr.find('input[name="detail['+i+'][debit]"]').val(formatRupiahB(row.debit));
             tr.find('input[name="detail['+i+'][kredit]"]').val(formatRupiahB(row.kredit));

@@ -223,7 +223,7 @@ function detail_transaksi(id,is_multi_cabang=null){
                         `;
                         no++;                        
                         totDebet += debit;
-                        totKredit = kredit;
+                        totKredit += kredit;
                     });
                     
                 html += "</tbody>";

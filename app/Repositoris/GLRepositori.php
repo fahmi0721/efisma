@@ -23,5 +23,9 @@ class GLRepositori
         return $query->get();
     }
 
+    public static function findById($id){
+        return DB::table('m_akun_gl')->where('id', $id)->first();
+    }
+
     
 }

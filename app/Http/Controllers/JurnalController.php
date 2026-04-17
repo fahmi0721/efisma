@@ -383,16 +383,7 @@ class JurnalController extends Controller
 
     public function datatableUangMuka(Request $request){
         $entitas = $request->entitas_id;
-
-        $query = DB::table('view_uang_muka_per_akun')
-                    ->join("m_cabang","m_cabang.id","view_uang_muka_per_akun.cabang_id")
-                    ->select("view_uang_muka_per_akun.*","m_cabang.nama as nama_cabang")
-                    ->where('view_uang_muka_per_akun.sisa', '>', 0);
-
-        if ($entitas) {
-            $query->where('view_uang_muka_per_akun.entitas_id', $entitas);
-        }
-
+        $query = UangMukaService::getDataTableUangMuka($entitas);
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('aksi', function($row){
@@ -704,10 +695,10 @@ class JurnalController extends Controller
             4) VALIDASI UANG MUKA WAJIB ADA LEWAT TOMBOL PJ  (JN)
             ==========================================================*/
             if ($jenis === 'JN' && $isUangMuka) {
-                if(empty($request->jurnal_id_jkk)){
+                if(empty($request->jurnal_id_jkk) && $request->is_multi_cabang === false){
                      return response()->json([
                         'status' => 'error',
-                        'message' => "Pertanggung Jawaban Uang Muka belum di piilh, terdapat akun uang muka pada detail transaksi!"
+                        'message' => "Pertanggung Jawaban Uang Muka belum di piilh, terdapat akun uang muka pada detail transaksi! "
                     ], 422);
                 }
             }
@@ -849,6 +840,9 @@ class JurnalController extends Controller
                     $cabangDetail = $request->is_multi_cabang
                     ? ($row['cabang_id'] ?? null)
                     : $request->cabang_id;
+                    $jurnal_id_secound = $request->is_multi_cabang
+                    ? ($row['jurnal_id'] ?? $jurnalId)
+                    : $jurnalId;
                 }elseif($jenis === "JKM"){
                     $cabangDetail = $request->is_multi_invoice
                     ? ($row['cabang_id'] ?? null)
@@ -883,6 +877,7 @@ class JurnalController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Jurnal berhasil disimpan.',
+                'cek' => $request->detail,
                 'kode_jurnal' => $kode
             ]);
 

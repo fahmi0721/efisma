@@ -3,98 +3,136 @@
 namespace App\Helpers;
 
 use Illuminate\Support\Facades\DB;
+use App\Repositoris\UangMukaRepositori;
+use App\Repositoris\JurnalRepositori;
+use App\Repositoris\GLRepositori;
 use Exception;
 
 class UangMukaService
 {
+
+    public static function getDataTableUangMuka($entitas){
+        return UangMukaRepositori::getDataUangMuka($entitas);
+    }
+
+    private static function get_jurnal_id_jkk($jurnal){
+        if(!$jurnal){
+            return false;
+        }else{
+            if($jurnal->is_multi_cabang == 1){
+                $detail_jurnal = JurnalRepositori::getJurnalDetailByJurnalId($jurnal->id);
+                $respons = array();
+                foreach($detail_jurnal as $d){
+                    $respons[] = $d->jurnal_id_secound;
+                }
+                return $respons;
+            }else{
+                return $jurnal->jurnal_id_jkk;
+            }
+        }
+    }
     /**
      * Saat POSTING JN → Insert pelunasan uang muka
      */
     public static function postingPelunasan($jurnalId)
     {
-        $jurnal = DB::table('jurnal_header')->where('id', $jurnalId)->first();
-        if (!$jurnal || !$jurnal->jurnal_id_jkk) return;
+        DB::transaction(function () use ($jurnalId) {
 
-        $jkkId = $jurnal->jurnal_id_jkk;
+            $jurnal = JurnalRepositori::getJurnalHeaderById($jurnalId);
 
-        // Validasi tanggal JN >= tanggal JKK
-        self::validateTanggal($jkkId, $jurnal->tanggal);
+            // ambil detail
+            $details = JurnalRepositori::getJurnalDetailByJurnalId($jurnalId);
 
-        // ambil detail
-        $details = DB::table('jurnal_detail')
-            ->where('jurnal_id', $jurnalId)
-            ->get();
+            // hapus pelunasan lama (jika reposting)
+            UangMukaRepositori::deletePelunasanUangMukaByJurnalId($jurnalId);
 
-        // hapus pelunasan lama (jika reposting)
-        DB::table('pelunasan_uang_muka')
-            ->where('jurnal_biaya_id', $jurnalId)
-            ->delete();
+            $jkkId = self::get_jurnal_id_jkk($jurnal);
 
-        foreach ($details as $d) {
+            if (is_array($jkkId)) {
+                foreach ($details as $d) {
 
-            $akun = DB::table('m_akun_gl')->where('id', $d->akun_id)->first();
-            if (!$akun || $akun->kategori !== 'uang_muka') continue;
+                    self::validateTanggal($d->jurnal_id_secound, $jurnal->tanggal);
 
-            $jumlah = $d->debit > 0 ? $d->debit : $d->kredit;
-            if ($jumlah <= 0) continue;
-
-            // validasi sisa
-            if (!self::cekKelebihanPelunasan($jkkId, $akun->id, $jumlah)) {
-                throw new Exception("Pelunasan uang muka melebihi sisa untuk akun {$akun->no_akun} - {$akun->nama}.");
+                    $akun = GLRepositori::findById($d->akun_id);
+                    if (!$akun || $akun->kategori !== 'uang_muka') continue;
+                    if (!in_array($d->jurnal_id_secound, $jkkId)) continue;
+                    $jumlah = $d->kredit;
+                    if ($jumlah <= 0) continue;
+                    if (!self::cekKelebihanPelunasan($d->jurnal_id_secound, $akun->id, $jumlah)) {
+                        throw new Exception(
+                            "Pelunasan uang muka melebihi sisa untuk akun {$akun->no_akun} - {$akun->nama}."
+                        );
+                    }
+                    UangMukaRepositori::create([
+                        'entitas_id'          => $jurnal->entitas_id,
+                        'partner_id'          => $jurnal->partner_id,
+                        'jurnal_uang_muka_id' => $d->jurnal_id_secound,
+                        'jurnal_biaya_id'     => $jurnalId,
+                        'akun_biaya_id'       => $akun->id,
+                        'jumlah'              => $jumlah,
+                        'created_at'          => now(),
+                        'updated_at'          => now(),
+                    ]);
+                    
+                }
+            } else {
+                self::validateTanggal($jkkId, $jurnal->tanggal);
+                foreach ($details as $d) {
+                    $akun = GLRepositori::findById($d->akun_id);
+                    if (!$akun || $akun->kategori !== 'uang_muka') continue;
+                    $jumlah = $d->debit > 0 ? $d->debit : $d->kredit;
+                    if ($jumlah <= 0) continue;
+                    if (!self::cekKelebihanPelunasan($jkkId, $akun->id, $jumlah)) {
+                        throw new Exception(
+                            "Pelunasan uang muka melebihi sisa untuk akun {$akun->no_akun} - {$akun->nama}."
+                        );
+                    }
+                    UangMukaRepositori::create([
+                        'entitas_id'          => $jurnal->entitas_id,
+                        'partner_id'          => $jurnal->partner_id,
+                        'jurnal_uang_muka_id' => $d->jurnal_id_secound,
+                        'jurnal_biaya_id'     => $jurnalId,
+                        'akun_biaya_id'       => $akun->id,
+                        'jumlah'              => $jumlah,
+                        'created_at'          => now(),
+                        'updated_at'          => now(),
+                    ]);
+                }
             }
 
-            DB::table('pelunasan_uang_muka')->insert([
-                'entitas_id'          => $jurnal->entitas_id,
-                'partner_id'          => $jurnal->partner_id,
-                'jurnal_uang_muka_id' => $jkkId,
-                'jurnal_biaya_id'     => $jurnalId,
-                'akun_biaya_id'       => $akun->id,
-                'jumlah'              => $jumlah,
-                'created_at'          => now(),
-                'updated_at'          => now(),
-            ]);
-        }
+        });
     }
+
+    
 
     /**
      * Unposting JN → Hapus pelunasan
      */
     public static function unpostingPelunasan($jurnalId)
     {
-        DB::table('pelunasan_uang_muka')
-            ->where('jurnal_biaya_id', $jurnalId)
-            ->delete();
+        UangMukaRepositori::deleteByJurnalBiaya($jurnalId);
     }
 
     /** cek apakah pelunasan tidak melebihi sisa */
-    public static function cekKelebihanPelunasan($jkkId, $akunUangMukaId, $jumlah)
+    public static function cekKelebihanPelunasan($jurnal_id, $akunUangMukaId, $jumlah)
     {
-        $sisa = self::getSisaUangMuka($jkkId, $akunUangMukaId);
+        $sisa = self::getSisaUangMuka($jurnal_id, $akunUangMukaId,$jurnal_id);
         return $jumlah <= $sisa;
     }
 
     /** hitung sisa UM */
-    public static function getSisaUangMuka($jkkId, $akunId)
+    public static function getSisaUangMuka($jurnal_id, $akunId)
     {
-        $totalIn = DB::table('jurnal_detail')
-            ->where('jurnal_id', $jkkId)
-            ->where('akun_id', $akunId)
-            ->sum('debit');
-
-        $totalUsed = DB::table('pelunasan_uang_muka')
-            ->where('jurnal_uang_muka_id', $jkkId)
-            ->where('akun_biaya_id', $akunId)
-            ->sum('jumlah');
-
-        return $totalIn - $totalUsed;
+        $totalUangMuka = UangMukaRepositori::totalUangMuka($jurnal_id);
+        $totalUsed = UangMukaRepositori::totalUsed($jurnal_id,$akunId);
+        return $totalUangMuka - $totalUsed;
     }
 
     /** Validasi tanggal JN >= tanggal JKK */
     public static function validateTanggal($jkkId, $tanggalJN)
     {
-        $jkk = DB::table('jurnal_header')->where('id', $jkkId)->first();
+        $jkk = JurnalRepositori::getJurnalHeaderById($jkkId);
         if (!$jkk) throw new Exception("Jurnal uang muka (JKK) tidak ditemukan.");
-
         if ($tanggalJN < $jkk->tanggal) {
             throw new Exception("Tanggal JN ($tanggalJN) tidak boleh lebih kecil dari tanggal JKK ($jkk->tanggal).");
         }
@@ -108,17 +146,12 @@ class UangMukaService
         self::validateTanggal($request->jurnal_id_jkk, $request->tanggal);
 
         foreach ($request->detail as $d) {
-
-            $akun = DB::table('m_akun_gl')->where('id', $d['akun_id'])->first();
+            $akun = GLRepositori::findById($d['akun_id']);
             if (!$akun || $akun->kategori !== 'uang_muka') continue;
-
             $jumlah = floatval(str_replace('.', '', $d['debit'] ?? $d['kredit'] ?? 0));
             if ($jumlah <= 0) continue;
-
             if (!self::cekKelebihanPelunasan($request->jurnal_id_jkk, $akun->id, $jumlah)) {
-
                 $sisa = self::getSisaUangMuka($request->jurnal_id_jkk, $akun->id);
-
                 throw new Exception("Pelunasan uang muka melebihi sisa untuk akun {$akun->no_akun} - {$akun->nama}. Sisa: " . number_format($sisa, 0, ',', '.'));
             }
         }

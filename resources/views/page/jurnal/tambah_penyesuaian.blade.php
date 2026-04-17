@@ -60,7 +60,7 @@
                             </div>
                         </div>
                         @endif
-                        <div class="row mb-3">
+                        <div class="row mb-3 dis-cabang">
                             <label class="col-sm-3 col-form-label">Multi Cabang</label>
                             <div class="col-sm-9">
                                 <div class="form-check">
@@ -81,7 +81,7 @@
                         </div>
                         
 
-                        <div class="row mb-3">
+                        <div class="row mb-3 dis-partner">
                             <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
                                 <select name="partner_id" id="partner_id" class="form-control partner">
@@ -129,6 +129,7 @@
                                         </td>
                                         <td><input type="text" name="detail[0][deskripsi]" class="form-control"></td>
                                         <td class="col-cabang d-none">
+                                            <input type="hidden"  name="detail[0][jurnal_id]" class="form-control" value="">
                                             <select name="detail[0][cabang_id]" class="form-control cabang-line"></select>
                                         </td>
                                         <td><input type="text"  name="detail[0][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
@@ -179,6 +180,7 @@
                             </td>
                             <td><input type="text" name="detail[__INDEX__][deskripsi]" class="form-control"></td>
                             <td class="col-cabang d-none">
+                                <input type="hidden"  name="detail[__INDEX__][jurnal_id]" class="form-control" value="">
                                 <select name="detail[__INDEX__][cabang_id]" class="form-control cabang-line"></select>
                             </td>
                             <td><input type="text" name="detail[__INDEX__][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
@@ -629,36 +631,57 @@ function hitungTotal() {
 }
 $(document).on('click','.pilihUangMuka', function() {
     const data = $(this).data();
-    const id_jkk = $("#jurnal_id_jkk").val();
-    if (id_jkk && id_jkk.trim() !== "") {
-        Swal.fire('Oops', 'Anda sudah memilih satu uang muka!, Hapus dulu dari data detail jurnal', 'warning');
-        return;
-    }
-    $("#jurnal_id_jkk").val(data.id);
-    var option = new Option(data.cabang, data.cabang_id, true, true);
-    $(".cabang").append(option).trigger('change');
-    $(".cabang").prop("disabled",true);
-
-    var option = new Option(data.partner, data.partner_id, true, true);
-    $(".partner").append(option).trigger('change');
-    $(".partner").prop("disabled",true);
     $(".entitas").prop("disabled",true);
+    $(".partner").prop("disabled",true);
+    if($('#is_multi_cabang').is(":checked")){
+        // Kirim ke fungsi pembuat baris jurnal
+        insertDetailJurnalUangMuka({
+            id: data.id,
+            cabang: data.cabang,
+            cabang_id:data.cabang_id,
+            kode: data.kode,
+            tanggal: data.tanggal,
+            total: data.total,
+            sisa: data.sisa,
+            akun_id: data.akun_id,
+            akun_nama: data.akun_nama
+        });
+        $(".dis-partner").addClass("d-none");
+    }else{
+        const id_jkk = $("#jurnal_id_jkk").val();
+        if (id_jkk && id_jkk.trim() !== "") {
+            Swal.fire('Oops', 'Anda sudah memilih satu uang muka!, Hapus dulu dari data detail jurnal', 'warning');
+            return;
+        }
+        $("#jurnal_id_jkk").val(data.id);
+        var option = new Option(data.cabang, data.cabang_id, true, true);
+        $(".cabang").append(option).trigger('change');
+        $(".cabang").prop("disabled",true);
 
-    // Simpan cabang JKK (referensi)
-    window.CABANG_JKK = data.cabang_id;
+        var option = new Option(data.partner, data.partner_id, true, true);
+        $(".partner").append(option).trigger('change');
+        $(".partner").prop("disabled",true);
+        $(".entitas").prop("disabled",true);
 
-    // Kirim ke fungsi pembuat baris jurnal
-    insertDetailJurnalUangMuka({
-        id: data.id,
-        cabang: data.cabang,
-        cabang_id:data.cabang_id,
-        kode: data.kode,
-        tanggal: data.tanggal,
-        total: data.total,
-        sisa: data.sisa,
-        akun_id: data.akun_id,
-        akun_nama: data.akun_nama
-    });
+        // Simpan cabang JKK (referensi)
+        window.CABANG_JKK = data.cabang_id;
+
+        // Kirim ke fungsi pembuat baris jurnal
+        insertDetailJurnalUangMuka({
+            id: data.id,
+            cabang: data.cabang,
+            cabang_id:data.cabang_id,
+            kode: data.kode,
+            tanggal: data.tanggal,
+            total: data.total,
+            sisa: data.sisa,
+            akun_id: data.akun_id,
+            akun_nama: data.akun_nama
+        });
+        $(".dis-cabang").addClass("d-none");
+        
+    }
+    
     $("#btnCariInvoice").prop("disabled",true);
     $('#modalUangMuka').modal('hide');
 });
@@ -713,10 +736,14 @@ function insertDetailJurnalUangMuka(data) {
 
     // 🔹 kolom cabang (conditional)
     let cabangCell = '';
+    let btn_hapus = '';
+    let jurnal_id = '';
 
     if (isMulti) {
+        jurnal_id = `<input type="hidden"  name="detail[${idx}][jurnal_id]" value="${data.id}" class="form-control" value="">`;
         cabangCell = `
             <td class="col-cabang">
+                ${jurnal_id}
                 <select class="form-control cabang-line cabang-jkk"
                         name="detail[${idx}][cabang_id]"
                         disabled>
@@ -724,6 +751,8 @@ function insertDetailJurnalUangMuka(data) {
                 </select>
             </td>
         `;
+        btn_hapus = `<button type="button" data-piutang='' class="btn btn-danger btn-sm btn-hapus"><i class="fas fa-trash"></i></button>`;
+        
     } else {
         // tetap kirim cabang JKK secara hidden (opsional, backend juga bisa isi)
         cabangCell = `
@@ -733,6 +762,7 @@ function insertDetailJurnalUangMuka(data) {
                        value="${window.CABANG_JKK ?? ''}">
             </td>
         `;
+        btn_hapus = `<button type="button" data-toggle='tooltip' title='tidak boleh dihapus' data-piutang='ada' class="btn btn-warning btn-sm btn-piutang"><i class="fas fa-times"></i></button>`;
     }
 
     // 🔹 Baris kedua: Piutang (Kredit)
@@ -750,10 +780,12 @@ function insertDetailJurnalUangMuka(data) {
             <td><input type="text" readonly name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
             <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
             <td class="text-center">
-                <button type="button" data-toggle='tooltip' title='tidak boleh dihapus' data-piutang='ada' class="btn btn-warning btn-sm btn-piutang"><i class="fas fa-times"></i></button>
+                ${btn_hapus}
             </td>
         </tr>
     `;
+
+    
 
     // Masukkan ke tabel
     $('#tableDetail tbody').append(rowPiutang);
