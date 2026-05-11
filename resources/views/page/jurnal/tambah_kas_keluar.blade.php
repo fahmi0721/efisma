@@ -23,14 +23,21 @@
     <div class="row">
         <div class="col-12">
             <div class="card card-success card-outline mb-4">
-                <div class="card-header"><div class="card-title">Create New Jurnal Kas Keluar</div></div>
+                <div class="card-header d-flex align-items-center">
+                    <h5 class="mb-0">Create New Jurnal Kas Keluar</h5>
+                    <div class="ms-auto">
+                        <button id="btnCariHutang" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-file-invoice-dollar fa-regular"></i> Pelunasan Hutang
+                        </button>
+                        
+                    </div>
+                </div>
                 
                 <form action="javascript:void(0)" enctype="multipart/form-data" id="form_data">
                     @csrf
                     @method("post")
 
                     <div class="card-body">
-
                         <!-- 🔄 Ganti Tahun → Periode -->
                         <div class="row mb-3">
                             <label for="tanggal" class="col-sm-3 col-form-label">Tanggal <b class="text-danger">*</b></label>
@@ -49,8 +56,8 @@
                             </div>
                         </div>
                         @endif
-
-                        <div class="row mb-3">
+                        
+                        <div class="row mb-3 dis-cabang">
                             <label for="cabang_id" class="col-sm-3 col-form-label">Cabang</label>
                             <div class="col-sm-9">
                                 <select name="cabang_id" id="cabang_id" class="form-control cabang">
@@ -59,7 +66,7 @@
                             </div>
                         </div>
 
-                        <div class="row mb-3">
+                        <div class="row mb-3 dis-partner">
                             <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
                                 <select name="partner_id" id="partner_id" class="form-control partner">
@@ -81,6 +88,7 @@
                                     <tr>
                                         <th style="width: 30%">Akun</th>
                                         <th>Deskripsi</th>
+                                        <th class="col-cabang d-none">Cabang</th>
                                         <th class="text-end">Debit</th>
                                         <th class="text-end">Kredit</th>
                                         <th style="width: 5%"></th>
@@ -96,7 +104,10 @@
                                                 @endforeach
                                             </select>
                                         </td>
-                                        <td><input type="text" name="detail[0][deskripsi]" class="form-control"></td>
+                                        <td>
+                                            <input type=""hidden  name="detail[0][jurnal_id]" class="form-control" value="">
+                                            <input type="text" name="detail[0][deskripsi]" class="form-control">
+                                        </td>
                                         <td><input type="text"  name="detail[0][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
                                         <td><input type="text"  name="detail[0][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="0"></td>
                                         <td class="text-center">
@@ -113,7 +124,7 @@
                                         </td>
                                     </tr>
                                     <tr class="table-light">
-                                        <th colspan="2" class="text-end">TOTAL</th>
+                                        <th  colspan="2" class="text-end">TOTAL</th>
                                         <th class="text-end" id="totalDebit">0</th>
                                         <th class="text-end" id="totalKredit">0</th>
                                         <th></th>
@@ -143,7 +154,10 @@
                                     <option value="">-- Pilih Akun --</option>
                                 </select>
                             </td>
-                            <td><input type="text" name="detail[__INDEX__][deskripsi]" class="form-control"></td>
+                            <td>
+                                <input type="hidden"  name="detail[__INDEX__][jurnal_id]" class="form-control" value="">
+                                <input type="text" name="detail[__INDEX__][deskripsi]" class="form-control">
+                            </td>
                             <td><input type="text" name="detail[__INDEX__][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
                             <td><input type="text" name="detail[__INDEX__][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="0"></td>
                             <td class="text-center">
@@ -157,12 +171,62 @@
     </div>    
 </div>
 
+
+
+<!-- 🧾 Modal Cari Hutang -->
+<div class="modal fade" id="modalHutang" tabindex="-1" aria-labelledby="modalHutang" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h6 class="modal-title" id="modalHutang">Daftar Hutang</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+        <div class="table-responsive">
+          <table id="tb_hutang" class="table table-bordered table-striped">
+            <thead class="table-light">
+              <tr class="text-center">
+                <th width="5%">#</th>
+                <th>Kode Jurnal</th>
+                <th>Entitas</th>
+                <th>Partner<br /><small>(Vendor/Pegawai)</small></th>
+                <th>Akun Hutang</th>
+                <th>Tanggal</th>
+                <th>Total Hutang</th>
+                <th>Pelunasan</th>
+                <th>Sisa</th>
+                <th>Umur</th>
+                <th width="5%">Aksi</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
 @endsection
 
 @section('js')
 
 <script>
 $(document).ready(function() {
+    
+    $('#btnCariHutang').click(function() {
+        @if(auth()->user()->level == "entitas")
+            const entitas = "{{ auth()->user()->entitas_id }}";
+        @else
+            const entitas = $('#entitas_id').val();
+            if (!entitas) {
+                Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
+                return;
+            }
+        @endif
+        $('#modalHutang').modal('show');
+        loadHutangTable(entitas);
+    });
 
     flatpickr("#tanggal", {
         altInput: true,
@@ -277,6 +341,154 @@ $(document).ready(function() {
         proses_data();
     });
 });
+
+
+// $('#is_multi_cabang').on('change', function () {
+//     if (this.checked) {
+//         $('.col-cabang').removeClass('d-none');
+//         $('#cabang_id').prop('required', false);
+//         $(".cabang_utama").addClass('d-none');
+//         $(".cek_col").attr("colspan",3);
+
+//         // 🔥 INIT SEMUA YANG SUDAH ADA
+//         initCabangLine($('#tableDetail'));
+//     } else {
+//         $('.col-cabang').addClass('d-none');
+//         $('#cabang_id').prop('required', true);
+//         $(".cabang_utama").removeClass('d-none');
+//         $(".cek_col").attr("colspan",2);
+//         // optional: clear value
+//         $('.cabang-line').val(null).trigger('change');
+//     }
+// });
+
+
+/** Load Datatable Hutang */
+function loadHutangTable(entitas_id) {
+    if ($.fn.DataTable.isDataTable('#tb_hutang')) {
+        $('#tb_hutang').DataTable().destroy();
+    }
+
+    $('#tb_hutang').DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        ajax: {
+            url: "{{ route('jurnal.hutang.datatable') }}",
+            data: { entitas_id: entitas_id },
+        },
+        columns: [
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', className: 'text-center', orderable: false, searchable: false },
+            { 
+                data: 'kode_jurnal', 
+                name: 'kode_jurnal',
+                render: function(data,type, row) {
+                     if (type === 'display') {
+                        let html = row.kode_jurnal;
+                        return html;
+                    }
+
+                    // 🔹 Untuk search / export — pakai teks polos gabungan
+                    return `${row.kode_jurnal} ${row.no_invoice ?? ''}`;
+                },orderable:false, 
+            },
+            { data: 'entitas_nama', name: 'm_entitas.nama' },
+            { data: 'partner_nama', name: 'partner_nama' },
+            { data: 'akun_hutang', name: 'm_akun_gl.nama' },
+            {
+                data: 'tanggal',
+                name: 'tanggal',
+                render: function (data) {
+                    if (!data) return '';
+                    let tgl = new Date(data);
+                    return tgl.toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                }
+            },
+            { data: 'total_tagihan', name: 'total_tagihan', className: 'text-end',orderable: false, searchable: false,
+                render: data => new Intl.NumberFormat('id-ID').format(data)
+            },
+            { data: 'total_pelunasan', name: 'total_pelunasan', className: 'text-end',orderable: false, searchable: false,
+                render: data => new Intl.NumberFormat('id-ID').format(data)
+            },
+            { data: 'sisa_hutang', name: 'sisa_hutang', className: 'text-end',orderable: false, searchable: false,
+                render: data => new Intl.NumberFormat('id-ID').format(data)
+            },
+            { data: 'umur_hutang', name: 'umur_hutang', 
+                render: data => data + " Hari"
+            },
+            { data: 'aksi', name: 'aksi', orderable: false, searchable: false }
+        ],
+        // order: [[, 'asc']]
+    });
+}
+
+$(document).on('click','.pilihHutang', function() {
+    const data = $(this).data();
+    console.log(data);
+    $(".entitas").prop("disabled",true);
+    $(".partner").prop("disabled",true);
+    insertDetailJurnalUtang({
+            id: data.id,
+            kode: data.kode,
+            tanggal: data.tanggal,
+            total: data.total,
+            sisa: data.sisa_hutang,
+            akun_id: data.akun_id,
+            akun_nama: data.akun_nama
+        });
+    $(".dis-partner").addClass("d-none");
+    $(".dis-cabang").addClass("d-none");
+    $("#is_multi_cabang").prop("checked",true);
+    $('#modalHutang').modal('hide');
+});
+
+function insertDetailJurnalUtang(data) {
+    
+    function formatIDR(angka) {
+        if (!angka || isNaN(angka)) return '0';
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(angka).replace('Rp', '').trim(); // tanpa simbol "Rp"
+    }
+    // Ambil index baris terakhir
+    const idx = $('#tableDetail tbody tr').length;
+    // 🔹 kolom cabang (conditional)
+    let btn_hapus = `<button type="button" data-piutang='' class="btn btn-danger btn-sm btn-hapus"><i class="fas fa-trash"></i></button>`;
+    let jurnal_id = `<input type="hidden"  name="detail[${idx}][jurnal_id]" value="${data.id}" class="form-control" value="">`;
+   
+    // 🔹 Baris kedua: Piutang (Kredit)
+    let rowHutang = `
+        <tr>
+            <td>
+                <select class="form-select akun-select" name="detail[${idx}][akun_id]" required>
+                    <option value="${data.akun_id ?? ''}">
+                        ${data.akun_nama ?? '(Akun Uang Muka)'}
+                    </option>
+                </select>
+            </td>
+            <td>${jurnal_id}<input readonly type="text" name="detail[${idx}][deskripsi]" value='PJ Uang Muka ${data.kode}' class="form-control"></td>
+            <td><input type="text" readonly name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
+            <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
+            <td class="text-center">
+                ${btn_hapus}
+            </td>
+        </tr>
+    `;
+
+    // Masukkan ke tabel
+    $('#tableDetail tbody').append(rowHutang);
+    $("[data-toggle='tooltip']").tooltip();
+    // Hitung ulang total
+    hitungTotal();
+}
+
+
 
 // tambah baris baru
 $('#btnTambahBaris').click(function() {

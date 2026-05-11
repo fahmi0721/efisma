@@ -232,6 +232,7 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
         Route::post('/unposting_batch', [JurnalController::class, 'unpostingBatch'])->name('jurnal.unposting_batch')->middleware('permission:kas_keluar.unposting|kas_masuk.unposting|pendapatan.unposting|penyesuaian.unposting');
         Route::get('/piutang/datatable', [JurnalController::class, 'datatablePiutang'])->name('jurnal.piutang.datatable')->middleware('permission:kas_keluar.view|kas_masuk.view|pendapatan.view|penyesuaian.view');
         Route::get('/uangmuka/datatable', [JurnalController::class, 'datatableUangMuka'])->name('jurnal.uangmuka.datatable')->middleware('permission:penyesuaian.view|penyesuaian.create');
+        Route::get('/hutang/datatable', [JurnalController::class, 'datatableHutang'])->name('jurnal.hutang.datatable')->middleware('permission:kas_keluar.view|kas_keluar.create');
 
 
         Route::get('/pendapatan', [JurnalController::class, 'index'])->name('jurnal.pendapatan')->defaults('jenis', 'JP')->middleware('permission:pendapatan.view');

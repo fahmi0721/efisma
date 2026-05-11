@@ -231,7 +231,7 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
-        <h6 class="modal-title" id="modalUangMuka">Daftar Invoice Belum Lunas</h6>
+        <h6 class="modal-title" id="modalUangMuka">Daftar Uang Muka yang belum di PJkan</h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">

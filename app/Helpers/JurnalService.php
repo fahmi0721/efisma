@@ -154,4 +154,6 @@ class JurnalService
 
         return ['is' => false, 'akun_id' => null, 'nominal' => 0];
     }
+
+    
 }

@@ -11,6 +11,7 @@ use App\Helpers\PeriodeHelper;
 use App\Helpers\JurnalService;
 use App\Helpers\PelunasanPiutangService;
 use App\Helpers\UangMukaService;
+use App\Helpers\HutangService;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use Validator;
@@ -408,6 +409,11 @@ class JurnalController extends Controller
             ->make(true);
     }
 
+    public function datatableHutang(Request $request){
+        $entitas = $request->entitas_id;
+        return HutangService::getDataTableHutang($entitas);
+    }
+
     function detail_transaksi(Request $request){
         $jurnal_id = $request->id;
         $detail = DB::table('jurnal_detail as d')
@@ -609,6 +615,11 @@ class JurnalController extends Controller
         $akunPiutangId = null;
         $nominalPiutang = 0;
 
+        // FLAG hutang
+        $isHutang = false;
+        $akunHutangId = null;
+        $JurnalIdHutang = null;
+
         foreach ($request->detail as $row) {
 
             $akun = JurnalService::getAkun($row['akun_id']);
@@ -634,6 +645,18 @@ class JurnalController extends Controller
                     $isPiutang    = true;
                     $akunPiutangId = $piut['akun_id'];
                     $nominalPiutang = $piut['nominal'];
+                }
+            }
+
+            /* =========================================================
+            3) DETEKSI HUTANG
+            ==========================================================*/
+            if ($jenis === 'JKK') {
+                $hut = HutangService::detectHutang($row);
+                if ($hut['is']) {
+                    $isHutang    = true;
+                    $akunHutangId = $hut['akun_id'];
+                    $JurnalIdHutang   = $hut['jurnal_id'];
                 }
             }
 
@@ -687,6 +710,18 @@ class JurnalController extends Controller
                      return response()->json([
                         'status' => 'error',
                         'message' => "Wajib memilih partner jika ada akun uang muka pada detail transaksi"
+                    ], 422);
+                }
+            }
+
+            /* =========================================================
+            4) VALIDASI UANG MUKA WAJIB TOMBOL PELUNASAN  (JKK)
+            ==========================================================*/
+            if ($jenis === 'JKK' && $isHutang) {
+                if(empty($JurnalIdHutang)){
+                     return response()->json([
+                        'status' => 'error',
+                        'message' => "Terdapat akun hutang, pelunasan hutang harus melalui tombol pelunasan hutang!"
                     ], 422);
                 }
             }
@@ -1043,7 +1078,33 @@ class JurnalController extends Controller
                     $nominalPiutang = $piut['nominal'];
                 }
             }
+            /* =========================================================
+            2) VALIDASI DEPOSIT (JP)
+            ==========================================================*/
+            if ($jenis === 'JP' && JurnalService::isDepositAkun($akun)) {
 
+                $saldoDeposit = JurnalService::getSaldoDeposit(
+                    $akun->id,
+                    $request->partner_id,
+                    $request->entitas_id
+                );
+
+                if ($debit <= 0) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => "Pemakaian deposit harus diisi pada kolom Debit."
+                    ], 422);
+                }
+
+                if ($debit > $saldoDeposit) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => "Saldo deposit tidak cukup. Saldo: " . number_format($saldoDeposit)
+                    ], 422);
+                }
+                
+                continue; // skip saldo normal
+            }
             
             /* =========================================================
             3) VALIDASI SALDO NORMAL (JP)
@@ -1264,7 +1325,8 @@ class JurnalController extends Controller
             return response()->json(['status' => false, 'message' => 'Total debit dan kredit tidak balance, tidak bisa diposting!']);
         }
 
-        if ((in_array($jurnal->jenis,['JKM',"JN"]))) {
+        // if ((in_array($jurnal->jenis,['JKM',"JN"]))) {
+        if ((in_array($jurnal->jenis,["JN"]))) {
             UangMukaService::postingPelunasan($id);
         }
 
