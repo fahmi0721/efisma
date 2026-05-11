@@ -41,7 +41,7 @@ class M_AkunGLController extends Controller
     public function map(Request $request)
     {
         if($request->ajax()){
-            $query = DB::table("view_akun_hirarki")->get();
+            $query = DB::table("view_akun_hirarki")->orderBy('sort_path','asc')->get();
             return  Datatables::of($query)
                 ->addIndexColumn()
                 ->addColumn('aksi', function ($row) {
