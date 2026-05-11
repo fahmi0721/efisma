@@ -48,6 +48,7 @@ class LaporanKeuanganController extends Controller
                 'level',
                 'sort_path'
             )
+            ->orderBy("sort_path","asc")
             ->whereIn('tipe_akun', ['aktiva', 'pasiva', 'modal'])
             ->get();
 
@@ -171,6 +172,7 @@ class LaporanKeuanganController extends Controller
                 'level',
                 'sort_path'
             )
+            ->orderBy('sort_path','asc')
             ->whereIn('tipe_akun', ['pendapatan', 'beban'])
             ->get();
 

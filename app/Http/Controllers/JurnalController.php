@@ -15,7 +15,7 @@ use App\Helpers\HutangService;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use Validator;
-
+use Exception;
 class JurnalController extends Controller
 {
     public function index(Request $request, $jenis = null)
@@ -411,7 +411,8 @@ class JurnalController extends Controller
 
     public function datatableHutang(Request $request){
         $entitas = $request->entitas_id;
-        return HutangService::getDataTableHutang($entitas);
+        $partner = $request->partner_id;
+        return HutangService::getDataTableHutang($entitas,$partner);
     }
 
     function detail_transaksi(Request $request){
@@ -619,6 +620,7 @@ class JurnalController extends Controller
         $isHutang = false;
         $akunHutangId = null;
         $JurnalIdHutang = null;
+        $IsMultiJkk = 0;
 
         foreach ($request->detail as $row) {
 
@@ -657,6 +659,8 @@ class JurnalController extends Controller
                     $isHutang    = true;
                     $akunHutangId = $hut['akun_id'];
                     $JurnalIdHutang   = $hut['jurnal_id'];
+                    $IsMultiJkk = 1;
+                    if(HutangService::validateDraftHutang($row,$request->tanggal)) continue;
                 }
             }
 
@@ -816,6 +820,8 @@ class JurnalController extends Controller
                 $is_multi_cabang = $request->is_multi_cabang;
             }elseif($jenis === "JKM"){
                 $is_multi_cabang = $request->is_multi_invoice;
+            }elseif($jenis == "JKK"){
+                $is_multi_cabang = $request->is_multi_cabang;
             }
             $dataHeader = [
                 'kode_jurnal'  => $kode,
@@ -892,6 +898,9 @@ class JurnalController extends Controller
                             JurnalService::parseRupiah($row['kredit'] ?? 0)
                         );
                     }
+                }elseif($jenis === "JKK"){
+                    $jurnal_id_secound = $row['jurnal_id'];
+                   
                 }
 
                 DB::table('jurnal_detail')->insert([
@@ -1070,6 +1079,16 @@ class JurnalController extends Controller
                 $nominalUangMuka = $um['nominal'];
             }
 
+            if ($jenis === 'JKK') {
+                $hut = HutangService::detectHutang($row);
+                if ($hut['is']) {
+                    $isHutang    = true;
+                    $akunHutangId = $hut['akun_id'];
+                    $JurnalIdHutang   = $hut['jurnal_id'];
+                    if(HutangService::validateDraftHutang($row,$request->tanggal)) continue;
+                }
+            }
+
             if ($jenis === 'JKM') {
                 $piut = JurnalService::detectPiutang($row);
                 if ($piut['is']) {
@@ -1229,6 +1248,10 @@ class JurnalController extends Controller
                             JurnalService::parseRupiah($row['kredit'] ?? 0)
                         );
                     }
+                }elseif($jenis === "JKK"){
+                    if($isMultiCabang){
+                        $jurnal_id_secound = $row['jurnal_id'];
+                    }
                 }
                
                 DB::table('jurnal_detail')->insert([
@@ -1237,9 +1260,7 @@ class JurnalController extends Controller
                     'jurnal_id_secound' => $isMultiCabang
                             ? $row['jurnal_id']
                             : $id,
-                    'cabang_id' => $isMultiCabang
-                            ? $row['cabang_id']
-                            : $request->cabang_id,
+                    'cabang_id' => $cabangDetail,
                     'deskripsi'  => $row['deskripsi'] ?? '',
                     'debit'      => JurnalService::parseRupiah($row['debit'] ?? 0),
                     'kredit'     => JurnalService::parseRupiah($row['kredit'] ?? 0),
@@ -1328,6 +1349,10 @@ class JurnalController extends Controller
         // if ((in_array($jurnal->jenis,['JKM',"JN"]))) {
         if ((in_array($jurnal->jenis,["JN"]))) {
             UangMukaService::postingPelunasan($id);
+        }
+
+        if ($jurnal->jenis === "JKK") {
+            HutangService::postingPelunasan($id);
         }
 
 
@@ -1522,6 +1547,7 @@ class JurnalController extends Controller
         if ($jurnal->jenis === 'JKK') {
             try {
                 JurnalService::validateJKKNotUsed($id);
+                HutangService::unpostingPelunasan($id);
             } catch (\Exception  $e) {
                 return response()->json(['status' => false, 'message' => 'Gagal unposting jurnal: '.$e->getMessage()]);
             }
@@ -1846,6 +1872,10 @@ class JurnalController extends Controller
                 PeriodeHelper::cekPeriodeOpen($jurnal->tanggal);
                 if (in_array($jurnal->jenis, ['JN','JKM'])) {
                     UangMukaService::postingPelunasan($jurnal->id);
+                }
+
+                if ($jurnal->jenis === "JKK") {
+                    HutangService::postingPelunasan($jurnal->id);
                 }
                 // Ambil detail jurnal
                 $detail = DB::table('jurnal_detail')

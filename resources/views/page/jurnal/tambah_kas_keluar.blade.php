@@ -36,7 +36,7 @@
                 <form action="javascript:void(0)" enctype="multipart/form-data" id="form_data">
                     @csrf
                     @method("post")
-
+                    <input type="hidden" name="is_multi_cabang" id="is_multi_cabang" value='0'>
                     <div class="card-body">
                         <!-- 🔄 Ganti Tahun → Periode -->
                         <div class="row mb-3">
@@ -217,15 +217,25 @@ $(document).ready(function() {
     $('#btnCariHutang').click(function() {
         @if(auth()->user()->level == "entitas")
             const entitas = "{{ auth()->user()->entitas_id }}";
+            const partner = $('#partner_id').val();
+            if (!partner) {
+                Swal.fire('Oops', 'Pilih partner terlebih dahulu!', 'warning');
+                return;
+            }
         @else
             const entitas = $('#entitas_id').val();
             if (!entitas) {
                 Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
                 return;
             }
+            const partner = $('#partner_id').val();
+            if (!partner) {
+                Swal.fire('Oops', 'Pilih partner terlebih dahulu!', 'warning');
+                return;
+            }
         @endif
         $('#modalHutang').modal('show');
-        loadHutangTable(entitas);
+        loadHutangTable(entitas,partner);
     });
 
     flatpickr("#tanggal", {
@@ -308,7 +318,7 @@ $(document).ready(function() {
             data: function (params) {
                 return {
                     q: params.term, // teks yang diketik user
-                    jenis: 'vendor',
+                    jenis: 'all',
                     @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val() || null // kirim data tambahan jika ada
                     @endif
@@ -343,28 +353,9 @@ $(document).ready(function() {
 });
 
 
-// $('#is_multi_cabang').on('change', function () {
-//     if (this.checked) {
-//         $('.col-cabang').removeClass('d-none');
-//         $('#cabang_id').prop('required', false);
-//         $(".cabang_utama").addClass('d-none');
-//         $(".cek_col").attr("colspan",3);
-
-//         // 🔥 INIT SEMUA YANG SUDAH ADA
-//         initCabangLine($('#tableDetail'));
-//     } else {
-//         $('.col-cabang').addClass('d-none');
-//         $('#cabang_id').prop('required', true);
-//         $(".cabang_utama").removeClass('d-none');
-//         $(".cek_col").attr("colspan",2);
-//         // optional: clear value
-//         $('.cabang-line').val(null).trigger('change');
-//     }
-// });
-
 
 /** Load Datatable Hutang */
-function loadHutangTable(entitas_id) {
+function loadHutangTable(entitas_id,partner_id) {
     if ($.fn.DataTable.isDataTable('#tb_hutang')) {
         $('#tb_hutang').DataTable().destroy();
     }
@@ -375,7 +366,7 @@ function loadHutangTable(entitas_id) {
         responsive: true,
         ajax: {
             url: "{{ route('jurnal.hutang.datatable') }}",
-            data: { entitas_id: entitas_id },
+            data: { entitas_id: entitas_id,partner_id: partner_id },
         },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', className: 'text-center', orderable: false, searchable: false },
@@ -437,16 +428,16 @@ $(document).on('click','.pilihHutang', function() {
             tanggal: data.tanggal,
             total: data.total,
             sisa: data.sisa_hutang,
-            akun_id: data.akun_id,
+            akun_id: data.akun_hutang_id,
             akun_nama: data.akun_nama
         });
-    $(".dis-partner").addClass("d-none");
     $(".dis-cabang").addClass("d-none");
-    $("#is_multi_cabang").prop("checked",true);
+    $("#is_multi_cabang").val(1);
     $('#modalHutang').modal('hide');
 });
 
 function insertDetailJurnalUtang(data) {
+    console.log(data);
     
     function formatIDR(angka) {
         if (!angka || isNaN(angka)) return '0';
@@ -577,6 +568,8 @@ function reIndexRows() {
  * @param {boolean} confirmSave - true jika user sudah konfirmasi peringatan
  */
 function proses_data(confirmSave = false) {
+    $("#entitas_id").prop("disabled",false);
+    $("#partner_id").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
     $.ajax({
@@ -620,6 +613,8 @@ function proses_data(confirmSave = false) {
                     timer: 1500,
                     showConfirmButton: false
                 });
+                $("#entitas_id").prop("disabled",true);
+                $("#partner_id").prop("disabled",true);
                 setTimeout(() => {
                     window.location.href = "{{ route('jurnal.kaskeluar') }}";
                 }, 1500);
@@ -628,6 +623,8 @@ function proses_data(confirmSave = false) {
             // ⚠️ Jika error non-konfirmasi
             if (result.status === "error") {
                 Swal.fire("Gagal!", result.message, "error");
+                $("#entitas_id").prop("disabled",true);
+                $("#partner_id").prop("disabled",true);
             }
         },
         error: function(e){

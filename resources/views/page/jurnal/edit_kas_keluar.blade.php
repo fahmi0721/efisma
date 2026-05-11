@@ -24,7 +24,7 @@
         <div class="col-12">
             <div class="card card-success card-outline mb-4">
                 <div class="card-header"><div class="card-title">Update Jurnal Kas Keluar</div></div>
-                
+                <input type="hidden" name="is_multi_cabang" id="is_multi_cabang" value="{{ $data->is_multi_cabang }}">
                 <form action="javascript:void(0)" enctype="multipart/form-data" id="form_data">
                     @csrf
                     @method("put")
@@ -44,12 +44,13 @@
                         <div class="row mb-3">
                             <label for="entitas_id" class="col-sm-3 col-form-label">Entitas <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
-                                <select name="entitas_id" id="entitas_id" class="form-control entitas">
+                                <select @if($data->is_multi_cabang == 1) disabled @endif name="entitas_id" id="entitas_id" class="form-control entitas">
                                     <option value="">-- Pilih Entitas --</option>
                                 </select>
                             </div>
                         </div>
                         @endif
+                        @if($data->is_multi_cabang == 0)
                         <div class="row mb-3">
                             <label for="cabang_id" class="col-sm-3 col-form-label">Cabang </label>
                             <div class="col-sm-9">
@@ -58,11 +59,11 @@
                                 </select>
                             </div>
                         </div>
-
+                        @endif
                         <div class="row mb-3">
                             <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
-                                <select name="partner_id" id="partner_id" class="form-control partner">
+                                <select name="partner_id" @if($data->is_multi_cabang == 1) disabled @endif id="partner_id" class="form-control partner">
                                     <option value="">-- Pilih Partner --</option>
                                 </select>
                             </div>
@@ -143,7 +144,10 @@
                                     <option value="">-- Pilih Akun --</option>
                                 </select>
                             </td>
-                            <td><input type="text" name="detail[__INDEX__][deskripsi]" class="form-control"></td>
+                            <td>
+                                <input type="hidden" name="detail[__INDEX__][jurnal_id]" class="form-control">
+                                <input type="text" name="detail[__INDEX__][deskripsi]" class="form-control">
+                            </td>
                             <td><input type="text" name="detail[__INDEX__][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
                             <td><input type="text" name="detail[__INDEX__][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="0"></td>
                             <td class="text-center">
@@ -289,6 +293,7 @@ $(document).ready(function() {
         $('.partner').val(null).trigger('change'); // kosongkan value dulu
     });
     @endif
+    
     if (detailData.length > 0) {
         let tbody = $('#tableDetail tbody');
         tbody.html('');
@@ -320,6 +325,7 @@ $(document).ready(function() {
             });
 
             // set nilai input
+            tr.find('input[name="detail['+i+'][jurnal_id]"]').val(row.jurnal_id_secound);
             tr.find('input[name="detail['+i+'][deskripsi]"]').val(row.deskripsi);
             tr.find('input[name="detail['+i+'][debit]"]').val(formatRupiahB(row.debit));
             tr.find('input[name="detail['+i+'][kredit]"]').val(formatRupiahB(row.kredit));
@@ -327,7 +333,12 @@ $(document).ready(function() {
             // isi select2 akun
             let option = new Option(row.akun_gl, row.akun_id, true, true);
             tr.find('.akun-select').append(option).trigger('change');
-
+            @if($data->is_multi_cabang == 1) 
+                tr.find('.akun-select').prop("disabled",true);
+                tr.find('.btn-hapus').html("<i class='fa fa-times'></i>");
+                tr.find('.btn-hapus').removeClass("btn-danger").addClass("btn-warning");
+                tr.find('.btn-hapus').removeClass("btn-hapus")
+            @endif
             tbody.append(tr);
         });
         hitungTotal();
@@ -423,6 +434,9 @@ function reIndexRows() {
 }
 
 function proses_data(confirmSave = false) {
+    $("#entitas_id").prop("disabled",false);
+    $("#partner_id").prop("disabled",false);
+    $(".akun-select").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     if (confirmSave) iData.append('confirm', true);
     var id = $("#id").val();
@@ -476,6 +490,9 @@ function proses_data(confirmSave = false) {
             // ⚠️ Jika error non-konfirmasi
             if (result.status === "error") {
                 Swal.fire("Gagal!", result.message, "error");
+                $("#entitas_id").prop("disabled",true);
+                $("#partner_id").prop("disabled",true);
+                $(".akun-select").prop("disabled",true);
             }
         },
         error: function(e){

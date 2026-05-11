@@ -5,6 +5,8 @@ namespace App\Helpers;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use App\Repositoris\HutangRepositori;
+use App\Repositoris\JurnalRepositori;
+use App\Repositoris\GLRepositori;
 use Exception;
 
 class HutangService
@@ -17,8 +19,51 @@ class HutangService
         return DB::table('m_akun_gl')->where('id', $akunId)->first();
     }
 
-    public static function getDataTableHutang($entitas){
-        $query = HutangRepositori::getDataHutang($entitas); 
+    public static function cekKelebihanPelunasan($jurnal_id_secound,$jumlah){
+        $sisahutang = self::getSisaHutang($jurnal_id_secound);
+        if($jumlah > $sisahutang){
+            throw new Exception("Jumlah pelunasan hutang lebih. Sisa Hutang : " . number_format($sisahutang, 0, ',', '.'));
+        }
+        return true;
+    }
+
+    public static function unpostingPelunasan($jurnalId)
+    {
+        HutangRepositori::deleteByJurnalHutang($jurnalId);
+    }
+    
+
+    public static function postingPelunasan($jurnalId)
+    {
+        DB::transaction(function () use ($jurnalId) {
+            $jurnal = JurnalRepositori::getJurnalHeaderById($jurnalId);
+            // ambil detail
+            $details = JurnalRepositori::getJurnalDetailByJurnalId($jurnalId);
+            HutangRepositori::deletePelunasanHutangByJurnalId($jurnalId);
+            foreach($details as $d){
+                if(!empty($d->jurnal_id_secound)){
+                    self::validateTanggal($d->jurnal_id_secound,$jurnal->tanggal);
+                    $akun = GLRepositori::findById($d->akun_id);
+                    if (!$akun || $akun->kategori !== 'hutang') continue;
+                    $jumlah = $d->kredit;
+                    if ($jumlah <= 0) continue;
+                    if(self::cekKelebihanPelunasan($d->jurnal_id_secound,$jumlah)){
+                        HutangRepositori::create([
+                            'jurnal_kas_id' => $d->jurnal_id_secound,
+                            'jurnal_hutang_id'     => $jurnalId,
+                            'jumlah'              => $jumlah,
+                            'created_at'          => now(),
+                            'updated_at'          => now(),
+                        ]);
+                    }
+                }
+            }
+        });
+
+    }
+
+    public static function getDataTableHutang($entitas,$partner){
+        $query = HutangRepositori::getDataHutang($entitas,$partner); 
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('aksi', function($row){
@@ -57,6 +102,47 @@ class HutangService
         }
 
         return ['is' => false, 'akun_id' => null, 'jurnal_id' => null];
+    }
+
+    /** Validasi tanggal JKM >= tanggal JKK */
+    public static function validateTanggal($jkmId, $tanggalJKK)
+    {
+        $jkm = JurnalRepositori::getJurnalHeaderById($jkmId);
+        if (!$jkm) throw new Exception("Jurnal Hutang (JKM) tidak ditemukan.");
+        if ($tanggalJKK < $jkm->tanggal) {
+            throw new Exception("Tanggal JKK ($tanggalJKK) tidak boleh lebih kecil dari tanggal JKM ($jkm->tanggal).");
+        }
+    }
+
+    /** hitung sisa Hutang */
+    public static function getSisaHutang($jurnal_id)
+    {
+        $totalHutang = HutangRepositori::totalHutang($jurnal_id);
+        $totalUsed = HutangRepositori::totalUsed($jurnal_id);
+        return $totalHutang - $totalUsed;
+    }
+
+    /** Validasi Jumlah pelunasan hutang*/
+    public static function validatePelunasan($row)
+    {
+        $akun = GLRepositori::findById($row['akun_id']); 
+        if (!$akun || $akun->kategori !== 'hutang') return true;
+        $jumlah = floatval(str_replace('.','',$row['kredit']));
+        if ($jumlah <= 0) return true;
+        $sisahutang = self::getSisaHutang($row['jurnal_id']);
+        if($jumlah > $sisahutang){
+            throw new Exception("Jumlah pelunasan hutang lebih. Sisa Hutang : " . number_format($sisahutang, 0, ',', '.'));
+        }
+        
+        return true;
+    }
+
+
+
+    public static function validateDraftHutang($row,$tanggal)
+    {
+        self::validateTanggal($row['jurnal_id'], $tanggal);
+        self::validatePelunasan($row);
     }
 
     
