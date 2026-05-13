@@ -117,7 +117,12 @@ class UangMukaService
     public static function cekKelebihanPelunasan($jurnal_id, $akunUangMukaId, $jumlah)
     {
         $sisa = self::getSisaUangMuka($jurnal_id, $akunUangMukaId,$jurnal_id);
-        return $jumlah <= $sisa;
+        if($jumlah < $sisa){
+            return false;
+        }else{
+            return true;
+        }
+        // return $jumlah < $sisa;
     }
 
     /** hitung sisa UM */
