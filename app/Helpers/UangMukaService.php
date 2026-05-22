@@ -51,10 +51,9 @@ class UangMukaService
             if (is_array($jkkId)) {
                 foreach ($details as $d) {
 
-                    self::validateTanggal($d->jurnal_id_secound, $jurnal->tanggal);
-
                     $akun = GLRepositori::findById($d->akun_id);
                     if (!$akun || $akun->kategori !== 'uang_muka') continue;
+                    self::validateTanggal($d->jurnal_id_secound, $jurnal->tanggal);
                     if (!in_array($d->jurnal_id_secound, $jkkId)) continue;
                     $jumlah = $d->kredit;
                     if ($jumlah <= 0) continue;
@@ -76,10 +75,11 @@ class UangMukaService
                     
                 }
             } else {
-                self::validateTanggal($jkkId, $jurnal->tanggal);
+                
                 foreach ($details as $d) {
                     $akun = GLRepositori::findById($d->akun_id);
                     if (!$akun || $akun->kategori !== 'uang_muka') continue;
+                    self::validateTanggal($jkkId, $jurnal->tanggal);
                     $jumlah = $d->debit > 0 ? $d->debit : $d->kredit;
                     if ($jumlah <= 0) continue;
                     if (!self::cekKelebihanPelunasan($jkkId, $akun->id, $jumlah)) {
