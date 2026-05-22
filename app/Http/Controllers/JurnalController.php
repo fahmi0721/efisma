@@ -435,17 +435,33 @@ class JurnalController extends Controller
     public function datatablePiutang(Request $request)
     {
         $partner_id = $request->partner_id;
-
+        
+        $piutangSub = DB::table('jurnal_detail as jd')
+            ->join('m_akun_gl as a', 'a.id', '=', 'jd.akun_id')
+            ->select(
+                'jd.jurnal_id',
+                DB::raw('SUM(jd.debit) as total_tagihan'),
+                DB::raw('MAX(a.id) as akun_piutang_id'),
+                DB::raw('MAX(a.nama) as akun_piutang_nama')
+            )
+            ->where('jd.debit', '>', 0)
+            ->where('a.kategori', 'piutang')
+            ->groupBy('jd.jurnal_id');
+        
+        $pelunasanSub = DB::table('pelunasan_piutang')
+            ->select(
+                'jurnal_piutang_id',
+                DB::raw('SUM(jumlah) as total_bayar')
+            )
+            ->groupBy('jurnal_piutang_id');
+        
         $query = DB::table('jurnal_header as j')
-            ->leftJoin('jurnal_detail as jd', function($join) {
-                $join->on('jd.jurnal_id', '=', 'j.id')
-                    ->where('jd.debit', '>', 0); // posisi debit (piutang)
+            ->joinSub($piutangSub, 'piutang', function ($join) {
+                $join->on('piutang.jurnal_id', '=', 'j.id');
             })
-            ->leftJoin('m_akun_gl as a', function($join) {
-                $join->on('a.id', '=', 'jd.akun_id')
-                    ->where('a.kategori', '=', 'piutang'); // hanya akun kategori piutang
+            ->leftJoinSub($pelunasanSub, 'pp', function ($join) {
+                $join->on('pp.jurnal_piutang_id', '=', 'j.id');
             })
-            ->leftJoin('pelunasan_piutang as pp', 'pp.jurnal_piutang_id', '=', 'j.id')
             ->leftJoin('m_cabang as c', 'c.id', '=', 'j.cabang_id')
             ->select(
                 'j.id',
@@ -453,30 +469,17 @@ class JurnalController extends Controller
                 'j.cabang_id',
                 'j.no_invoice',
                 DB::raw('DATE_FORMAT(j.tanggal, "%d %M %Y") as tanggal'),
-                DB::raw('j.total_debit as total_tagihan'),
-                DB::raw('COALESCE(SUM(pp.jumlah),0) as total_bayar'),
-                DB::raw('(j.total_debit - COALESCE(SUM(pp.jumlah),0)) as sisa_piutang'),
-                'a.id as akun_piutang_id',
-                'a.nama as akun_piutang_nama',
+                DB::raw('piutang.total_tagihan as total_tagihan'),
+                DB::raw('COALESCE(pp.total_bayar, 0) as total_bayar'),
+                DB::raw('(piutang.total_tagihan - COALESCE(pp.total_bayar, 0)) as sisa_piutang'),
+                'piutang.akun_piutang_id',
+                'piutang.akun_piutang_nama',
                 'c.nama as cabang',
                 'j.jenis as jenis'
             )
             ->where('j.partner_id', $partner_id)
             ->where('j.status', 'posted')
-            ->whereNotNull('a.id') // hanya jika benar-benar ada akun piutang
-            ->groupBy(
-                'j.id',
-                'j.cabang_id',
-                'j.kode_jurnal',
-                'j.no_invoice',
-                'j.tanggal',
-                'j.total_debit',
-                'a.id',
-                'a.nama',
-                'c.nama',
-                'j.jenis'
-            )
-            ->havingRaw('(j.total_debit - COALESCE(SUM(pp.jumlah),0)) > 0')
+            ->whereRaw('(piutang.total_tagihan - COALESCE(pp.total_bayar, 0)) > 0')
             ->orderBy('j.tanggal', 'asc');
 
              /*

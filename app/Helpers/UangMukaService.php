@@ -19,7 +19,7 @@ class UangMukaService
         if(!$jurnal){
             return false;
         }else{
-            if($jurnal->is_multi_cabang == 1){
+            if($jurnal->is_multi_cabang == "1"){
                 $detail_jurnal = JurnalRepositori::getJurnalDetailByJurnalId($jurnal->id);
                 $respons = array();
                 foreach($detail_jurnal as $d){
