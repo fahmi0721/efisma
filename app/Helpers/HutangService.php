@@ -45,12 +45,12 @@ class HutangService
                     self::validateTanggal($d->jurnal_id_secound,$jurnal->tanggal);
                     $akun = GLRepositori::findById($d->akun_id);
                     if (!$akun || $akun->kategori !== 'hutang') continue;
-                    $jumlah = $d->kredit;
+                    $jumlah = $d->debit;
                     if ($jumlah <= 0) continue;
                     if(self::cekKelebihanPelunasan($d->jurnal_id_secound,$jumlah)){
                         HutangRepositori::create([
-                            'jurnal_kas_id' => $d->jurnal_id_secound,
-                            'jurnal_hutang_id'     => $jurnalId,
+                            'jurnal_kas_id' => $jurnalId,
+                            'jurnal_hutang_id'     => $d->jurnal_id_secound,
                             'jumlah'              => $jumlah,
                             'created_at'          => now(),
                             'updated_at'          => now(),
@@ -127,7 +127,7 @@ class HutangService
     {
         $akun = GLRepositori::findById($row['akun_id']); 
         if (!$akun || $akun->kategori !== 'hutang') return true;
-        $jumlah = floatval(str_replace('.','',$row['kredit']));
+        $jumlah = floatval(str_replace('.','',$row['debit']));
         if ($jumlah <= 0) return true;
         $sisahutang = self::getSisaHutang($row['jurnal_id']);
         if($jumlah > $sisahutang){

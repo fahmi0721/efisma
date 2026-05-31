@@ -66,6 +66,7 @@
                 <thead class="table-light text-center">
                     <tr>
                         <th width="5%">No</th>
+                        <th>Kode Jurnal</th>
                         <th>Tanggal</th>
                         <th>Partner</th>
                         <th>Keterangan</th>
@@ -179,6 +180,7 @@ $(document).ready(function() {
         },
         columns: [
             { data: 'DT_RowIndex', className: 'text-center', orderable: false,searchable: false },
+            { data: 'kode_jurnal' ,orderable: false },
             { 
                 data: 'tanggal', 
                 searchable: false,

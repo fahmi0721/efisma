@@ -440,12 +440,14 @@ function insertDetailJurnalUtang(data) {
     console.log(data);
     
     function formatIDR(angka) {
-        if (!angka || isNaN(angka)) return '0';
+        if (angka === null || angka === undefined || angka === '' || isNaN(angka)) return '0,00';
+
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(angka).replace('Rp', '').trim(); // tanpa simbol "Rp"
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(angka).replace('Rp', '').trim();
     }
     // Ambil index baris terakhir
     const idx = $('#tableDetail tbody tr').length;
@@ -464,8 +466,8 @@ function insertDetailJurnalUtang(data) {
                 </select>
             </td>
             <td>${jurnal_id}<input readonly type="text" name="detail[${idx}][deskripsi]" value='PJ Uang Muka ${data.kode}' class="form-control"></td>
-            <td><input type="text" readonly name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
-            <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
+            <td><input type="text"  name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="${formatIDR(data.sisa)}" ></td>
+            <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control readonly text-end kredit-input" value="0"></td>
             <td class="text-center">
                 ${btn_hapus}
             </td>
