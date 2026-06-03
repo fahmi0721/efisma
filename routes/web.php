@@ -219,6 +219,7 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
  * Route JURNAL
  */
 use App\Http\Controllers\JurnalController;
+use App\Http\Controllers\UploadJurnalController;
 Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::prefix('jurnal')->group(function() {
         Route::get('/partner/customer', [JurnalController::class, 'partner'])->name('jurnal.partner.customer')->defaults('jenis', 'customer');
@@ -251,6 +252,8 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
         Route::get('/kas-masuk/unposting', [JurnalController::class, 'form_unposting'])->name('jurnal.kasmasuk.unposting')->defaults('jenis', 'JKM')->middleware('permission:kas_masuk.unposting');
 
         Route::get('/kas-keluar', [JurnalController::class, 'index'])->name('jurnal.kaskeluar')->defaults('jenis', 'JKK')->middleware('permission:kas_keluar.view');
+        Route::get('/kas-keluar/upload', [UploadJurnalController::class, 'index'])->name('jurnal.kaskeluar.upload')->middleware('permission:kas_keluar.upload');
+        Route::get('/kas-keluar/template', [UploadJurnalController::class, 'template'])->name('jurnal.kaskeluar.template')->middleware('permission:kas_keluar.upload');
         Route::get('/kas-keluar/create', [JurnalController::class, 'create'])->name('jurnal.kaskeluar.create')->defaults('jenis', 'JKK')->middleware('permission:kas_keluar.create');
         Route::post('/kas-keluar/store', [JurnalController::class, 'store'])->name('jurnal.kaskeluar.save')->defaults('jenis', 'JKK')->middleware('permission:kas_keluar.create');
         Route::get('/kas-keluar/edit', [JurnalController::class, 'edit'])->name('jurnal.kaskeluar.edit')->defaults('jenis', 'JKK')->middleware('permission:kas_keluar.edit');

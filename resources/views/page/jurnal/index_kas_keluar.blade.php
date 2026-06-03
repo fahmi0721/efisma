@@ -31,11 +31,19 @@
                             <i class="fas fa-bolt"></i> Unposting
                         </a>
                         @endcanAccess
+                        
                         @canAccess('kas_keluar.posting')
                         <a href="{{ route('jurnal.kaskeluar.posting') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-bolt"></i> Posting
                         </a>
                         @endcanAccess
+
+                        @canAccess('kas_keluar.upload')
+                        <a href="{{ route('jurnal.kaskeluar.upload') }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-upload"></i> Upload Jurnal
+                        </a>
+                        @endcanAccess
+
                         @canAccess('kas_keluar.create')
                         <a href="{{ route('jurnal.kaskeluar.create') }}" class="btn btn-success btn-sm">
                             <i class="fas fa-plus-square"></i> Create New
