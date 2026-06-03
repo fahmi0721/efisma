@@ -780,29 +780,29 @@ class JurnalController extends Controller
         // =========================================================
         // VALIDASI PELUNASAN PIUTANG (JKM / JN)
         // =========================================================
-        if (($jenis === 'JKM' || $jenis === 'JN') && $request->filled('jurnal_id_jp')) {
-            if($jenis === "JKM"){
-                $valid = PelunasanPiutangService::validatePelunasanWithDate(
-                    $request->jurnal_id_jp, // ID JP
-                    $nominalPiutang,             // pelunasan baru
-                    $request->tanggal   // tanggal jurnal kas (JKM / JN)
-                ); 
-            }else{
-                $valid = PelunasanPiutangService::validatePelunasanWithDate(
-                    $request->jurnal_id_jp, // ID JP
-                    $totalDebit,             // pelunasan baru
-                    $request->tanggal   // tanggal jurnal kas (JKM / JN)
-                );    
-            }
+        // if (($jenis === 'JKM' || $jenis === 'JN') && $request->filled('jurnal_id_jp')) {
+        //     if($jenis === "JKM"){
+        //         $valid = PelunasanPiutangService::validatePelunasanWithDate(
+        //             $request->jurnal_id_jp, // ID JP
+        //             $nominalPiutang,             // pelunasan baru
+        //             $request->tanggal   // tanggal jurnal kas (JKM / JN)
+        //         ); 
+        //     }else{
+        //         $valid = PelunasanPiutangService::validatePelunasanWithDate(
+        //             $request->jurnal_id_jp, // ID JP
+        //             $totalDebit,             // pelunasan baru
+        //             $request->tanggal   // tanggal jurnal kas (JKM / JN)
+        //         );    
+        //     }
             
 
-            if (!$valid['status']) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => $valid['message']
-                ], 422);
-            }
-        }
+        //     if (!$valid['status']) {
+        //         return response()->json([
+        //             'status' => 'error',
+        //             'message' => $valid['message']
+        //         ], 422);
+        //     }
+        // }
 
        
 
