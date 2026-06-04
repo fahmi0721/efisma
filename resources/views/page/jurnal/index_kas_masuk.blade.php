@@ -387,7 +387,7 @@ function load_data() {
                 className: 'text-end',
                 render: function(data) {
                     if (!data) return '-';
-                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0, }).format(data);
+                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(parseFloat(data));
                 },orderable:false, 
             },
             { data: 'entitas', name: 'entitas',orderable:false, },
