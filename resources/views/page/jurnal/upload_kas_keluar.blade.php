@@ -110,7 +110,9 @@ function get_template(){
             Swal.fire("Perhatian!", "Entitas Wajib dipilih!", "warning");
         }else{
             window.open("{{ route('jurnal.kaskeluar.template') }}?entitas_id="+entitas_id, '_blank');
-        }   
+        } 
+    @else
+      window.open("{{ route('jurnal.kaskeluar.template') }}", '_blank');
     @endif
 }
 
