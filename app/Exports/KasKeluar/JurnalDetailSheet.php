@@ -20,7 +20,7 @@ class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvent
 {
     public function title(): string
     {
-        return 'Jurnal Detail';
+        return 'jurnal_detail';
     }
 
     public function headings(): array

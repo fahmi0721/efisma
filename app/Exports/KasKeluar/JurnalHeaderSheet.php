@@ -22,7 +22,7 @@ class JurnalHeaderSheet implements FromArray, WithHeadings, WithTitle, WithEvent
 {
     public function title(): string
     {
-        return 'Jurnal Header';
+        return 'jurnal_header';
     }
 
     public function headings(): array
