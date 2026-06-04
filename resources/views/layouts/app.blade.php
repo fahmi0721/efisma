@@ -63,6 +63,43 @@
             color: #000 !important;
             font-size: 16px !important;
         }
+        table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control,
+        table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control {
+            position: relative;
+            padding-left: 45px !important;
+            text-align: center;
+        }
+
+        table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control:before {
+            content: "\f067" !important; /* fa-plus */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+
+            background: #0d6efd;
+            color: #fff;
+
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+
+            text-align: center;
+            font-size: 12px;
+            box-shadow: none;
+        }
+
+        table.dataTable.dtr-inline.collapsed > tbody > tr.parent > td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before {
+            content: "\f068" !important; /* fa-minus */
+            background: #dc3545;
+        }
     </style>
 
     @stack('styles')

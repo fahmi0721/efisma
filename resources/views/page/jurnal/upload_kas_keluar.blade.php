@@ -53,7 +53,7 @@
                         <div class="row mb-3">
                             <label for="files" class="col-sm-3 col-form-label">File Import <b class='text-danger'>*</b></label>
                             <div class="col-sm-9">
-                                <input type="text"  class="form-control" id="files" name="files" placeholder="File Import" />
+                                <input type="file"  class="form-control" id="file" name="file" placeholder="File Import" />
                             </div>
                         </div>
                         
@@ -80,6 +80,10 @@
 @section('js')
 
 <script>
+$("#form_data").submit(function(e){
+    e.preventDefault();
+    proses_data();
+});
 @if(auth()->user()->level != "entitas")
 // 🔽 Select2 Entitas
 $('.entitas').select2({
@@ -102,6 +106,44 @@ $('.entitas').select2({
     allowClear: true
 });
 @endif
+
+function proses_data(){
+    let iData = new FormData(document.getElementById("form_data"));
+    $.ajax({
+        type: "POST",
+        url: "{{ route('jurnal.kaskeluar.upload.save') }}",
+        data: iData,
+        cache: false,
+        processData: false,
+        contentType: false,
+        beforeSend: function (){
+            $("#btn-submit").html("<i class='fa fa-spinner fa-spin'></i>  Simpan..");
+            $("#btn-submit").prop("disabled", true);
+        },
+        success: function(result){
+            console.log(result);
+            if(result.status == "success"){
+                position = "bottom-left";
+                icons = result.status;
+                pesan = result.message;
+                title = "Uploaded!";
+                info(title, pesan, icons, position);
+                $("#btn-submit").html("<i class='fa fa-save'></i> Simpan");
+                $("#btn-submit").prop("disabled", false);
+                setTimeout(() => {
+                    window.location.href = "{{ route('jurnal.kaskeluar') }}";
+                }, 1500);
+            }
+        },
+        error: function(e){
+            console.log(e);
+            $("#btn-submit").html("<i class='fa fa-save'></i> Simpan");
+            $("#btn-submit").prop("disabled", false);
+            error_message(e,'Proses Data Error');
+        }
+    });
+}
+
 
 function get_template(){
     @if(auth()->user()->level != "entitas")
