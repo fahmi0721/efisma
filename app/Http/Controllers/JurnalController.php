@@ -755,12 +755,12 @@ class JurnalController extends Controller
             }
         }
 
-        if ($jenis === 'JP' && !$adaPiutang) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'JP harus memiliki akun piutang.'
-            ], 422);
-        }
+        // if ($jenis === 'JP' && !$adaPiutang) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'message' => 'JP harus memiliki akun piutang.'
+        //     ], 422);
+        // }
 
         
 
