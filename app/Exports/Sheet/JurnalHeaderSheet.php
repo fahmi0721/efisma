@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports\KasKeluar;
+namespace App\Exports\Sheet;
 
 use App\Models\MCabang;
 use App\Models\MPartner;

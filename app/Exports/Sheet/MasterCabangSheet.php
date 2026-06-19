@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Exports\KasKeluar;
+namespace App\Exports\Sheet;
 
-use App\Models\MAkun;
+use App\Models\MCabang;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -15,30 +15,30 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 
-
-class MasterAkunSheet implements FromCollection, WithHeadings, WithTitle, WithEvents, ShouldAutoSize
+class MasterCabangSheet implements FromCollection, WithHeadings, WithTitle,WithEvents,ShouldAutoSize
 {
     public function title(): string
     {
-        return 'master_akun';
+        return 'master_cabang';
     }
 
     public function headings(): array
     {
         return [
             'ID',
-            'Akun',
+            'Nama Cabang',
+            'Deskripsi',
         ];
     }
 
     public function collection()
     {
-        return MAkun::query()
+        return MCabang::query()
             ->select(
-                'id'
+                'id',
+                'nama',
+                'deskripsi',
             )
-            ->selectRaw("CONCAT(no_akun, ' - ', nama) as akun")
-            ->orderBy('full_path',"ASC")
             ->get();
     }
 

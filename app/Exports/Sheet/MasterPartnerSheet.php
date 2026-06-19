@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Exports\KasKeluar;
+namespace App\Exports\Sheet;
 
-use App\Models\MCabang;
+use App\Models\MPartner;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -15,32 +15,52 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 
-class MasterCabangSheet implements FromCollection, WithHeadings, WithTitle,WithEvents,ShouldAutoSize
+
+class MasterPartnerSheet implements FromCollection, WithHeadings, WithTitle, WithEvents, ShouldAutoSize
 {
+    protected $id_entitas;
+
+    public function __construct($id_entitas)
+    {
+        $this->id_entitas = $id_entitas;
+    }
     public function title(): string
     {
-        return 'master_cabang';
+        return 'master_partner';
     }
 
     public function headings(): array
     {
         return [
             'ID',
-            'Nama Cabang',
-            'Deskripsi',
+            'Nama Partner',
+            'Is Vendor',
+            'Is Customer',
+            'No Telepon',
+            'Alamat',
+
         ];
     }
 
     public function collection()
     {
-        return MCabang::query()
+        return MPartner::query()
             ->select(
                 'id',
                 'nama',
-                'deskripsi',
+                'is_vendor',
+                'is_customer',
+                'no_telpon',
+                'alamat',
             )
+            ->where("entitas_id",$this->id_entitas)
+            ->where(function ($query) {
+                $query->where('is_vendor', 'active')
+                    ->orWhere('is_customer', 'active');
+            })
             ->get();
     }
+    
 
     public function registerEvents(): array
     {

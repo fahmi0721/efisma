@@ -246,6 +246,8 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
         
         Route::get('/kas-masuk', [JurnalController::class, 'index'])->name('jurnal.kasmasuk')->defaults('jenis', 'JKM')->middleware('permission:kas_masuk.view');
         Route::get('/kas-masuk/create', [JurnalController::class, 'create'])->name('jurnal.kasmasuk.create')->defaults('jenis', 'JKM')->middleware('permission:kas_masuk.create');
+        Route::get('/kas-masuk/template', [UploadJurnalController::class, 'template_kasmasuk'])->name('jurnal.kasmasuk.template_kasmasuk')->middleware('permission:kas_masuk.create');
+        Route::get('/kas-masuk/upload/save', [UploadJurnalController::class, 'kasmasuk'])->name('jurnal.kasmasuk.upload.save')->middleware('permission:kas_masuk.create');
         Route::post('/kas-masuk/store', [JurnalController::class, 'store'])->name('jurnal.kasmasuk.save')->defaults('jenis', 'JKM')->middleware('permission:kas_masuk.create');
         Route::get('/kas-masuk/edit', [JurnalController::class, 'edit'])->name('jurnal.kasmasuk.edit')->defaults('jenis', 'JKM')->middleware('permission:kas_masuk.edit');
         Route::get('/kas-masuk/posting', [JurnalController::class, 'form_posting'])->name('jurnal.kasmasuk.posting')->defaults('jenis', 'JKM')->middleware('permission:kas_masuk.posting');

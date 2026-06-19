@@ -260,6 +260,7 @@
     </div>
   </div>
 </div>
+{{ auth()->user()->entitas_id }}
 @endsection
 
 @section('js')
@@ -282,12 +283,16 @@ $(document).ready(function() {
     });
     /** Buttton Cari Piutang */
     $('#btnCariInvoice').click(function() {
-        const entitas = $('#entitas_id').val();
+        @if(auth()->user()->level == "entitas")
+            const entitas = "{{ auth()->user()->entitas_id }}";
+        @else
+            const entitas = $('#entitas_id').val();
+            if (!entitas) {
+                Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
+                return;
+            }
+        @endif
         const partner = $('#partner_id').val();
-        if (!entitas) {
-            Swal.fire('Oops', 'Pilih entitas terlebih dahulu!', 'warning');
-            return;
-        }
         if (!partner) {
             Swal.fire('Oops', 'Pilih partner terlebih dahulu!', 'warning');
             return;
@@ -687,35 +692,53 @@ $(document).on('click','.pilihUangMuka', function() {
 });
 $(document).on('click', '.btn-pilih-invoice', function() {
     const data = $(this).data();
-    // Jika sudah ada invoice di form, blokir
-    const id_jp = $("#jurnal_id_jp").val();
-    if (id_jp && id_jp.trim() !== "") {
-        Swal.fire('Oops', 'Anda sudah memilih satu invoice!, Hapus dulu dari data detail jurnal', 'warning');
-        return;
-    }
+    const isMulti = $('#is_multi_cabang').is(':checked');
+    if(isMulti){
+        // Kirim ke fungsi pembuat baris jurnal
+        insertDetailJurnal({
+            id: data.id,
+            kode: data.kode,
+            tanggal: data.tanggal,
+            total: data.total,
+            sisa: data.sisa,
+            akun_piutang_id: data.akun_piutang_id,
+            akun_piutang_nama: data.akun_piutang_nama,
+            cabang_name:data.cabang,
+            cabang_id:data.cabang_id
+        });
+    }else{
+        // Jika sudah ada invoice di form, blokir
+        const id_jp = $("#jurnal_id_jp").val();
+        if (id_jp && id_jp.trim() !== "") {
+            Swal.fire('Oops', 'Anda sudah memilih satu invoice!, Hapus dulu dari data detail jurnal', 'warning');
+            return;
+        }
 
-    $("#jurnal_id_jp").val(data.id);
-    var option = new Option(data.cabang, data.cabang_id, true, true);
-    $(".cabang").append(option).trigger('change');
-    $(".cabang").prop("disabled",true);
-    $(".entitas").prop("disabled",true);
+        $("#jurnal_id_jp").val(data.id);
+        var option = new Option(data.cabang, data.cabang_id, true, true);
+        $(".cabang").append(option).trigger('change');
+        $(".cabang").prop("disabled",true);
+        $(".entitas").prop("disabled",true);
 
+        
     
-   
 
-    $("#no_invoice").val(data.no_invoice);
-    $("#no_invoice_t").val(data.no_invoice);
-    $("#no_invoice_t").prop("disabled",true);
-    // Kirim ke fungsi pembuat baris jurnal
-    insertDetailJurnal({
-        id: data.id,
-        kode: data.kode,
-        tanggal: data.tanggal,
-        total: data.total,
-        sisa: data.sisa,
-        akun_piutang_id: data.akun_piutang_id,
-        akun_piutang_nama: data.akun_piutang_nama
-    });
+        $("#no_invoice").val(data.no_invoice);
+        $("#no_invoice_t").val(data.no_invoice);
+        $("#no_invoice_t").prop("disabled",true);
+        // Kirim ke fungsi pembuat baris jurnal
+        insertDetailJurnal({
+            id: data.id,
+            kode: data.kode,
+            tanggal: data.tanggal,
+            total: data.total,
+            sisa: data.sisa,
+            akun_piutang_id: data.akun_piutang_id,
+            akun_piutang_nama: data.akun_piutang_nama,
+            cabang_name:data.cabang,
+            cabang_id:data.cabang_id
+        });
+    }
 
     $('#modalInvoice').modal('hide');
 });
@@ -806,7 +829,7 @@ function insertDetailJurnal(data) {
     }
     // Ambil index baris terakhir
     let idx = $('#tableDetail tbody tr').length;
-
+    const isMulti = $('#is_multi_cabang').is(':checked');
     // 🔹 Baris kedua: Piutang (Kredit)
     let rowPiutang = `
         <tr>
@@ -825,6 +848,33 @@ function insertDetailJurnal(data) {
             </td>
         </tr>
     `;
+    if(isMulti){
+        rowPiutang = `
+            <tr>
+                <td>
+                    <select class="form-select akun-select" name="detail[${idx}][akun_id]" disabled>
+                        <option value="${data.akun_piutang_id ?? ''}">
+                            ${data.akun_piutang_nama ?? '(Akun Piutang)'}
+                        </option>
+                    </select>
+                </td>
+                <td><input readonly type="text" name="detail[${idx}][deskripsi]" value='Pelunasan Invoice ${data.kode}' class="form-control"></td>
+                <td>
+                    <input type="hidden"  name="detail[${idx}][jurnal_id]" value="${data.id}" class="form-control" value="">
+                    <select name="detail[${idx}][cabang_id]" class="form-control cabang-line" disabled>
+                        <option value="${data.cabang_id ?? ''}">
+                            ${data.cabang_name ?? '(Cabang)'}
+                        </option>
+                    </select>
+                </td>
+                <td><input type="text" name="detail[${idx}][debit]" onkeyup="formatRupiah(this)" class="form-control text-end debit-input" value="0"></td>
+                <td><input type="text" name="detail[${idx}][kredit]" onkeyup="formatRupiah(this)" class="form-control text-end kredit-input" value="${formatIDR(data.sisa)}"></td>
+                <td class="text-center">
+                    <button type="button" data-piutang='' class="btn btn-danger btn-sm btn-hapus"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }
 
     // Masukkan ke tabel
     $('#tableDetail tbody').append(rowPiutang);
@@ -844,11 +894,13 @@ function reIndexRows() {
 }
 
 function proses_data(){
+    $(".no_invoice_t").prop("disabled",false);
+    $(".cabang-jkk").prop("disabled",false);
     $(".cabang").prop("disabled",false);
     $(".entitas").prop("disabled",false);
     $(".partner").prop("disabled",false);
-    $(".no_invoice_t").prop("disabled",false);
-    $(".cabang-jkk").prop("disabled",false);
+    $(".akun-select").prop("disabled",false);
+    $(".cabang-line").prop("disabled",false);
     let iData = new FormData(document.getElementById("form_data"));
     $.ajax({
         type: "POST",

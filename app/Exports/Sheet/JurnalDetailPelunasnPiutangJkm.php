@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports\KasKeluar;
+namespace App\Exports\Sheet;
 
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -16,7 +16,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Protection;
 
-class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvents, ShouldAutoSize
+class JurnalDetailPelunasnPiutangJkm implements FromArray, WithHeadings, WithTitle, WithEvents, ShouldAutoSize
 {
     public function title(): string
     {
@@ -30,6 +30,10 @@ class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvent
             'Akun ID',
             'Akun',
             'Deskripsi',
+            'Cabang ID',
+            'Cabang',
+            'Jurnal Piutang ID',
+            'Jurnal Piutang',
             'Debit',
             'Kredit',
         ];

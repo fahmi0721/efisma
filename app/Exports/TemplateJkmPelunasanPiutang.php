@@ -2,14 +2,14 @@
 
 namespace App\Exports;
 
-use App\Exports\Sheet\JurnalHeaderSheet;
-use App\Exports\Sheet\JurnalDetailSheet;
+use App\Exports\Sheet\JurnalHeaderPelunasnPiutangJkm;
+use App\Exports\Sheet\JurnalDetailPelunasnPiutangJkm;
 use App\Exports\Sheet\MasterAkunSheet;
 use App\Exports\Sheet\MasterCabangSheet;
 use App\Exports\Sheet\MasterPartnerSheet;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
-class TemplateJurnalKasKeluar implements WithMultipleSheets
+class TemplateJkmPelunasanPiutang implements WithMultipleSheets
 {
     protected $id_entitas;
 
@@ -21,8 +21,8 @@ class TemplateJurnalKasKeluar implements WithMultipleSheets
    public function sheets(): array
     {
         return [
-            new JurnalHeaderSheet(),
-            new JurnalDetailSheet(),
+            new JurnalHeaderPelunasnPiutangJkm(),
+            new JurnalHeaderPelunasnPiutangJkm(),
             new MasterAkunSheet(),
             new MasterCabangSheet(),
             new MasterPartnerSheet($this->id_entitas),

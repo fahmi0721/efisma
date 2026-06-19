@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Exports\KasKeluar;
+namespace App\Exports\Sheet;
 
-use App\Models\MPartner;
+use App\Models\MAkun;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -16,51 +16,31 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 
 
-class MasterPartnerSheet implements FromCollection, WithHeadings, WithTitle, WithEvents, ShouldAutoSize
+class MasterAkunSheet implements FromCollection, WithHeadings, WithTitle, WithEvents, ShouldAutoSize
 {
-    protected $id_entitas;
-
-    public function __construct($id_entitas)
-    {
-        $this->id_entitas = $id_entitas;
-    }
     public function title(): string
     {
-        return 'master_partner';
+        return 'master_akun';
     }
 
     public function headings(): array
     {
         return [
             'ID',
-            'Nama Partner',
-            'Is Vendor',
-            'Is Customer',
-            'No Telepon',
-            'Alamat',
-
+            'Akun',
         ];
     }
 
     public function collection()
     {
-        return MPartner::query()
+        return MAkun::query()
             ->select(
-                'id',
-                'nama',
-                'is_vendor',
-                'is_customer',
-                'no_telpon',
-                'alamat',
+                'id'
             )
-            ->where("entitas_id",$this->id_entitas)
-            ->where(function ($query) {
-                $query->where('is_vendor', 'active')
-                    ->orWhere('is_customer', 'active');
-            })
+            ->selectRaw("CONCAT(no_akun, ' - ', nama) as akun")
+            ->orderBy('full_path',"ASC")
             ->get();
     }
-    
 
     public function registerEvents(): array
     {
