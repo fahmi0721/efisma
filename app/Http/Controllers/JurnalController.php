@@ -1533,12 +1533,12 @@ class JurnalController extends Controller
                     // -----------------------------
                     $saldoSetelahUnpost = $saldoSekarang - $nominalJKM;
 
-                    if ($saldoSetelahUnpost < 0) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => "JKM dengan No Dokumen {$jurnal->kode_jurnal} tidak dapat di-unposting karena deposit yang berasal dari jurnal ini sudah dipakai dan akan menyebabkan saldo deposit customer menjadi negatif."
-                        ]);
-                    }
+                    // if ($saldoSetelahUnpost < 0) {
+                    //     return response()->json([
+                    //         'status' => false,
+                    //         'message' => "JKM dengan No Dokumen {$jurnal->kode_jurnal} tidak dapat di-unposting karena deposit yang berasal dari jurnal ini sudah dipakai dan akan menyebabkan saldo deposit customer menjadi negatif."
+                    //     ]);
+                    // }
                 }
             }
         }
