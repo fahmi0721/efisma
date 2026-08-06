@@ -282,6 +282,8 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::get('/piutang/aging/export', [PiutangController::class, 'agingPiutangExport'])->name('piutang.aging.export')->middleware('permission:piutang.aging.export');
     Route::get('/piutang/daftar', [PiutangController::class, 'daftar'])->name('piutang.daftar')->middleware('permission:piutang.daftar.view');
     Route::get('/piutang/daftarexport', [PiutangController::class, 'exportExcel'])->name('piutang.daftar.export')->middleware('permission:piutang.daftar.export');
+    Route::get('/piutang/monitoring', [PiutangController::class, 'monitoring'])->name('piutang.monitoring')->middleware('permission:piutang.monitoring.view');
+    Route::get('/piutang/monitoringexport', [PiutangController::class, 'monitoringExcel'])->name('piutang.monitoring.export')->middleware('permission:piutang.monitoring.view');
 });
 
 /**

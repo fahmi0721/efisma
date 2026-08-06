@@ -1,0 +1,85 @@
+CREATE OR REPLACE VIEW view_monitoring_piutang AS
+SELECT
+    jp.jurnal_piutang_id,
+    jp.no_invoice AS invoice,
+    jp.keterangan AS deskripsi,
+    jp.entitas,
+    jp.partner,
+ 	jp.entitas_id,
+		jp.cabang_id,
+	jp.partner_id,
+    jp.cabang,
+    jp.kode_jurnal_piutang,
+    jp.tanggal_piutang,
+    jp.jumlah_piutang,
+
+    pp.id AS pelunasan_piutang_id,
+    jkm.id AS jurnal_kas_id,
+    jkm.kode_jurnal AS kode_jurnal_pelunasan,
+    pp.jumlah AS jumlah_pelunasan,
+    jkm.tanggal AS tanggal_pelunasan
+
+FROM (
+    SELECT
+        jh.id AS jurnal_piutang_id,
+        jh.no_invoice,
+        jh.keterangan,
+        jh.kode_jurnal AS kode_jurnal_piutang,
+        jh.tanggal AS tanggal_piutang,
+        jh.entitas_id,
+        jh.partner_id,
+        jh.cabang_id,
+
+        me.nama AS entitas,
+        mp.nama AS partner,
+        mc.nama AS cabang,
+
+        SUM(
+            CASE
+                WHEN mag.kategori = 'piutang'
+                THEN jd.debit
+                ELSE 0
+            END
+        ) AS jumlah_piutang
+
+    FROM jurnal_header jh
+
+    INNER JOIN jurnal_detail jd
+        ON jd.jurnal_id = jh.id
+
+    INNER JOIN m_akun_gl mag
+        ON mag.id = jd.akun_id
+
+    LEFT JOIN m_entitas me
+        ON me.id = jh.entitas_id
+
+    LEFT JOIN m_partner mp
+        ON mp.id = jh.partner_id
+
+    LEFT JOIN m_cabang mc
+        ON mc.id = jh.cabang_id
+
+    WHERE jh.jenis = 'JP'
+      AND jh.status = 'posted'
+      AND mag.kategori = 'piutang'
+
+    GROUP BY
+        jh.id,
+        jh.no_invoice,
+        jh.kode_jurnal,
+        jh.tanggal,
+        jh.entitas_id,
+        jh.partner_id,
+        jh.cabang_id,
+        me.nama,
+        mp.nama,
+        mc.nama
+) AS jp
+
+LEFT JOIN pelunasan_piutang pp
+    ON pp.jurnal_piutang_id = jp.jurnal_piutang_id
+
+LEFT JOIN jurnal_header jkm
+    ON jkm.id = pp.jurnal_kas_id
+    AND jkm.jenis = 'JKM'
+    AND jkm.status = 'posted';
