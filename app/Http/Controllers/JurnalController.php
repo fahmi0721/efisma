@@ -1350,7 +1350,7 @@ class JurnalController extends Controller
         }
 
         // if ((in_array($jurnal->jenis,['JKM',"JN"]))) {
-        if ((in_array($jurnal->jenis,["JN"]))) {
+        if ((in_array($jurnal->jenis,["JN","JKM"]))) {
             UangMukaService::postingPelunasan($id);
         }
 
