@@ -399,7 +399,7 @@ class JurnalController extends Controller
                             data-sisa='{$row->sisa}'
                             data-partner='{$row->partner_nama}'
                             data-partner_id='{$row->partner_id}'
-                            data-cabang='{$row->nama_cabang}'
+                            data-cabang='{$row->cabang_nama}'
                             data-cabang_id='{$row->cabang_id}'
                             data-entitas='{$row->entitas_id}'>
                             Pilih
