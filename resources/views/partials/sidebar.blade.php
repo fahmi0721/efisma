@@ -182,9 +182,9 @@
             </a>
             </li>
             @endcanAccess
-            @canAccess('piutang.aging.view|piutang.daftar.view')
-            <li class="nav-item {{ setActive(['piutang.aging','piutang.daftar'], 'menu-open')  }}">
-                <a href="#" class="nav-link {{ setActive(['piutang.aging','piutang.daftar'], 'active')  }}">
+            @canAccess('piutang.aging.view|piutang.daftar.view||piutang.monitoring.view')
+            <li class="nav-item {{ setActive(['piutang.aging','piutang.daftar','piutang.monitoring'], 'menu-open')  }}">
+                <a href="#" class="nav-link {{ setActive(['piutang.aging','piutang.daftar','piutang.monitoring'], 'active')  }}">
                     <i class="nav-icon fa fa-book"></i>
                     <p>
                     Piutang
@@ -205,6 +205,14 @@
                     <a href="{{ route('piutang.daftar') }}" class="nav-link {{  setActive(['piutang.daftar'], 'active')  }}">
                         <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
                         <p>Daftar Piutang</p>
+                    </a>
+                    </li>
+                    @endcanAccess
+                    @canAccess('piutang.monitoring.view')
+                    <li class="nav-item">
+                    <a href="{{ route('piutang.monitoring') }}" class="nav-link {{  setActive(['piutang.monitoring'], 'active')  }}">
+                        <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
+                        <p>Monitoring Piutang</p>
                     </a>
                     </li>
                     @endcanAccess

@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;    
+use App\Helpers\PiutangService;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 use Validator;
@@ -124,9 +125,9 @@ class PiutangController extends Controller
 
     public function daftar(Request $request)
     {
-        $partner_id = $request->input('partner_id');
+       $partner_id = $request->input('partner_id');
         $entitas_id = $request->input('entitas_id');
-        $cabang_id = $request->input('cabang_id');
+        $cabang_id = $request->input('cabang_id'); 
         if ($request->ajax()) {
             $query = DB::table('view_daftar_piutang');
 
@@ -239,6 +240,53 @@ class PiutangController extends Controller
         $data = $data->get();
 
         return Excel::download(new \App\Exports\DaftarPiutangExport($data), 'daftar_piutang.xlsx');
+    }
+
+    public function monitoring(Request $request)
+    {
+        if ($request->ajax()) {
+            $query = PiutangService::getData($request);
+
+            return DataTables::of($query)
+                ->addIndexColumn()
+                // Search untuk keterangan
+                ->filterColumn('deskripsi', function($q, $kw) {
+                    $q->where('deskripsi', 'LIKE', "%$kw%");
+                })
+
+                // Search untuk partner_nama
+                ->filterColumn('partner', function($q, $kw) {
+                    $q->where('partner', 'LIKE', "%$kw%");
+                })
+
+                // Search untuk entitas
+                ->filterColumn('entitas', function($q, $kw) {
+                    $q->where('entitas', 'LIKE', "%$kw%");
+                })
+
+                // Search untuk cabang
+                ->filterColumn('cabang', function($q, $kw) {
+                    $q->where('cabang', 'LIKE', "%$kw%");
+                })
+
+                ->editColumn('jumlah_piutang', fn($r) => number_format($r->jumlah_piutang, 2, ',', '.'))
+                ->editColumn('jumlah_pelunasan', fn($r) => number_format($r->jumlah_pelunasan, 2, ',', '.'))
+                ->make(true);
+        }
+        
+        return view('page.piutang.monitoring');
+    }
+
+
+    public function monitoringExcel(Request $request)
+    {
+    
+
+        $data = PiutangService::getData($request);
+
+        $data = $data->get();
+
+        return Excel::download(new \App\Exports\MonitoringPiutangExport($data), 'monitoring_piutang.xlsx');
     }
 
 }

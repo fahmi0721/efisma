@@ -1,15 +1,15 @@
 @extends('layouts.app')
-@section('title','Daftar Piutang')
+@section('title','Monitoring Piutang')
 
 @section('breadcrumb')
 <div class="app-content-header">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-6"><h5 class="mb-2">Daftar Piutang</h5></div>
+            <div class="col-sm-6"><h5 class="mb-2">Monitoring Piutang</h5></div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-end">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Daftar Piutang</li>
+                    <li class="breadcrumb-item active">Monitoring Piutang</li>
                 </ol>
             </div>
         </div>
@@ -58,34 +58,31 @@
 </div>
 <div class="card card-success card-outline">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-        <h5 class="mb-0">Daftar Piutang</h5>
+        <h5 class="mb-0">Monitoring Piutang</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table id="tb_data" class="table table-bordered table-striped align-middle">
                 <thead class="table-light text-center">
                     <tr>
-                        <th width="5%">No</th>
+                        <th rowspan='2'width="5%">No</th>
+                        <th rowspan='2'>No Invoice</th>
+                        <th rowspan='2'>Entitas</th>
+                        <th rowspan='2'>Partner</th>
+                        <th rowspan='2'>Deskripsi</th>
+                        <th colspan='3' class="text-center">Piutang</th>
+                        <th colspan='3' class="text-center">Pelunasan</th>
+                    </tr>
+                    <tr>
+                        <th>Kode Jurnal</th>
                         <th>Tanggal</th>
-                        <th>Invoice</th>
-                        <th>Partner</th>
-                        <th>Keterangan</th>
-                        <th class="text-end">Tagihan</th>
-                        <th class="text-end">Pelunasan</th>
-                        <th class="text-end">Sisa Piutang</th>
-                        <th class="text-center">Umur (Hari)</th>
+                        <th class="text-end">Jumlah</th>
+                        <th>Kode Jurnal</th>
+                        <th>Tanggal</th>
+                        <th class="text-end">Jumlah</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
-                <tfoot class="table-light fw-bold text-end">
-                    <tr>
-                        <th colspan="5" class="text-center">TOTAL</th>
-                        <th id="total_tagihan">0</th>
-                        <th id="total_pelunasan">0</th>
-                        <th id="total_sisa">0</th>
-                        <th></th>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>
@@ -119,7 +116,7 @@ $(document).ready(function() {
         // allowClear: true
     });
     @endif
-    @canAccess('piutang.daftar.view')
+    @canAccess('piutang.monitoring.view')
     // 🔹 Select2 Partner
     $('.partner').select2({
         ajax: {
@@ -171,7 +168,7 @@ $(document).ready(function() {
         serverSide: true,
         responsive: true,
          ajax: {
-            url: "{{ route('piutang.daftar') }}",
+            url: "{{ route('piutang.monitoring') }}",
             data: function (d) {
                 d.partner_id = $('#filter_tipe').val();
                 d.entitas_id = $('#filter_entitas').val();
@@ -180,8 +177,13 @@ $(document).ready(function() {
         },
         columns: [
             { data: 'DT_RowIndex', className: 'text-center', orderable: false,searchable: false },
+            { data: 'invoice', className: 'text-center',orderable: false},
+            { data: 'entitas' ,orderable: false },
+            { data: 'partner' ,orderable: false },
+            { data: 'deskripsi' ,orderable: false },
+            { data: 'kode_jurnal_piutang' ,orderable: false },
             { 
-                data: 'tanggal', 
+                data: 'tanggal_piutang', 
                 searchable: false,
                 className: 'text-center',
                 render: function(data) {
@@ -190,38 +192,24 @@ $(document).ready(function() {
                     return tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
                 }
             },
-            { data: 'no_invoice', className: 'text-center',orderable: false, 
-                render: function(data,c,row) {
-                    let html = `<b>${row.kode_jurnal}</b>`;
-                    if (row.no_invoice && row.no_invoice !== '') {
-                        html += `<br><small>No Invoice: ${row.no_invoice}</small>`;
-                    }
-                    return html;
+            { data: 'jumlah_piutang', className: 'text-end',orderable: false,searchable: false },
+            { data: 'kode_jurnal_pelunasan' ,orderable: false },
+            { 
+                data: 'tanggal_pelunasan', 
+                searchable: false,
+                className: 'text-center',
+                render: function(data) {
+                    if (!data) return '-';
+                    const tgl = new Date(data);
+                    return tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
                 }
             },
-            { data: 'partner_nama' ,orderable: false },
-            { data: 'keterangan' ,orderable: false },
-            { data: 'total_tagihan', className: 'text-end',orderable: false,searchable: false },
-            { data: 'total_pelunasan', className: 'text-end',orderable: false,searchable: false },
-            { data: 'sisa_piutang', className: 'text-end fw-bold',orderable: false,searchable: false },
-            { data: 'umur_piutang', className: 'text-center',orderable: false,searchable: false },
+            { data: 'jumlah_pelunasan', className: 'text-end',orderable: false,searchable: false }
+            
         ],
         order: [[1, 'desc']],
-        drawCallback: function(settings) {
-            let api = this.api();
-            let json = api.ajax.json(); // Mengambil data tambahan dari server
-            
-            if (json.totalFooter) {
-                let res = json.totalFooter;
-                let format = new Intl.NumberFormat('id-ID');
-
-                $(api.column(5).footer()).html(format.format(res.total_tagihan));
-                $(api.column(6).footer()).html(format.format(res.total_pelunasan));
-                $(api.column(7).footer()).html(format.format(res.sisa_piutang));
-            }
-        },
         language: {
-            searchPlaceholder: 'Cari partner...',
+            searchPlaceholder: 'Cari data...',
             processing: '<i class="fa fa-spinner fa-spin"></i> Loading...'
         }
     });
@@ -231,7 +219,7 @@ $(document).ready(function() {
         tb.ajax.reload();
     });
     @endcanAccess
-    @canAccess('piutang.daftar.export')
+    @canAccess('piutang.monitoring.view')
     // 📤 Export Excel
     $('#btnExportExcel').click(function() {
         const partner = $('#filter_tipe').val();
@@ -242,7 +230,7 @@ $(document).ready(function() {
         @endif
         const cabang = $('#filter_cabang').val(); // ← ambil pilihan cabang
 
-        const url = "{{ route('piutang.daftar.export') }}"
+        const url = "{{ route('piutang.monitoring.export') }}"
             + "?parter_id=" + encodeURIComponent(partner ?? '')
             + "&entitas_id=" + encodeURIComponent(entitas ?? '')
             + "&cabang_id=" + encodeURIComponent(cabang ?? '');
