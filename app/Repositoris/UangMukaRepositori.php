@@ -12,12 +12,10 @@ class UangMukaRepositori
     public static function getDataUangMuka($entitas)
     {
         $query = DB::table('view_uang_muka_per_akun')
-                ->join("m_cabang","m_cabang.id","view_uang_muka_per_akun.cabang_id")
-                ->select("view_uang_muka_per_akun.*","m_cabang.nama as nama_cabang")
-                ->where('view_uang_muka_per_akun.sisa', '>', 0);
+                ->where('sisa', '>', 0);
 
         if ($entitas) {
-            $query->where('view_uang_muka_per_akun.entitas_id', $entitas);
+            $query->where('entitas_id', $entitas);
         }
         return $query;
     }
