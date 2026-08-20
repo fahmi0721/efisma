@@ -1403,7 +1403,7 @@ class JurnalController extends Controller
                 $debit  = floatval($row->debit);
                 $kredit = floatval($row->kredit);
                 $akun = JurnalService::getAkun($row->akun_id);
-                if ($jurnal->jenis === 'JP' && JurnalService::isDepositAkun($akun)) {
+                if (($jurnal->jenis === 'JP' || $jurnal->jenis === 'JN') && JurnalService::isDepositAkun($akun)) {
                     $nominal = $debit;
 
                     $saldoDeposit = JurnalService::getSaldoDeposit(
@@ -1411,6 +1411,8 @@ class JurnalController extends Controller
                         $jurnal->partner_id,
                         $jurnal->entitas_id
                     );
+
+                    
 
                     if ($debit > $saldoDeposit) {
                         return response()->json([
