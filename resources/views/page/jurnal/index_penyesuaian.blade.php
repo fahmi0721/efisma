@@ -37,6 +37,9 @@
                         </a>
                         @endcanAccess
                         @canAccess('penyesuaian.create')
+                        <a href="{{ route('jurnal.penyesuaian.upload') }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-upload"></i> Upload
+                        </a>
                         <a href="{{ route('jurnal.penyesuaian.create') }}" class="btn btn-success btn-sm">
                             <i class="fas fa-plus-square"></i> Create New
                         </a>
