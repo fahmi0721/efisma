@@ -66,6 +66,7 @@ FROM (
     GROUP BY
         jh.id,
         jh.no_invoice,
+        jh.keterangan,
         jh.kode_jurnal,
         jh.tanggal,
         jh.entitas_id,
