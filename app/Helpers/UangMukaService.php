@@ -81,6 +81,7 @@ class UangMukaService
                         self::validateTanggal($jurnal->jurnal_id_jkk, $jurnal->tanggal);
                         $jumlah = $d->debit > 0 ? $d->debit : $d->kredit;
                         if ($jumlah <= 0) continue;
+                        $sisa = self::getSisaUangMuka($jurnal->jurnal_id_jkk, $akun->id,);
                         if (!self::cekKelebihanPelunasan($jurnal->jurnal_id_jkk, $akun->id, $jumlah)) {
                             throw new Exception(
                                 "Pelunasan uang muka melebihi sisa untuk akun {$akun->no_akun} - {$akun->nama}."
@@ -115,7 +116,7 @@ class UangMukaService
     /** cek apakah pelunasan tidak melebihi sisa */
     public static function cekKelebihanPelunasan($jurnal_id, $akunUangMukaId, $jumlah)
     {
-        $sisa = self::getSisaUangMuka($jurnal_id, $akunUangMukaId,$jurnal_id);
+        $sisa = self::getSisaUangMuka($jurnal_id, $akunUangMukaId);
         if($jumlah < $sisa){
             return false;
         }else{
