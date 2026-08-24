@@ -50,7 +50,6 @@ class UangMukaService
 
                 if (is_array($jkkId)) {
                     foreach ($details as $d) {
-
                         $akun = GLRepositori::findById($d->akun_id);
                         if (!$akun || $akun->kategori !== 'uang_muka') continue;
                         self::validateTanggal($d->jurnal_id_secound, $jurnal->tanggal);
@@ -81,10 +80,10 @@ class UangMukaService
                         self::validateTanggal($jurnal->jurnal_id_jkk, $jurnal->tanggal);
                         $jumlah = $d->debit > 0 ? $d->debit : $d->kredit;
                         if ($jumlah <= 0) continue;
-                        $sisa = self::getSisaUangMuka($jurnal->jurnal_id_jkk, $akun->id,);
+                        $sisa = self::getSisaUangMuka($jurnal->jurnal_id_jkk, $akun->id);
                         if (!self::cekKelebihanPelunasan($jurnal->jurnal_id_jkk, $akun->id, $jumlah)) {
                             throw new Exception(
-                                "Pelunasan uang muka melebihi sisa untuk akun {$akun->no_akun} - {$akun->nama}."
+                                "Pelunasan uang muka melebihi sisa untuk akun {$totalUangMuka} - {$totalUsed} - {$akun->no_akun} - {$akun->nama}."
                             );
                         }
                         UangMukaRepositori::create([
@@ -122,13 +121,13 @@ class UangMukaService
         }else{
             return true;
         }
-        // return $jumlah < $sisa;
+        
     }
 
     /** hitung sisa UM */
     public static function getSisaUangMuka($jurnal_id, $akunId)
     {
-        $totalUangMuka = UangMukaRepositori::totalUangMuka($jurnal_id);
+        $totalUangMuka = UangMukaRepositori::totalUangMuka($jurnal_id,$akunId);
         $totalUsed = UangMukaRepositori::totalUsed($jurnal_id,$akunId);
         return $totalUangMuka - $totalUsed;
     }

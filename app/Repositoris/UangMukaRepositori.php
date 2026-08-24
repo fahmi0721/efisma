@@ -36,10 +36,11 @@ class UangMukaRepositori
             ->delete();
     }
 
-    public static function totalUangMuka($jurnal_id){
-        return DB::table('jurnal_header')
-            ->where('id', $jurnal_id)
-            ->value('total_debit');
+    public static function totalUangMuka($jurnal_id,$akunUangMukaId){
+        return DB::table('jurnal_detail')
+            ->where('jurnal_id', $jurnal_id)
+            ->where('akun_id', $akunUangMukaId)
+            ->sum('debit');
     }
 
     public static function totalUsed($jurnal_id,$akunId){
