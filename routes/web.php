@@ -265,8 +265,11 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
         Route::get('/kas-keluar/unposting', [JurnalController::class, 'form_unposting'])->name('jurnal.kaskeluar.unposting')->defaults('jenis', 'JKK')->middleware('permission:kas_keluar.unposting');
 
         Route::get('/penyesuaian', [JurnalController::class, 'index'])->name('jurnal.penyesuaian')->defaults('jenis', 'JN')->middleware('permission:penyesuaian.view');
+        /** Upload Route */
         Route::get('/penyesuaian/upload', [UploadJurnalJPController::class, 'index'])->name('jurnal.penyesuaian.upload')->middleware('permission:penyesuaian.create');
-        Route::get('/penyesuaian/template', [UploadJurnalJPController::class, 'template'])->name('jurnal.penyesuaian.template')->middleware('permission:penyesuaian.upload');
+        Route::get('/penyesuaian/template', [UploadJurnalJPController::class, 'template'])->name('jurnal.penyesuaian.template')->middleware('permission:penyesuaian.create');
+        Route::post('/penyesuaian/upload/save', [UploadJurnalJPController::class, 'upload'])->name('jurnal.penyesuaian.upload.save')->middleware('permission:penyesuaian.create');
+        /**End */
         Route::get('/penyesuaian/create', [JurnalController::class, 'create'])->name('jurnal.penyesuaian.create')->defaults('jenis', 'JN')->middleware('permission:penyesuaian.create');
         Route::post('/penyesuaian/store', [JurnalController::class, 'store'])->name('jurnal.penyesuaian.save')->defaults('jenis', 'JN')->middleware('permission:penyesuaian.create');
         Route::get('/penyesuaian/edit', [JurnalController::class, 'edit'])->name('jurnal.penyesuaian.edit')->defaults('jenis', 'JN')->middleware('permission:penyesuaian.edit');
