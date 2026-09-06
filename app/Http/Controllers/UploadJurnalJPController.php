@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Exports\TemplateJurnalKasKeluar;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Helpers\UploadJurnalValidasiService;
-use App\Helpers\UploadJurnalService;
+use App\Helpers\UploadJurnalJPValidasiService;
+use App\Helpers\UploadJurnalJPService;
+use App\Helpers\TemplateJurnalJPService;
 use Exception;
 
 class UploadJurnalJPController extends Controller
@@ -18,28 +17,20 @@ class UploadJurnalJPController extends Controller
 
     public function template(Request $request)
     {
-        if ($request->entitas_scope) {
-            $entitas_id = $request->entitas_scope;
-        }elseif($request->filled('entitas_id')){
-            $entitas_id = $request->entitas_id;
-        }
-        return Excel::download(
-            new TemplateJurnalKasKeluar($entitas_id),
-            'template_jurnal_kas_keluar.xlsx'
-        );
+        return TemplateJurnalJPService::get_template($request);
     }
 
-    public function kaskeluar(Request $request)
+    public function upload(Request $request)
     {
         try {
-            UploadJurnalValidasiService::kaskeluar($request);
-            $res = UploadJurnalService::kaskeluar($request);
+            UploadJurnalJPValidasiService::validasi($request);
+            $res = UploadJurnalJPService::uploads($request);
 
             // lanjut proses upload/import excel di sini
 
             return response()->json([
                 'status'  => 'success',
-                'message' => 'File berhasil diupload.',
+                'message' => 'Validasi OK',
             ]);
 
         } catch (Exception $e) {

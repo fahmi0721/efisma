@@ -33,14 +33,14 @@
 
                             <div class="dropdown-menu">
                                 <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('piutang')">
-                                    <i class='fa fa-file-excel'></i> Pelunasan Piutang
+                                    <!-- <i class='fa fa-file-excel'></i> Pelunasan Piutang
                                 </a>
 
                                 <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('uang_muka')">
                                     <i class='fa fa-file-excel'></i> Pertanggung Jawaban Uang Muka
-                                </a>
-                                <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('jrr')">
-                                    <i class='fa fa-file-excel'></i> Jurnal Rupa-Rupa
+                                </a> -->
+                                <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('acs')">
+                                    <i class='fa fa-file-excel'></i> Jurnal ACS
                                 </a>
                             </div>
                         </div>
@@ -64,6 +64,16 @@
                             </div>
                         </div>
                         @endif
+
+                        <div class="row mb-3">
+                            <label for="jenis_upload" class="col-sm-3 col-form-label">Jenis Upload <b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <select name="jenis_upload" id="jenis_upload" class="form-control jenis_upload">
+                                    <option value="">-- Pilih Jenis Upload --</option>
+                                    <option value="acs">Jurnal ACS</option>
+                                </select>
+                            </div>
+                        </div>
 
                         <div class="row mb-3">
                             <label for="files" class="col-sm-3 col-form-label">File Import <b class='text-danger'>*</b></label>
@@ -99,6 +109,12 @@ $("#form_data").submit(function(e){
     e.preventDefault();
     proses_data();
 });
+$('.jenis_upload').select2({
+    theme: 'bootstrap4',
+    width: '100%',
+    placeholder: "-- Pilih Jenis Upload --",
+    allowClear: true
+});
 @if(auth()->user()->level != "entitas")
 // 🔽 Select2 Entitas
 $('.entitas').select2({
@@ -126,7 +142,7 @@ function proses_data(){
     let iData = new FormData(document.getElementById("form_data"));
     $.ajax({
         type: "POST",
-        url: "{{ route('jurnal.kaskeluar.upload.save') }}",
+        url: "{{ route('jurnal.penyesuaian.upload.save') }}",
         data: iData,
         cache: false,
         processData: false,
@@ -146,7 +162,7 @@ function proses_data(){
                 $("#btn-submit").html("<i class='fa fa-save'></i> Simpan");
                 $("#btn-submit").prop("disabled", false);
                 setTimeout(() => {
-                    window.location.href = "{{ route('jurnal.kaskeluar') }}";
+                    window.location.href = "{{ route('jurnal.penyesuaian') }}";
                 }, 1500);
             }
         },
@@ -169,7 +185,7 @@ function get_template(jenis){
             window.open("{{ route('jurnal.penyesuaian.template') }}?jenis="+jenis+"&entitas_id="+entitas_id, '_blank');
         } 
     @else
-      window.open("{{ route('jurnal.kaskeluar.template') }}", '_blank');
+      window.open("{{ route('jurnal.penyesuaian.template') }}", '_blank');
     @endif
 }
 
