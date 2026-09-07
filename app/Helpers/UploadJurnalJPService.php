@@ -51,7 +51,7 @@ class UploadJurnalJPService
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage(), $e->getCode() ?: 500);
+            throw new Exception($e->getMessage(), 500);
         }
     }
 
