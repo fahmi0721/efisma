@@ -44,7 +44,7 @@ class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                 '1010301 - Bank Mandiri Rupiah MBA',
                 'Pembayaran A',
                 '0',
-                '501000',
+                '201000',
                 'Contoh Pengisian',
             ],
             [
@@ -52,7 +52,7 @@ class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                 '21',
                 '10301 - Piutang Usaha Swasta',
                 'Pembayaran A',
-                '501000',
+                '201000',
                 '0',
                 'Contoh Pengisian',
             ],
@@ -115,7 +115,7 @@ class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                  * Jika kolom B / Akun ID diisi,
                  * maka kolom C / Akun otomatis terisi dari sheet Master Akun.
                  */
-                for ($row = 4; $row <= 501; $row++) {
+                for ($row = 4; $row <= 201; $row++) {
                     $sheet->setCellValue(
                         'C' . $row,
                         '=IFERROR(VLOOKUP(B' . $row . ',\'master_akun\'!$A:$B,2,FALSE),"")'
@@ -125,7 +125,7 @@ class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                  /**
                  * Unlock semua cell dulu agar user bisa input
                  */
-                $sheet->getStyle('A1:' . $highestColumn . '501')
+                $sheet->getStyle('A1:' . $highestColumn . '201')
                     ->getProtection()
                     ->setLocked(Protection::PROTECTION_UNPROTECTED);
 
@@ -141,7 +141,7 @@ class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                  * D = Cabang otomatis
                  * F = Partner otomatis
                  */
-                $sheet->getStyle('C2:C501')
+                $sheet->getStyle('C2:C201')
                     ->getProtection()
                     ->setLocked(Protection::PROTECTION_PROTECTED);
 
@@ -158,7 +158,7 @@ class JurnalDetailSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                 /**
                  * Background kolom otomatis seperti disabled
                  */
-                $sheet->getStyle('C2:C501')->applyFromArray([
+                $sheet->getStyle('C2:C201')->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => [
