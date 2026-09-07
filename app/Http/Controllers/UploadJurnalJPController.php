@@ -30,7 +30,7 @@ class UploadJurnalJPController extends Controller
 
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Validasi OK',
+                'message' => 'Upload Jurnal Berhasil!',
             ]);
 
         } catch (Exception $e) {
