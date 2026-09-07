@@ -150,9 +150,19 @@ function proses_data(){
         beforeSend: function (){
             $("#btn-submit").html("<i class='fa fa-spinner fa-spin'></i>  Simpan..");
             $("#btn-submit").prop("disabled", true);
+            Swal.fire({
+                title: 'Sedang diproses...',
+                text: 'Mohon tunggu, jangan tutup jendela ini!',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
         },
         success: function(result){
-            console.log(result);
+            Swal.close();
             if(result.status == "success"){
                 position = "bottom-left";
                 icons = result.status;
