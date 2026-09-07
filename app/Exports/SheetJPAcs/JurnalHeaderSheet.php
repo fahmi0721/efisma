@@ -94,7 +94,7 @@ class JurnalHeaderSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                  * Jika kolom C / Cabang ID diisi,
                  * maka kolom D / Cabang otomatis terisi dari sheet Master Cabang.
                  */
-                for ($row = 3; $row <= 404; $row++) {
+                for ($row = 3; $row <= 201; $row++) {
                     $sheet->setCellValue(
                         'D' . $row,
                         '=IFERROR(VLOOKUP(C' . $row . ',\'master_cabang\'!$A:$B,2,FALSE),"")'
@@ -106,7 +106,7 @@ class JurnalHeaderSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                  * Jika kolom E / Partner ID diisi,
                  * maka kolom F / Partner otomatis terisi dari sheet Master Partner.
                  */
-                for ($row = 3; $row <= 404; $row++) {
+                for ($row = 3; $row <= 201; $row++) {
                     $sheet->setCellValue(
                         'F' . $row,
                         '=IFERROR(VLOOKUP(E' . $row . ',\'master_partner\'!$A:$B,2,FALSE),"")'
@@ -126,7 +126,7 @@ class JurnalHeaderSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                 /**
                  * Unlock semua cell dulu agar user bisa input
                  */
-                $sheet->getStyle('A1:' . $highestColumn . '404')
+                $sheet->getStyle('A1:' . $highestColumn . '201')
                     ->getProtection()
                     ->setLocked(Protection::PROTECTION_UNPROTECTED);
 
@@ -142,11 +142,11 @@ class JurnalHeaderSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                  * D = Cabang otomatis
                  * F = Partner otomatis
                  */
-                $sheet->getStyle('D2:D404')
+                $sheet->getStyle('D2:D201')
                     ->getProtection()
                     ->setLocked(Protection::PROTECTION_PROTECTED);
 
-                $sheet->getStyle('F2:F404')
+                $sheet->getStyle('F2:F201')
                     ->getProtection()
                     ->setLocked(Protection::PROTECTION_PROTECTED);
 
@@ -162,7 +162,7 @@ class JurnalHeaderSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                 /**
                  * Background kolom otomatis seperti disabled
                  */
-                $sheet->getStyle('D2:D404')->applyFromArray([
+                $sheet->getStyle('D2:D201')->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => [
@@ -176,7 +176,7 @@ class JurnalHeaderSheet implements FromArray, WithHeadings, WithTitle, WithEvent
                     ],
                 ]);
 
-                $sheet->getStyle('F2:F404')->applyFromArray([
+                $sheet->getStyle('F2:F201')->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => [
