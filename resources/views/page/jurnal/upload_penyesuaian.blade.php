@@ -195,7 +195,7 @@ function get_template(jenis){
             window.open("{{ route('jurnal.penyesuaian.template') }}?jenis="+jenis+"&entitas_id="+entitas_id, '_blank');
         } 
     @else
-      window.open("{{ route('jurnal.penyesuaian.template') }}", '_blank');
+      window.open("{{ route('jurnal.penyesuaian.template') }}?jenis="+jenis, '_blank');
     @endif
 }
 
