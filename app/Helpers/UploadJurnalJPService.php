@@ -58,7 +58,7 @@ class UploadJurnalJPService
     private static function prosesJurnalHeaderDanDetailAcs($spreadsheet, $request, array $detailGroup)
     {
         $sheet = $spreadsheet->getSheetByName('jurnal_header');
-
+        $sheet->getProtection()->setSheet(false);
         if (!$sheet) {
             throw new Exception('Sheet Jurnal Header tidak ditemukan.', 422);
         }
@@ -146,7 +146,7 @@ class UploadJurnalJPService
     private static function cleansingJurnalDetailAcs($spreadsheet): array
     {
         $sheet = $spreadsheet->getSheetByName('jurnal_detail');
-
+        $sheet->getProtection()->setSheet(false);         
         if (!$sheet) {
             throw new Exception('Sheet Jurnal Detail tidak ditemukan.', 422);
         }
