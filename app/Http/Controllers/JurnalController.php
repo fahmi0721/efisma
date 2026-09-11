@@ -814,8 +814,13 @@ class JurnalController extends Controller
             PeriodeHelper::cekPeriodeOpen($request->tanggal);
             // nomor jurnal
             $prefix = $jenis . '-' . date('Ym');
-            $last = DB::table('jurnal_header')->where('kode_jurnal', 'like', $prefix . '%')->max('kode_jurnal');
-            $urut = $last ? intval(substr($last, -3)) + 1 : 1;
+            $last = DB::table('jurnal_header')
+                ->where('kode_jurnal', 'like', $prefix . '-%')
+                ->orderByRaw("CAST(SUBSTRING_INDEX(kode_jurnal, '-', -1) AS UNSIGNED) DESC")
+                ->value('kode_jurnal');
+            $urut = $last
+                ? intval(substr($last, strrpos($last, '-') + 1)) + 1
+                : 1;
             $kode = $prefix . '-' . str_pad($urut, 3, '0', STR_PAD_LEFT);
             $cabang_id = $request->is_multi_cabang ? null  : $request->cabang_id;
             $is_multi_cabang = '0';

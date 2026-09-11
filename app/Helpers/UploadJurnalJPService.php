@@ -62,6 +62,7 @@ class UploadJurnalJPService
         if (!$sheet) {
             throw new Exception('Sheet Jurnal Header tidak ditemukan.', 422);
         }
+        
 
         $highestRow = $sheet->getHighestRow();
 
@@ -254,25 +255,33 @@ class UploadJurnalJPService
 
     private static function generateKodeJurnal(): string
     {
-        /**
-         * Sementara sederhana dulu.
-         * Nanti bisa disesuaikan dengan format kode jurnal Anda.
-         */
         $prefix = 'JN-' . date('Ym');
-
+    
         $last = JurnalHeader::query()
-            ->where('kode_jurnal', 'like', $prefix . '%')
-            ->orderByDesc('id')
+            ->where('kode_jurnal', 'like', $prefix . '-%')
+            ->orderByRaw(
+                "CAST(SUBSTRING_INDEX(kode_jurnal, '-', -1) AS UNSIGNED) DESC"
+            )
             ->first();
-
+    
         if (!$last) {
             return $prefix . '-001';
         }
-
-        $lastNumber = (int) substr($last->kode_jurnal, -3);
+    
+        // Ambil angka setelah tanda "-" terakhir
+        $lastNumber = (int) substr(
+            $last->kode_jurnal,
+            strrpos($last->kode_jurnal, '-') + 1
+        );
+    
         $nextNumber = $lastNumber + 1;
-
-        return $prefix . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+    
+        return $prefix . '-' . str_pad(
+            (string) $nextNumber,
+            3,
+            '0',
+            STR_PAD_LEFT
+        );
     }
 
     
