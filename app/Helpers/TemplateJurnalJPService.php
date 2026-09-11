@@ -7,6 +7,7 @@ use App\Models\JurnalDetail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Exports\TemplateJPAcs;
+use App\Exports\TemplateUangMuka;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Database\QueryException;
 use Carbon\Carbon;
@@ -29,6 +30,12 @@ class TemplateJurnalJPService
                 return Excel::download(
                     new TemplateJPAcs($entitas_id),
                     'template_jrr_acs.xlsx'
+                );
+                break;
+            case 'uang_muka':
+                return Excel::download(
+                    new TemplateUangMuka($entitas_id),
+                    'template_jrr_uang_muka.xlsx'
                 );
                 break;
             
