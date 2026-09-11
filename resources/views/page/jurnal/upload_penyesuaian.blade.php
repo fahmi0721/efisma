@@ -34,11 +34,11 @@
                             <div class="dropdown-menu">
                                 <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('piutang')">
                                     <!-- <i class='fa fa-file-excel'></i> Pelunasan Piutang
-                                </a>
+                                </a>-->
 
                                 <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('uang_muka')">
-                                    <i class='fa fa-file-excel'></i> Pertanggung Jawaban Uang Muka
-                                </a> -->
+                                    <i class='fa fa-file-excel'></i> PJ Uang Muka
+                                </a> 
                                 <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('acs')">
                                     <i class='fa fa-file-excel'></i> Jurnal ACS
                                 </a>
@@ -105,6 +105,7 @@
 @section('js')
 
 <script>
+
 $("#form_data").submit(function(e){
     e.preventDefault();
     proses_data();
