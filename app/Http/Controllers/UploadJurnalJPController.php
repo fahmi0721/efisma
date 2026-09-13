@@ -34,10 +34,17 @@ class UploadJurnalJPController extends Controller
             ]);
 
         } catch (Exception $e) {
+            $code = $e->getCode();
+            $statusCode = is_numeric($code)
+                && (int) $code >= 100
+                && (int) $code <= 599
+                    ? (int) $code
+                    : 500;
+
             return response()->json([
                 'status'  => 'warning',
                 'message' => $e->getMessage(),
-            ], $e->getCode() ?: 500);
+            ], $statusCode);
         }
             
     }

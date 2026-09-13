@@ -70,6 +70,7 @@
                             <div class="col-sm-9">
                                 <select name="jenis_upload" id="jenis_upload" class="form-control jenis_upload">
                                     <option value="">-- Pilih Jenis Upload --</option>
+                                    <option value="uang_muka">Jurnal PJ Uang Muka</option>
                                     <option value="acs">Jurnal ACS</option>
                                 </select>
                             </div>
