@@ -57,9 +57,17 @@ class UangMukaService
                         if (!in_array($d->jurnal_id_secound, $jkkId)) continue;
                         $jumlah = $d->kredit;
                         if ($jumlah <= 0) continue;
+                        $sisa = self::getSisaUangMuka(
+                            $d->jurnal_id_secound,
+                            $akun->id
+                        );
                         if (!self::cekKelebihanPelunasan($d->jurnal_id_secound, $akun->id, $jumlah)) {
                             throw new Exception(
-                                "Pelunasan uang muka melebihi sisa untuk akun {$akun->no_akun} - {$akun->nama}."
+                                "Pelunasan uang muka melebihi sisa untuk akun "
+                                . "{$akun->no_akun} - {$akun->nama}. "
+                                . "Jumlah pelunasan: " . number_format($jumlah, 2, ',', '.') . ", "
+                                . "Sisa uang muka: " . number_format($sisa, 2, ',', '.'),
+                                422
                             );
                         }
                         UangMukaRepositori::create([
@@ -82,9 +90,17 @@ class UangMukaService
                         self::validateTanggal($jurnal->jurnal_id_jkk, $jurnal->tanggal);
                         $jumlah = $d->debit > 0 ? $d->debit : $d->kredit;
                         if ($jumlah <= 0) continue;
+                        $sisa = self::getSisaUangMuka(
+                            $d->jurnal_id_secound,
+                            $akun->id
+                        );
                         if (!self::cekKelebihanPelunasan($jurnal->jurnal_id_jkk, $akun->id, $jumlah)) {
                             throw new Exception(
-                                "Pelunasan uang muka melebihi sisa untuk akun  {$akun->no_akun} - {$akun->nama}."
+                                "Pelunasan uang muka melebihi sisa untuk akun "
+                                . "{$akun->no_akun} - {$akun->nama}. "
+                                . "Jumlah pelunasan: " . number_format($jumlah, 2, ',', '.') . ", "
+                                . "Sisa uang muka: " . number_format($sisa, 2, ',', '.'),
+                                422
                             );
                         }
                         UangMukaRepositori::create([
