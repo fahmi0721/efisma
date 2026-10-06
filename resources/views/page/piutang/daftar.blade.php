@@ -246,7 +246,6 @@ $(document).ready(function() {
             + "?partner_id=" + encodeURIComponent(partner ?? '')
             + "&entitas_id=" + encodeURIComponent(entitas ?? '')
             + "&cabang_id=" + encodeURIComponent(cabang ?? '');
-        alert(url)
         
         window.location.href = url;
     });
