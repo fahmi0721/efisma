@@ -243,10 +243,11 @@ $(document).ready(function() {
         const cabang = $('#filter_cabang').val(); // ← ambil pilihan cabang
 
         const url = "{{ route('piutang.daftar.export') }}"
-            + "?parter_id=" + encodeURIComponent(partner ?? '')
+            + "?partner_id=" + encodeURIComponent(partner ?? '')
             + "&entitas_id=" + encodeURIComponent(entitas ?? '')
             + "&cabang_id=" + encodeURIComponent(cabang ?? '');
-
+        alert(url)
+        
         window.location.href = url;
     });
     @endcanAccess

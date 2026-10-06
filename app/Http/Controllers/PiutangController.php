@@ -219,7 +219,7 @@ class PiutangController extends Controller
         |----------------------------------------------------------
         */
         if (!empty($partner_id)) {
-            $query->where('partner_id', $partner_id);
+            $data->where('partner_id', $partner_id);
         }
 
         if (!empty($entitas_id)) {
@@ -238,7 +238,6 @@ class PiutangController extends Controller
         }
 
         $data = $data->get();
-
         return Excel::download(new \App\Exports\DaftarPiutangExport($data), 'daftar_piutang.xlsx');
     }
 
