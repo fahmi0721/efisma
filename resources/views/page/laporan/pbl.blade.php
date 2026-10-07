@@ -27,14 +27,15 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
             <h5 class="mb-0">Laporan Laba Rugi</h5>
             <div class="d-flex align-items-center gap-2 ms-auto">
-                <input type="text" id="periode" class="form-control form-control flatpickr-input" placeholder="Pilih Periode" style="width: 200px;" />
+                <input type="text" id="periode_from" class="form-control form-control flatpickr-input" placeholder="Periode Awal" style="width: 150px;" />
+                <input type="text" id="periode_to" class="form-control form-control flatpickr-input" placeholder="Periode Awal" style="width: 150px;" />
                 @if(auth()->user()->level != "entitas")
                 {{-- 🔽 Filter Entitas --}}
-                <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:250px">
+                <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:200px">
                     <option value="">Semua Entitas</option>
                 </select>
                 @endif
-                <select id="filter_cabang" class="form-select form-select-sm cabang" style="width:250px">
+                <select id="filter_cabang" class="form-select form-select-sm cabang" style="width:200px">
                     <option value="">Semua Cabang</option>
                 </select>
                 @canAccess('pbl.export')
@@ -83,6 +84,7 @@
 @section('js')
 <script>
 $(function() {
+    console.log('JS Laporan Laba Rugi mulai');
     @if(auth()->user()->level != "entitas")
     $('#filter_entitas').select2({
         ajax: {
@@ -108,14 +110,14 @@ $(function() {
     @endif
       // 🔹 Flatpickr Month Picker dengan default bulan ini
     const now = new Date();
-    const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
+    let periodeFrom = null;
+    let periodeTo = null;
      // 🔧 Inisialisasi Flatpickr Month Picker
-    flatpickr("#periode", {
+    periodeFrom = flatpickr("#periode_from", {
         altInput: true,
-        altFormat: "F Y",   // tampil misalnya: Oktober 2025
-        dateFormat: "Y-m",  // dikirim ke backend: 2025-10
-        defaultDate: defaultDate,
+        altFormat: "F Y",
+        dateFormat: "Y-m",
+
         plugins: [
             new monthSelectPlugin({
                 shorthand: true,
@@ -123,10 +125,66 @@ $(function() {
                 altFormat: "F Y"
             })
         ],
-        static: true, 
+
+        static: true,
         allowInput: false,
-        locale: "id"
+        locale: "id",
+
+        onChange: function(selectedDates) {
+
+            if (selectedDates.length > 0) {
+
+                // To tidak boleh sebelum From
+                periodeTo.set("minDate", selectedDates[0]);
+
+                // Jika To saat ini lebih kecil dari From
+                if (
+                    periodeTo.selectedDates.length > 0 &&
+                    periodeTo.selectedDates[0] < selectedDates[0]
+                ) {
+                    periodeTo.clear();
+                }
+            }
+        }
     });
+
+
+    periodeTo = flatpickr("#periode_to", {
+        altInput: true,
+        altFormat: "F Y",
+        dateFormat: "Y-m",
+
+        plugins: [
+            new monthSelectPlugin({
+                shorthand: true,
+                dateFormat: "Y-m",
+                altFormat: "F Y"
+            })
+        ],
+
+        static: true,
+        allowInput: false,
+        locale: "id",
+
+        onChange: function(selectedDates) {
+
+            if (selectedDates.length > 0) {
+                // From tidak boleh setelah To
+                periodeFrom.set("maxDate", selectedDates[0]);
+                // Jika From saat ini lebih besar dari To
+                if (
+                    periodeFrom.selectedDates.length > 0 &&
+                    periodeFrom.selectedDates[0] > selectedDates[0]
+                ) {
+                    periodeFrom.clear();
+                }
+            }
+        }
+    });
+
+     // 🔧 Inisialisasi Flatpickr Month Picker
+    
+
     $('#filter_cabang').select2({
         ajax: {
             url: '{{ route("cabang.select") }}',
@@ -150,6 +208,7 @@ $(function() {
     });
 
     @canAccess('pbl.view')
+    console.log('Mulai init DataTable');
     const table = $('#tb_data').DataTable({
         processing: true,
         serverSide: false,
@@ -157,8 +216,10 @@ $(function() {
             url: "{{ route('laporan.laba_rugi.data') }}",
             data: function(d) {
                 d.entitas_id = $('#filter_entitas').val();
-                d.periode = $('#periode').val();
+                d.periode_from = $('#periode_from').val();
+                d.periode_to = $('#periode_to').val();
                 d.cabang_id = $('#filter_cabang').val();
+                console.log('FILTER:', d);
             },
             dataSrc: function (json) {
                 // tampilkan total di bawah tabel
@@ -200,9 +261,14 @@ $(function() {
         searching: false,
         info: false,
     });
-
+     console.log('DataTable berhasil init');
     // Reload saat filter berubah
-    $('#filter_entitas, #periode, #filter_cabang').on('change', function() {
+    $('#filter_entitas, #periode_from,#periode_to, #filter_cabang').on('change', function() {
+        console.log(
+                'Filter berubah:',
+                this.id,
+                $(this).val()
+            );
         table.ajax.reload();
     });
     @endcanAccess
@@ -210,12 +276,13 @@ $(function() {
     // Export Excel
     $('#btnExportExcel').click(function() {
         let entitas = $('#filter_entitas').val();
-        let periode = $('#periode').val();
+        let periode_from = $('#periode_from').val();
+        let periode_to = $('#periode_to').val();
         let cabang_id = $('#filter_cabang').val();
         @if(auth()->user()->level != "entitas")
-            window.location.href = "{{ route('laporan.laba_rugi.export') }}?entitas_id=" + entitas + "&periode=" + periode + "&cabang_id=" + cabang_id;
+            window.location.href = "{{ route('laporan.laba_rugi.export') }}?entitas_id=" + entitas + "&periode_from=" + periode_from +"&periode_to=" + periode_to + "&cabang_id=" + cabang_id;
         @else
-            window.location.href = "{{ route('laporan.laba_rugi.export') }}?periode=" + periode + "&cabang_id=" + cabang_id;
+            window.location.href = "{{ route('laporan.laba_rugi.export') }}?periode=" + "&periode_from=" + periode_from +"&periode_to=" + periode_to +  "&cabang_id=" + cabang_id;
         @endif
     });
     @endcanAccess

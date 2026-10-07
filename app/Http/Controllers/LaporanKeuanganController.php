@@ -153,9 +153,11 @@ class LaporanKeuanganController extends Controller
         } else {
             $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
         }
-        $periode = $request->periode ?? date('Y-m'); // contoh: "2025-11"
-        $periode_awal = $periode . '-01';
-        $periode_akhir = date('Y-m-t', strtotime($periode_awal));
+        $periode_from = $request->periode_from ?? date('Y-m'); // contoh: "2025-11"
+        $periode_to = $request->periode_to ?? date('Y-m'); // contoh: "2025-11"
+        $periode_awal = $periode_from . '-01';
+        $periode_toto = $periode_to . '-01';
+        $periode_akhir = date('Y-m-t', strtotime($periode_toto));
         $cabang_id = $request->cabang_id; // filter dari dropdown jika admin/pusat
 
 
@@ -263,10 +265,14 @@ class LaporanKeuanganController extends Controller
         } else {
             $entitas_id = $request->entitas_id; // filter dari dropdown jika admin/pusat
         }
-        $periode = $request->periode ?? date('Y-m');
+        $periode_from = $request->periode_from ?? date('Y-m'); // contoh: "2025-11"
+        $periode_to = $request->periode_to ?? date('Y-m'); // contoh: "2025-11"
+        $periode_awal = $periode_from . '-01';
+        $periode_toto = $periode_to . '-01';
+        $periode_akhir = date('Y-m-t', strtotime($periode_toto));
         $cabang_id = $request->cabang_id;
-        $filename = 'Laporan_PBL_' . $periode . '.xlsx';
-        return Excel::download(new PblExport($entitas_id, $periode,$cabang_id), $filename);
+        $filename = 'Laporan_PBL_' . $periode_awal . '_'.$periode_akhir.'.xlsx';
+        return Excel::download(new PblExport($entitas_id, $periode_awal,$periode_akhir,$cabang_id), $filename);
     }
 
      public function indexAruskas()
