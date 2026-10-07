@@ -7,7 +7,7 @@
         </tr>
         <tr>
             <th colspan="5">
-                Periode: {{ \Carbon\Carbon::parse($periode . '-01')->translatedFormat('F Y') }}
+                Periode: {{ $periode}}
             </th>
         </tr>
         <tr>

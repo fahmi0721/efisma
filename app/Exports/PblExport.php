@@ -5,24 +5,27 @@ namespace App\Exports;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Illuminate\Support\Facades\DB;
-
+use Carbon\Carbon;
 class PblExport implements FromView
 {
     protected $entitas_id;
-    protected $periode;
+    protected $periode_awal;
+    protected $periode_akhir;
     protected $cabang_id;
 
-    public function __construct($entitas_id = null, $periode = null,$cabang_id = null)
+    public function __construct($entitas_id = null, $periode_awal = null,$periode_akhir = null,$cabang_id = null)
     {
         $this->entitas_id = $entitas_id;
-        $this->periode = $periode;
+        $this->periode_awal = $periode_awal;
+        $this->periode_akhir = $periode_akhir;
         $this->cabang_id = $cabang_id;
     }
 
     public function view(): View
     {
-        $periode_awal = $this->periode ? $this->periode . '-01' : date('Y-m-01');
-        $periode_akhir = date('Y-m-t', strtotime($periode_awal));
+        // $periode_awal = $this->periode ? $this->periode . '-01' : date('Y-m-01');
+        // $periode_akhir = date('Y-m-t', strtotime($periode_awal));
+        $periode = date("Y-m", strtotime($this->periode_awal));
 
         // 🔹 Ambil seluruh akun dari view hirarki
         $akun = DB::table('view_akun_hirarki')
@@ -43,7 +46,7 @@ class PblExport implements FromView
         // 🔹 Ambil saldo awal
         $saldoAwal = DB::table('m_saldo_awal')
             ->when($this->entitas_id, fn($q) => $q->where('entitas_id', $this->entitas_id))
-            ->where('periode', '<=', $this->periode) // periode sebelumnya juga boleh
+            ->where('periode', '<=', $periode) // periode sebelumnya juga boleh
             ->select('akun_gl_id', DB::raw('SUM(saldo) as saldo'))
             ->groupBy('akun_gl_id')
             ->get()
@@ -56,7 +59,7 @@ class PblExport implements FromView
             ->where('j.status', 'posted')
             ->when($this->entitas_id, fn($q) => $q->where('j.entitas_id', $this->entitas_id))
             ->when($this->cabang_id, fn($q) => $q->where('j.cabang_id', $this->cabang_id))
-            ->whereBetween('b.tanggal', [$periode_awal, $periode_akhir])
+            ->whereBetween('b.tanggal', [$this->periode_awal, $this->periode_akhir])
             ->select(
                 'b.akun_id',
                 DB::raw('SUM(b.debit) as total_debit'),
@@ -119,7 +122,7 @@ class PblExport implements FromView
             'total_pendapatan' => $total_pendapatan,
             'total_beban' => $total_beban,
             'laba_bersih' => $laba_bersih,
-            'periode' => $this->periode
+            'periode' => Carbon::parse($this->periode_awal)->translatedFormat('F Y')." s.d ".Carbon::parse($this->periode_akhir)->translatedFormat('F Y')
         ]);
     }
 
