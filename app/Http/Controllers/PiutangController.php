@@ -13,48 +13,72 @@ use Carbon\Carbon;
 use Validator;
 class PiutangController extends Controller
 {
+    
     public function index(Request $request)
     {
-        // Jika permintaan AJAX (DataTables)
-        $filter = $request->get('filter');
-        $entitas_id = $request->get('entitas_id');
-        $cabang_id = $request->get('cabang_id');
         if ($request->ajax()) {
-            $query  = DB::table('view_aging_piutang');
-                    if ($filter === 'customer') {
-                        $query->where('is_customer', 'active');
-                    } elseif ($filter === 'vendor') {
-                        $query->where('is_vendor', 'active');
-                    }
-                    if (!empty($entitas_id)) {
-                        $query->where('entitas_id', $entitas_id);
-                    }
-                   
-                    /*
-                    |--------------------------------------------------------------------------
-                    | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
-                    |--------------------------------------------------------------------------
-                    */
-                    if ($request->entitas_scope) {
-                        $query->where('entitas_id', $request->entitas_scope);
-                    }
-            $data = $query->get();
+
+            $validated = $request->validate([
+                'periode_from'  => 'nullable|date',
+                'periode_to' => 'nullable|date|after_or_equal:periode_from',
+                'filter'        => 'nullable|in:customer,vendor,all',
+                'entitas_id'    => 'nullable',
+            ]);
+            $lisData = PiutangService::getAging($request);
+
+            $data = $lisData;
+
+            /*
+            |--------------------------------------------------------------------------
+            | 7. FOOTER
+            |--------------------------------------------------------------------------
+            */
+
+            $totalFooter = [
+                'aging_0_14'    => $data->sum('aging_0_14'),
+                'aging_15_30'   => $data->sum('aging_15_30'),
+                'aging_31_45'   => $data->sum('aging_31_45'),
+                'aging_46_60'   => $data->sum('aging_46_60'),
+                'aging_60_plus' => $data->sum('aging_60_plus'),
+                'total_piutang' => $data->sum('total_piutang'),
+            ];
+
+            /*
+            |--------------------------------------------------------------------------
+            | 8. DATATABLES
+            |--------------------------------------------------------------------------
+            */
+
             return DataTables::of($data)
                 ->addIndexColumn()
-                ->editColumn('aging_0_14', fn($row) => number_format($row->aging_0_14, 2, ',', '.'))
-                ->editColumn('aging_15_30', fn($row) => number_format($row->aging_15_30, 2, ',', '.'))
-                ->editColumn('aging_31_45', fn($row) => number_format($row->aging_31_45, 2, ',', '.'))
-                ->editColumn('aging_46_60', fn($row) => number_format($row->aging_46_60, 2, ',', '.'))
-                ->editColumn('aging_60_plus', fn($row) => number_format($row->aging_60_plus, 2, ',', '.'))
-                ->editColumn('total_piutang', fn($row) => "<b>" . number_format($row->total_piutang, 2, ',', '.') . "</b>")
-                ->with('totalFooter', [
-                    'aging_0_14'   => $data->sum('aging_0_14'),
-                    'aging_15_30'  => $data->sum('aging_15_30'),
-                    'aging_31_45'  => $data->sum('aging_31_45'),
-                    'aging_46_60'  => $data->sum('aging_46_60'),
-                    'aging_60_plus' => $data->sum('aging_60_plus'),
-                    'total_piutang' => $data->sum('total_piutang'),
-                ])
+
+                ->editColumn('aging_0_14', fn($row) =>
+                    number_format($row->aging_0_14, 2, ',', '.')
+                )
+
+                ->editColumn('aging_15_30', fn($row) =>
+                    number_format($row->aging_15_30, 2, ',', '.')
+                )
+
+                ->editColumn('aging_31_45', fn($row) =>
+                    number_format($row->aging_31_45, 2, ',', '.')
+                )
+
+                ->editColumn('aging_46_60', fn($row) =>
+                    number_format($row->aging_46_60, 2, ',', '.')
+                )
+
+                ->editColumn('aging_60_plus', fn($row) =>
+                    number_format($row->aging_60_plus, 2, ',', '.')
+                )
+
+                ->editColumn('total_piutang', fn($row) =>
+                    '<b>' . number_format(
+                        $row->total_piutang, 2, ',', '.'
+                    ) . '</b>'
+                )
+
+                ->with('totalFooter', $totalFooter)
                 ->rawColumns(['total_piutang'])
                 ->make(true);
         }
@@ -62,32 +86,34 @@ class PiutangController extends Controller
         return view('page.piutang.index');
     }
 
+
     public function agingPiutangExport(Request $request)
     {
         $filter = $request->get('filter');
-        $cabang_id = $request->get('cabang_id');
-        $entitas_id = null;
-        // Jika user level entitas → paksa entitas user
-        if ($request->user()->level == 'entitas') {
-            $entitas_id = $request->entitas_scope;
-        }
-        // Jika admin/pusat → ambil dari dropdown entitas (boleh kosong)
-        else {
-            $entitas_id = $request->get('entitas_id');
-        }
-        $query = DB::table('view_aging_piutang');
+        // $cabang_id = $request->get('cabang_id');
+        // $entitas_id = null;
+        // // Jika user level entitas → paksa entitas user
+        // if ($request->user()->level == 'entitas') {
+        //     $entitas_id = $request->entitas_scope;
+        // }
+        // // Jika admin/pusat → ambil dari dropdown entitas (boleh kosong)
+        // else {
+        //     $entitas_id = $request->get('entitas_id');
+        // }
+        // $query = DB::table('view_aging_piutang');
 
-        if ($filter === 'customer') {
-            $query->where('is_customer', 'active');
-        } elseif ($filter === 'vendor') {
-            $query->where('is_vendor', 'active');
-        }
+        // if ($filter === 'customer') {
+        //     $query->where('is_customer', 'active');
+        // } elseif ($filter === 'vendor') {
+        //     $query->where('is_vendor', 'active');
+        // }
 
-        if (!empty($entitas_id)) {
-            $query->where('entitas_id', $entitas_id);
-        }
+        // if (!empty($entitas_id)) {
+        //     $query->where('entitas_id', $entitas_id);
+        // }
+        $lisData = PiutangService::getAging($request);
 
-        $data = $query->get();
+        $data = $lisData;
 
         $filename = 'Laporan_Aging_Piutang_' . ucfirst($filter ?: 'semua') . '_' . date('Ymd_His') . '.xlsx';
 
