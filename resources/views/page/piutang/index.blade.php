@@ -49,9 +49,9 @@
 <div class="container-fluid">
     <div class="card card-success card-outline">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-            <h5 class="mb-0">Daftar Aging Piutang per Partner</h5>
-
             <div class="d-flex align-items-center gap-2 ms-auto">
+                <input type="text" id="periode_from" class="form-control form-control flatpickr-input" placeholder="Periode Awal" style="width: 150px;" />
+                <input type="text" id="periode_to" class="form-control form-control flatpickr-input" placeholder="Periode Awal" style="width: 150px;" />
                 @if(auth()->user()->level != "entitas")
                 {{-- 🔽 Filter Entitas --}}
                 <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:180px">
@@ -109,6 +109,78 @@
 @section('js')
 <script>
 $(document).ready(function() {
+    const now = new Date();
+    let periodeFrom = null;
+    let periodeTo = null;
+    // 🔧 Inisialisasi Flatpickr Month Picker
+    periodeFrom = flatpickr("#periode_from", {
+        altInput: true,
+        altFormat: "F Y",
+        dateFormat: "Y-m",
+
+        plugins: [
+            new monthSelectPlugin({
+                shorthand: true,
+                dateFormat: "Y-m",
+                altFormat: "F Y"
+            })
+        ],
+
+        static: true,
+        allowInput: false,
+        locale: "id",
+
+        onChange: function(selectedDates) {
+
+            if (selectedDates.length > 0) {
+
+                // To tidak boleh sebelum From
+                periodeTo.set("minDate", selectedDates[0]);
+
+                // Jika To saat ini lebih kecil dari From
+                if (
+                    periodeTo.selectedDates.length > 0 &&
+                    periodeTo.selectedDates[0] < selectedDates[0]
+                ) {
+                    periodeTo.clear();
+                }
+            }
+        }
+    });
+
+
+    periodeTo = flatpickr("#periode_to", {
+        altInput: true,
+        altFormat: "F Y",
+        dateFormat: "Y-m",
+
+        plugins: [
+            new monthSelectPlugin({
+                shorthand: true,
+                dateFormat: "Y-m",
+                altFormat: "F Y"
+            })
+        ],
+
+        static: true,
+        allowInput: false,
+        locale: "id",
+
+        onChange: function(selectedDates) {
+
+            if (selectedDates.length > 0) {
+                // From tidak boleh setelah To
+                periodeFrom.set("maxDate", selectedDates[0]);
+                // Jika From saat ini lebih besar dari To
+                if (
+                    periodeFrom.selectedDates.length > 0 &&
+                    periodeFrom.selectedDates[0] > selectedDates[0]
+                ) {
+                    periodeFrom.clear();
+                }
+            }
+        }
+    });
     @if(auth()->user()->level != "entitas")
     $('.entitas').select2({
         ajax: {
@@ -143,6 +215,8 @@ $(document).ready(function() {
             data: function (d) {
                 d.filter = $('#filter_tipe').val();
                 d.entitas_id = $('#filter_entitas').val();
+                d.periode_from = $('#periode_from').val();
+                d.periode_to = $('#periode_to').val();
             }
         },
         columns: [
@@ -183,7 +257,7 @@ $(document).ready(function() {
         tb.ajax.reload();
     });
     @endif
-     $('#filter_tipe').on('change', function() {
+     $('#filter_tipe,#periode_from,#periode_to').on('change', function() {
         tb.ajax.reload();
     });
     @endcanAccess
@@ -192,6 +266,8 @@ $(document).ready(function() {
     $('#btnExportExcel').click(function() {
         const params = {
             filter: $('#filter_tipe').val() || '',
+            periode_from: $('#periode_from').val() || '',
+            periode_to: $('#periode_to').val() || '',
             entitas_id: $('#filter_entitas').val() || '',
         };
         const query = new URLSearchParams(params).toString();
