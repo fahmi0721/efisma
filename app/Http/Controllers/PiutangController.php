@@ -125,11 +125,18 @@ class PiutangController extends Controller
 
     public function daftar(Request $request)
     {
-       $partner_id = $request->input('partner_id');
+        $partner_id = $request->input('partner_id');
         $entitas_id = $request->input('entitas_id');
         $cabang_id = $request->input('cabang_id'); 
+
+        $periode_from = $request->periode_from ?? date('Y-m'); // contoh: "2025-11"
+        $periode_to = $request->periode_to ?? date('Y-m'); // contoh: "2025-11"
+        $periode_awal = $periode_from . '-01';
+        $periode_toto = $periode_to . '-01';
+        $periode_akhir = date('Y-m-t', strtotime($periode_toto));
         if ($request->ajax()) {
             $query = DB::table('view_daftar_piutang');
+            
 
             /*
             |----------------------------------------------------------
@@ -156,6 +163,10 @@ class PiutangController extends Controller
             if ($request->entitas_scope) {
                 $query->where('entitas_id', $request->entitas_scope);
             }
+            if (!empty($request->periode_from) AND !empty($request->periode_to)) {
+                $query->whereBetween('tanggal', [$periode_awal, $periode_akhir]);
+            }
+            
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -210,7 +221,12 @@ class PiutangController extends Controller
         $partner_id = $request->input('partner_id');
         $entitas_id = $request->input('entitas_id');
         $cabang_id = $request->input('cabang_id');
-
+        
+        $periode_from = $request->periode_from ?? date('Y-m'); // contoh: "2025-11"
+        $periode_to = $request->periode_to ?? date('Y-m'); // contoh: "2025-11"
+        $periode_awal = $periode_from . '-01';
+        $periode_toto = $periode_to . '-01';
+        $periode_akhir = date('Y-m-t', strtotime($periode_toto));
         $data = DB::table('view_daftar_piutang');
 
         /*
@@ -235,6 +251,10 @@ class PiutangController extends Controller
         */
         if ($request->entitas_scope) {
             $data->where('entitas_id', $request->entitas_scope);
+        }
+
+        if (!empty($request->periode_from) AND !empty($request->periode_to)) {
+            $data->whereBetween('tanggal', [$periode_awal, $periode_akhir]);
         }
 
         $data = $data->get();

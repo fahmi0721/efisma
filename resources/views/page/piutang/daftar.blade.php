@@ -26,27 +26,33 @@
 <div class="container">
     <!-- FILTER -->
 <div class="row g-2 mb-4">
+    <div class="col-md-2">
+        <input type="text" id="periode_from" class="form-control form-control flatpickr-input" placeholder="Periode Awal"  />
+    </div>
+    <div class="col-md-2">
+        <input type="text" id="periode_to" class="form-control form-control flatpickr-input" placeholder="Periode Akhir" />
+    </div>
     @if(auth()->user()->level != "entitas")
-    <div class="col-md-3">
+    <div class="col-md-2">
         <select id="filter_entitas" class="form-select form-select-sm entitas">
             <option value="">Semua Entitas</option>
         </select>
     </div>
     @endif
-    <div class="col-md-3">
+    <div class="col-md-2">
         <select id="filter_cabang" class="form-select form-select-sm cabang">
             <option value="">Semua Cabang</option>
         </select>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         {{-- 🔽 Filter Tipe Partner --}}
         <select id="filter_tipe" class="form-select partner">
             <option value="">Semua Partner</option>
         </select>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class='btn-group'>
         @canAccess('piutang.daftar.export')
         <button id='btnExportExcel' data-toggle='tooltip' title='Export Excel' class="btn btn-success">
@@ -95,6 +101,78 @@
 @section('js')
 <script>
 $(document).ready(function() {
+    const now = new Date();
+    let periodeFrom = null;
+    let periodeTo = null;
+    // 🔧 Inisialisasi Flatpickr Month Picker
+    periodeFrom = flatpickr("#periode_from", {
+        altInput: true,
+        altFormat: "F Y",
+        dateFormat: "Y-m",
+
+        plugins: [
+            new monthSelectPlugin({
+                shorthand: true,
+                dateFormat: "Y-m",
+                altFormat: "F Y"
+            })
+        ],
+
+        static: true,
+        allowInput: false,
+        locale: "id",
+
+        onChange: function(selectedDates) {
+
+            if (selectedDates.length > 0) {
+
+                // To tidak boleh sebelum From
+                periodeTo.set("minDate", selectedDates[0]);
+
+                // Jika To saat ini lebih kecil dari From
+                if (
+                    periodeTo.selectedDates.length > 0 &&
+                    periodeTo.selectedDates[0] < selectedDates[0]
+                ) {
+                    periodeTo.clear();
+                }
+            }
+        }
+    });
+
+
+    periodeTo = flatpickr("#periode_to", {
+        altInput: true,
+        altFormat: "F Y",
+        dateFormat: "Y-m",
+
+        plugins: [
+            new monthSelectPlugin({
+                shorthand: true,
+                dateFormat: "Y-m",
+                altFormat: "F Y"
+            })
+        ],
+
+        static: true,
+        allowInput: false,
+        locale: "id",
+
+        onChange: function(selectedDates) {
+
+            if (selectedDates.length > 0) {
+                // From tidak boleh setelah To
+                periodeFrom.set("maxDate", selectedDates[0]);
+                // Jika From saat ini lebih besar dari To
+                if (
+                    periodeFrom.selectedDates.length > 0 &&
+                    periodeFrom.selectedDates[0] > selectedDates[0]
+                ) {
+                    periodeFrom.clear();
+                }
+            }
+        }
+    });
     @if(auth()->user()->level != "entitas")
     $('.entitas').select2({
         ajax: {
@@ -166,6 +244,8 @@ $(document).ready(function() {
         // placeholder: "-- Pilih Entitas --",
         // allowClear: true
     });
+
+    
     const tb = $('#tb_data').DataTable({
         processing: true,
         serverSide: true,
@@ -175,6 +255,8 @@ $(document).ready(function() {
             data: function (d) {
                 d.partner_id = $('#filter_tipe').val();
                 d.entitas_id = $('#filter_entitas').val();
+                d.periode_from = $('#periode_from').val();
+                d.periode_to = $('#periode_to').val();
                 d.cabang_id = $('#filter_cabang').val();
             }
         },
@@ -227,7 +309,7 @@ $(document).ready(function() {
     });
 
     // 🔄 Reload ketika filter berubah
-    $('#filter_tipe, #filter_entitas,#filter_cabang').on('change', function() {
+    $('#filter_tipe, #filter_entitas,#filter_cabang,#periode_from,#periode_to').on('change', function() {
         tb.ajax.reload();
     });
     @endcanAccess
@@ -235,6 +317,8 @@ $(document).ready(function() {
     // 📤 Export Excel
     $('#btnExportExcel').click(function() {
         const partner = $('#filter_tipe').val();
+        let periode_from = $('#periode_from').val();
+        let periode_to = $('#periode_to').val();
         @if(auth()->user()->level == 'entitas')
             const entitas = "{{ auth()->user()->entitas_id }}";
         @else
@@ -244,6 +328,8 @@ $(document).ready(function() {
 
         const url = "{{ route('piutang.daftar.export') }}"
             + "?partner_id=" + encodeURIComponent(partner ?? '')
+            + "&periode_from=" + encodeURIComponent(periode_from ?? '')
+            + "&periode_to=" + encodeURIComponent(periode_to ?? '')
             + "&entitas_id=" + encodeURIComponent(entitas ?? '')
             + "&cabang_id=" + encodeURIComponent(cabang ?? '');
         
