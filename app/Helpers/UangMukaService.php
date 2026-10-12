@@ -7,9 +7,237 @@ use App\Repositoris\UangMukaRepositori;
 use App\Repositoris\JurnalRepositori;
 use App\Repositoris\GLRepositori;
 use Exception;
+use Carbon\Carbon;
 
 class UangMukaService
 {
+    public static function getSaldoAwalPeriode(
+        $entitas_id = null,
+        $partner_id = null,
+        $akun_gl_id = null,
+        $periode
+    ) {
+        $periode = Carbon::parse($periode)->format('Y-m');
+        return DB::table('m_saldo_awal')
+            ->when($entitas_id !== null, function ($query) use ($entitas_id) {
+                $query->where('entitas_id', $entitas_id);
+            })
+            ->when($partner_id !== null, function ($query) use ($partner_id) {
+                $query->where('partner_id', $partner_id);
+            })
+            ->when($akun_gl_id !== null, function ($query) use ($akun_gl_id) {
+                $query->where('akun_gl_id', $akun_gl_id);
+            })
+            ->where('periode', $periode)
+            ->select(
+                'entitas_id',
+                'partner_id',
+                'akun_gl_id AS akun_id'
+            )
+            ->selectRaw('
+                COALESCE(SUM(saldo), 0) AS saldo_awal
+            ')
+            ->groupBy(
+                'entitas_id',
+                'partner_id',
+                'akun_gl_id'
+            )
+            ->get();
+    }
+
+    public static function getMutasiPeriode(
+        $entitas_id = null,
+        $partner_id = null,
+        $akun_gl_id = null,
+        $tgl_mulai = null,
+        $tgl_akhir = null
+    ) {
+        return DB::table('buku_besar')
+            ->when($entitas_id !== null, function ($query) use ($entitas_id) {
+                $query->where('entitas_id', $entitas_id);
+            })
+            ->when($partner_id !== null, function ($query) use ($partner_id) {
+                $query->where('partner_id', $partner_id);
+            })
+            ->when($akun_gl_id !== null, function ($query) use ($akun_gl_id) {
+                $query->where('akun_id', $akun_gl_id);
+            })
+            ->when($tgl_mulai !== null, function ($query) use ($tgl_mulai) {
+                $query->where('tanggal', '>=', $tgl_mulai);
+            })
+            ->when($tgl_akhir !== null, function ($query) use ($tgl_akhir) {
+                $query->where('tanggal', '<=', $tgl_akhir);
+            })
+            ->select(
+                'entitas_id',
+                'partner_id',
+                'akun_id'
+            )
+            ->selectRaw('
+                COALESCE(SUM(debit), 0) AS total_debit,
+                COALESCE(SUM(kredit), 0) AS total_kredit
+            ')
+            ->groupBy(
+                'entitas_id',
+                'partner_id',
+                'akun_id'
+            )
+            ->get();
+    }
+
+    public static function getDaftarUangMuka(
+        $entitas_id = null,
+        $partner_id = null,
+        $akun_gl_id = null,
+        $tgl_mulai = null,
+        $tgl_akhir = null
+    ) {
+        if (!$tgl_mulai || !$tgl_akhir) {
+            throw new \InvalidArgumentException(
+                'Tanggal mulai dan tanggal akhir wajib diisi.'
+            );
+        }
+
+        if ($tgl_mulai > $tgl_akhir) {
+            throw new \InvalidArgumentException(
+                'Tanggal mulai tidak boleh melebihi tanggal akhir.'
+            );
+        }
+
+        // Ambil saldo awal dari fungsi yang sudah dibuat
+        $saldoAwal = self::getSaldoAwalPeriode(
+            $entitas_id,
+            $partner_id,
+            $akun_gl_id,
+            $tgl_mulai
+        );
+
+        // Ambil mutasi buku besar
+        $mutasi = self::getMutasiPeriode(
+            $entitas_id,
+            $partner_id,
+            $akun_gl_id,
+            $tgl_mulai,
+            $tgl_akhir
+        );
+
+        // Gabungkan sumber data
+        $rows = collect();
+
+        foreach ($saldoAwal as $item) {
+            $rows->push([
+                'entitas_id' => $item->entitas_id,
+                'partner_id' => $item->partner_id,
+                'akun_gl_id' => $item->akun_id,
+                'saldo_awal' => (float) $item->saldo_awal,
+                'total_debit' => 0,
+                'total_kredit' => 0,
+            ]);
+        }
+
+        foreach ($mutasi as $item) {
+            $rows->push([
+                'entitas_id' => $item->entitas_id,
+                'partner_id' => $item->partner_id,
+                'akun_gl_id' => $item->akun_id,
+                'saldo_awal' => 0,
+                'total_debit' => (float) $item->total_debit,
+                'total_kredit' => (float) $item->total_kredit,
+            ]);
+        }
+
+        // Gabungkan berdasarkan entitas + partner + akun
+        $grouped = $rows->groupBy(function ($item) {
+            return implode('|', [
+                $item['entitas_id'],
+                $item['partner_id'] ?? 'NULL',
+                $item['akun_gl_id'],
+            ]);
+        });
+
+        $akunIds = $rows->pluck('akun_gl_id')->unique();
+        $entitasIds = $rows->pluck('entitas_id')->unique();
+        $partnerIds = $rows->pluck('partner_id')
+            ->filter(fn ($id) => $id !== null)
+            ->unique();
+
+        // Master data hanya diambil sekali
+        $akun = DB::table('m_akun_gl')
+            ->whereIn('id', $akunIds)
+            ->where('kategori', 'uang_muka')
+            ->get()
+            ->keyBy('id');
+
+        $entitas = DB::table('m_entitas')
+            ->whereIn('id', $entitasIds)
+            ->get()
+            ->keyBy('id');
+
+        $partners = DB::table('m_partner')
+            ->whereIn('id', $partnerIds)
+            ->get()
+            ->keyBy('id');
+
+        return $grouped->map(function ($items) use (
+            $akun,
+            $entitas,
+            $partners
+        ) {
+            $first = $items->first();
+
+            $akunGl = $akun->get($first['akun_gl_id']);
+
+            // Hanya akun kategori uang_muka
+            if (!$akunGl) {
+                return null;
+            }
+
+            $saldoAwal = $items->sum('saldo_awal');
+            $totalDebit = $items->sum('total_debit');
+            $totalKredit = $items->sum('total_kredit');
+
+            $normal = strtolower(trim($akunGl->saldo_normal));
+
+            if (in_array($normal, ['debit', 'debet'])) {
+                $mutasiSaldo = $totalDebit - $totalKredit;
+            } elseif ($normal === 'kredit') {
+                $mutasiSaldo = $totalKredit - $totalDebit;
+            } else {
+                throw new \UnexpectedValueException(
+                    'Saldo normal akun GL tidak valid: ' . $akunGl->id
+                );
+            }
+
+            $saldo = $saldoAwal + $mutasiSaldo;
+
+            $entitasData = $entitas->get($first['entitas_id']);
+            $partnerData = $partners->get($first['partner_id']);
+
+            return [
+                'akun_gl_id' => $first['akun_gl_id'],
+                'akun_gl' => $akunGl->no_akun . ' - ' . $akunGl->nama,
+
+                'entitas_id' => $first['entitas_id'],
+                'entitas' => $entitasData?->nama,
+
+                'partner_id' => $first['partner_id'],
+                'partner' => $partnerData?->nama,
+
+                'saldo_awal' => $saldoAwal,
+                'total_debit' => $totalDebit,
+                'total_kredit' => $totalKredit,
+                'saldo' => $saldo,
+            ];
+        })
+        ->filter()
+        ->filter(fn ($item) => round($item['saldo'], 2) != 0)
+        ->sortBy([
+            ['akun_gl', 'asc'],
+            ['entitas', 'asc'],
+            ['partner', 'asc'],
+        ])
+        ->values();
+    }
 
     public static function getDataTableUangMuka($entitas){
         return UangMukaRepositori::getDataUangMuka($entitas);

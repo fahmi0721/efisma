@@ -8,71 +8,50 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;    
 use Yajra\DataTables\Facades\DataTables;
+use App\Helpers\UangMukaService;
 use Carbon\Carbon;
 use Validator;
 class UangmukaController extends Controller
 {
     public function index(Request $request)
     {
-        $entitas_id = $request->get('entitas_id');
-        $cabang_id  = $request->get('cabang_id');
-
-        // Jika permintaan AJAX (DataTables)
         if ($request->ajax()) {
-
-            $query = DB::table('view_uang_muka_per_akun');
-
-            // Filter entitas
-            if (!empty($entitas_id)) {
-                $query->where('entitas_id', $entitas_id);
+            $entitas_id = null;
+            $request->validate([
+                'entitas_id' => 'nullable|integer',
+                'partner_id' => 'nullable|integer',
+                'akun_gl_id' => 'nullable|integer',
+                'periode_from' => 'required|date',
+                'periode_to' => 'required|date|after_or_equal:periode_from',
+            ]);
+            if(!empty($request->entitas_id)){
+                $entitas_id = ($request->entitas_scope) ? $request->entitas_scope : $request->get('entitas_id');    
             }
+            $data = UangMukaService::getDaftarUangMuka(
+                entitas_id: $entitas_id,
+                partner_id: $request->partner_id,
+                akun_gl_id: $request->akun_gl_id,
+                tgl_mulai: $request->periode_from,
+                tgl_akhir: $request->periode_to
+            );
 
-            // Filter cabang
-            if (!empty($cabang_id)) {
-                $query->where('cabang_id', $cabang_id);
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
-            |--------------------------------------------------------------------------
-            */
-            if ($request->entitas_scope) {
-                $query->where('entitas_id', $request->entitas_scope);
-            }
-
-            $data = $query->get();
-
-            return DataTables::of($data)
+             return DataTables::of($data)
                 ->addIndexColumn()
-
-                ->editColumn('nominal', fn($row) => number_format($row->nominal, 0, ',', '.'))
-                ->editColumn('terpakai', fn($row) => number_format($row->terpakai, 0, ',', '.'))
-                ->editColumn('sisa', function ($row) {
-                    $sisa = number_format($row->sisa, 0, ',', '.');
-                    return $row->sisa > 0 
-                        ? "<span class='text-success fw-bold'>{$sisa}</span>"
-                        : "<span class='text-danger fw-bold'>{$sisa}</span>";
+                ->editColumn('saldo', function ($row) {
+                    return number_format($row['saldo'], 2, ',', '.');
                 })
-
-                ->editColumn('umur', fn($row) => "{$row->umur} hari")
-
-                ->editColumn('status', function ($row) {
-                    if ($row->status === 'open') {
-                        return "<span class='badge bg-warning text-dark'>OPEN</span>";
-                    }
-                    return "<span class='badge bg-success'>CLOSED</span>";
-                })
-                 ->with('totalFooter', [
-                    'total_uangmuka'   => $query->sum('nominal'),
-                    'total_terpakai'  => $query->sum('terpakai'),
-                    'sisa_uangmuka'  => $query->sum('sisa'),
-                ])
-                ->rawColumns(['sisa', 'status'])
                 ->make(true);
-        }
 
-        return view('page.uangmuka.index');
+
+        }
+        return view('page.uangmuka.index'); 
+    }
+
+    public function akun_gl(Request $request)
+    {
+        $query = $request->get('q');
+        $m_akun = DB::table("view_akun_transaksi_only")->where('nama','like','%'.$query.'%')->orWhere('no_akun','like','%'.$query.'%')->get();
+        return response()->json($m_akun);
     }
 
     public function agingIndex(Request $request)
@@ -175,107 +154,29 @@ class UangmukaController extends Controller
         return response()->download($path)->deleteFileAfterSend(true);
     }
 
-    public function daftar(Request $request)
-    {
-        $filter = $request->input('filter', 'all');
-        $entitas_id = $request->input('entitas_id');
-        $cabang_id = $request->input('cabang_id');
-        if ($request->ajax()) {
-            $query = DB::table('view_daftar_piutang');
-
-            if ($filter === 'customer') {
-                $query->where('is_customer', 'active');
-            } elseif ($filter === 'vendor') {
-                $query->where('is_vendor', 'active');
-            }
-
-            if (!empty($entitas_id)) {
-                $query->where('entitas_id', $entitas_id);
-            }
-
-            if (!empty($cabang_id)) {
-                $query->where('cabang_id', $cabang_id);
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
-            |--------------------------------------------------------------------------
-            */
-            if ($request->entitas_scope) {
-                $query->where('entitas_id', $request->entitas_scope);
-            }
-
-            return DataTables::of($query)
-                ->addIndexColumn()
-                // Search untuk kode_jurnal
-                ->filterColumn('no_invoice', function($q, $keyword) {
-                    $q->where(function($query) use ($keyword) {
-                        $query->where('no_invoice', 'LIKE', "%$keyword%")
-                            ->orWhere('kode_jurnal', 'LIKE', "%$keyword%");
-                    });
-                })
-
-                // Search untuk partner_nama
-                ->filterColumn('partner_nama', function($q, $kw) {
-                    $q->where('partner_nama', 'LIKE', "%$kw%");
-                })
-
-                // Search untuk total_tagihan
-                ->filterColumn('total_tagihan', function($q, $kw) {
-                    $q->havingRaw("total_tagihan LIKE ?", ["%$kw%"]);
-                })
-
-                // Search untuk sisa_piutang
-                ->filterColumn('sisa_piutang', function($q, $kw) {
-                    $q->havingRaw("sisa_piutang LIKE ?", ["%$kw%"]);
-                })
-
-                // Search untuk total_pelunasan
-                ->filterColumn('total_pelunasan', function($q, $kw) {
-                    $q->havingRaw("total_pelunasan LIKE ?", ["%$kw%"]);
-                })
-                ->editColumn('total_tagihan', fn($r) => number_format($r->total_tagihan, 0, ',', '.'))
-                ->editColumn('total_pelunasan', fn($r) => number_format($r->total_pelunasan, 0, ',', '.'))
-                ->editColumn('sisa_piutang', fn($r) => number_format($r->sisa_piutang, 0, ',', '.'))
-                ->make(true);
-        }
-        
-        return view('page.piutang.daftar');
-    }
-
+    
     public function exportExcel(Request $request)
     {
-        $filter = $request->input('filter', 'all');
-        $entitas_id = $request->input('entitas_id');
-        $cabang_id = $request->input('cabang_id');
-
-        $data = DB::table('view_daftar_piutang');
-
-        if ($filter === 'customer') {
-            $data->where('is_customer', 'active');
-        } elseif ($filter === 'vendor') {
-            $data->where('is_vendor', 'active');
+        $entitas_id = null;
+        $request->validate([
+            'entitas_id' => 'nullable|integer',
+            'partner_id' => 'nullable|integer',
+            'akun_gl_id' => 'nullable|integer',
+            'periode_from' => 'required|date',
+            'periode_to' => 'required|date|after_or_equal:periode_from',
+        ]);
+        if(!empty($request->entitas_id)){
+            $entitas_id = ($request->entitas_scope) ? $request->entitas_scope : $request->get('entitas_id');    
         }
-
-        if (!empty($entitas_id)) {
-            $data->where('entitas_id', $entitas_id);
-        }
-        if (!empty($cabang_id)) {
-            $data->where('cabang_id', $cabang_id);
-        }
-        /*
-        |--------------------------------------------------------------------------
-        | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
-        |--------------------------------------------------------------------------
-        */
-        if ($request->entitas_scope) {
-            $data->where('entitas_id', $request->entitas_scope);
-        }
-
-        $data = $data->get();
-
-        return Excel::download(new \App\Exports\DaftarPiutangExport($data), 'daftar_piutang.xlsx');
+        $data = UangMukaService::getDaftarUangMuka(
+            entitas_id: $entitas_id,
+            partner_id: $request->partner_id,
+            akun_gl_id: $request->akun_gl_id,
+            tgl_mulai: $request->periode_from,
+            tgl_akhir: $request->periode_to
+        );
+        // dd($data);
+        return Excel::download(new \App\Exports\DaftarUangMukaExport($data), 'daftar_uangmuka.xlsx');
     }
 
 }
