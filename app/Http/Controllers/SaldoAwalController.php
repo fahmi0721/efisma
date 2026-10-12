@@ -157,10 +157,10 @@ class SaldoAwalController extends Controller
             'periode.required'    => 'Periode wajib diisi.',
             'periode.regex'       => 'Format periode harus YYYY-MM (contoh: 2025-10).',
             'entitas_id.required' => 'Entitas wajib dipilih.',
-            'saldo_akhir.required' => 'Saldo Awal wajib diisi.',
+            'saldo_akhir.required' => 'Saldo Akhir wajib diisi.',
             'total_debit.required' => 'Total Debit  wajib diisi.',
             'total_kredit.required' => 'Total Kredit wajib diisi.',
-            'saldo.required' => 'Saldo Akhir wajib diisi.',
+            'saldo.required' => 'Saldo Awal wajib diisi.',
         ];
         $saldo = str_replace(['.', 'Rp', ' '], '', $request->saldo);
         if (str_contains($saldo, ',')) {
@@ -259,10 +259,10 @@ class SaldoAwalController extends Controller
             'periode.required'    => 'Periode wajib diisi.',
             'periode.regex'       => 'Format periode harus YYYY-MM (contoh: 2025-10).',
             'entitas_id.required' => 'Entitas wajib dipilih.',
-             'saldo_akhir.required' => 'Saldo Awal wajib diisi.',
+            'saldo_akhir.required' => 'Saldo Akhir wajib diisi.',
             'total_debit.required' => 'Total Debit  wajib diisi.',
             'total_kredit.required' => 'Total Kredit wajib diisi.',
-            'saldo.required' => 'Saldo Akhir wajib diisi.',
+            'saldo.required' => 'Saldo Awal wajib diisi.',
         ];
         $saldo = str_replace(['.', 'Rp', ' '], '', $request->saldo);
         if (str_contains($saldo, ',')) {
