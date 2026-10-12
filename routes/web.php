@@ -313,7 +313,8 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::get('/uangmuka/aging', [UangmukaController::class, 'agingIndex'])->name('uangmuka.aging')->middleware('permission:uangmuka.aging.view');
     Route::get('/uangmuka/aging/export', [UangmukaController::class, 'agingExport'])->name('uangmuka.aging.export')->middleware('permission:uangmuka.aging.export');
     Route::get('/uangmuka/daftar', [UangmukaController::class, 'index'])->name('uangmuka.daftar')->middleware('permission:uangmuka.daftar.view');
-    Route::get('/uangmuka/daftarexport', [UangmukaController::class, 'daftarxport'])->name('uangmuka.daftar.export')->middleware('permission:uangmuka.daftar.export');
+    Route::get('/uangmuka/akun_gl', [UangmukaController::class, 'akun_gl'])->name('uangmuka.akun_gl')->middleware('permission:uangmuka.daftar.view');
+    Route::get('/uangmuka/daftarexport', [UangmukaController::class, 'exportExcel'])->name('uangmuka.daftar.export')->middleware('permission:uangmuka.daftar.export');
 });
 
 

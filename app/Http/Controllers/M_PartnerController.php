@@ -70,7 +70,7 @@ class M_PartnerController extends Controller
     public function partner_select(Request $request)
     {
         $query = $request->get('q');
-        $entitas_id = $request->get('entitas_id');
+        $entitas_id = ($request->entitas_scope) ? $request->entitas_scope : $request->get('entitas_id');
         $jenis = $request->get('jenis'); // ✅ ambil dari request (opsional)
 
         $m_partner = DB::table('m_partner')
