@@ -70,7 +70,11 @@
                                 <th>Akun GL</th>
                                 <th>Periode</th>
                                 <th>Entitas</th>
-                                <th>Saldo</th>
+                                <th>Partner</th>
+                                <th>Saldo Awal</th>
+                                <th>Total Debit</th>
+                                <th>Total Kredit</th>
+                                <th>Saldo Akhir</th>
                                 @canAccess('m_saldo_awal.edit|m_akun.delete')
                                 <th width="5%">Aksi</th>
                                 @endcanAccess
@@ -173,9 +177,37 @@ function load_data() {
             { data: 'akun_gl', name: 'akun_gl' },
             { data: 'periode', name: 'periode' },
             { data: 'entitas', name: 'entitas' },
+            { data: 'partner', name: 'partner' },
             { 
                 data: 'saldo', 
                 name: 'saldo',
+                className: 'text-end',
+                render: function(data) {
+                    if (!data) return '-';
+                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0 }).format(data);
+                }
+            },
+            { 
+                data: 'total_debit', 
+                name: 'total_debit',
+                className: 'text-end',
+                render: function(data) {
+                    if (!data) return '-';
+                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0 }).format(data);
+                }
+            },
+            { 
+                data: 'total_kredit', 
+                name: 'total_kredit',
+                className: 'text-end',
+                render: function(data) {
+                    if (!data) return '-';
+                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR',minimumFractionDigits: 0 }).format(data);
+                }
+            },
+            { 
+                data: 'saldo_akhir', 
+                name: 'saldo_akhir',
                 className: 'text-end',
                 render: function(data) {
                     if (!data) return '-';

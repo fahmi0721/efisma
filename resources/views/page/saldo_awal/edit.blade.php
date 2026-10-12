@@ -59,13 +59,39 @@
                             </div>
                         </div>  
                         @endif
-
                         <div class="row mb-3">
-                            <label for="saldo" class="col-sm-3 col-form-label">Saldo <b class='text-danger'>*</b></label>
+                            <label for="partner_id" class="col-sm-3 col-form-label">Partner</label>
                             <div class="col-sm-9">
-                                <input type="text" value="{{ number_format($data->saldo, 2, ',', '.') }}" onkeyup="formatRupiah(this)" class="form-control" id="saldo" name="saldo" placeholder="Saldo" />
+                                <select name="partner_id" id="partner_id" class="form-control partner">
+                                    <option value="">-- Pilih Partner --</option>
+                                </select>
                             </div>
                         </div>
+                        <div class="row mb-3">
+                            <label for="saldo" class="col-sm-3 col-form-label">Saldo Awal<b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <input type="text" value="{{ number_format($data->saldo, 2, ',', '.') }}" onkeyup="formatRupiah(this)" class="form-control" id="saldo" name="saldo" placeholder="Saldo Awal" />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="total_debit" class="col-sm-3 col-form-label">Total Debit<b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <input type="text" value="{{ number_format($data->total_debit, 2, ',', '.') }}" onkeyup="formatRupiah(this)" class="form-control" id="total_debit" name="total_debit" placeholder="Total Debit" />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="total_kredit" class="col-sm-3 col-form-label">Total Kredit<b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <input type="text" value="{{ number_format($data->total_kredit, 2, ',', '.') }}" onkeyup="formatRupiah(this)" class="form-control" id="total_kredit" name="total_kredit" placeholder="Total Kredit" />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="saldo_akhir" class="col-sm-3 col-form-label">Saldo Akhir<b class='text-danger'>*</b></label>
+                            <div class="col-sm-9">
+                                <input type="text" value="{{ number_format($data->saldo_akhir, 2, ',', '.') }}" onkeyup="formatRupiah(this)" class="form-control" id="saldo_akhir" name="saldo_akhir" placeholder="Saldo Akhir" />
+                            </div>
+                        </div>
+                        
                     </div>
                     <!--end::Body-->
                     <!--begin::Footer-->
@@ -138,13 +164,47 @@
             placeholder: "-- Pilih Entitas --",
             allowClear: true
         });
+        $('#entitas_id').on('change', function () {
+            $('.partner').val(null).trigger('change');
+        });
         @endif
-        
+        // 🔽 Select2 Akun GL
+        $('.partner').select2({
+            ajax: {
+                url: '{{ route("saldo_awal.partner") }}',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term,
+                        @if(auth()->user()->level != "entitas")
+                        entitas_id: $('#entitas_id').val()
+                        @endif
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.map(function(q) {
+                            return {
+                                id: q.id,
+                                text: q.nama
+                            };
+                        })
+                    };
+                },
+                cache: true
+            },
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: "-- Pilih Partner --",
+            allowClear: true
+        });
         @if(!empty($akun_selected))
             var akun_selected = "{{ $akun_selected->id }}";
             var option = new Option("{{ $akun_selected->nama }}", {{ $akun_selected->id }}, true, true);
             $(".akun_gl").append(option).trigger('change');    
         @endif
+        
         @if(auth()->user()->level != "entitas")
         @if(!empty($entitas_selected))
             var entitas_selected = "{{ $entitas_selected->id }}";
@@ -152,6 +212,12 @@
             $(".entitas").append(option).trigger('change');    
         @endif
         @endif
+        @if(!empty($partner_selected))
+            var partner_selected = "{{ $partner_selected->id }}";
+            var option = new Option("{{ $partner_selected->nama }}", {{ $partner_selected->id }}, true, true);
+            $(".partner").append(option).trigger('change');    
+        @endif
+        
 
         
     });

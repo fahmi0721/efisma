@@ -200,6 +200,7 @@ use App\Http\Controllers\SaldoAwalController;
 Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::get('/saldo_awal/akun_gl', [SaldoAwalController::class, 'akun_gl'])->name('saldo_awal.akun_gl');
     Route::get('/saldo_awal/entitas', [SaldoAwalController::class, 'entitas'])->name('saldo_awal.entitas');
+    Route::get('/saldo_awal/partner', [SaldoAwalController::class, 'partner'])->name('saldo_awal.partner');
 
     Route::get('/saldo_awal', [SaldoAwalController::class, 'index'])->name('saldo_awal')->middleware('permission:m_saldo_awal.view');
     Route::get('/saldo_awal/add', [SaldoAwalController::class, 'create'])->name('saldo_awal.create')->middleware('permission:m_saldo_awal.create');
