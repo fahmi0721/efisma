@@ -24,11 +24,16 @@ class SaldoAwalController extends Controller
             $query = DB::table('m_saldo_awal')
                 ->join('m_akun_gl', 'm_saldo_awal.akun_gl_id', '=', 'm_akun_gl.id')
                 ->join('m_entitas', 'm_saldo_awal.entitas_id', '=', 'm_entitas.id')
+                ->leftJoin('m_partner','m_saldo_awal.partner_id','=','m_partner.id')
                 ->select(
                     'm_saldo_awal.id',
                     DB::raw("CONCAT(m_akun_gl.no_akun, ' - ', m_akun_gl.nama) as akun_gl"),
                     'm_saldo_awal.periode',
                     'm_entitas.nama as entitas',
+                    DB::raw("COALESCE(m_partner.nama, '-') as partner"),
+                    'm_saldo_awal.saldo_akhir',
+                    'm_saldo_awal.total_debit',
+                    'm_saldo_awal.total_kredit',
                     'm_saldo_awal.saldo'
                 )
                 ->orderBy('m_saldo_awal.periode', 'desc');
@@ -55,6 +60,7 @@ class SaldoAwalController extends Controller
                             $q->where('m_akun_gl.no_akun', 'like', "%{$search}%")
                             ->orWhere('m_akun_gl.nama', 'like', "%{$search}%")
                             ->orWhere('m_entitas.nama', 'like', "%{$search}%")
+                            ->orWhere('m_partner.nama', 'like', "%{$search}%")
                             ->orWhere('m_saldo_awal.periode', 'like', "%{$search}%")
                             ->orWhere('m_saldo_awal.saldo', 'like', "%{$search}%");
                         });
@@ -99,8 +105,24 @@ class SaldoAwalController extends Controller
         $data = DB::table('m_saldo_awal')->where('id', $id)->first();
         $akun_selected = DB::table('m_akun_gl')->where("id",$data->akun_gl_id)->first();
         $entitas_selected = DB::table('m_entitas')->where("id",$data->entitas_id)->first();
-        return view("page.saldo_awal.edit",compact("data","id","akun_selected","entitas_selected"));
+        $partner_selected = DB::table('m_partner')->where("id",$data->partner_id)->first();
+        return view("page.saldo_awal.edit",compact("data","id","akun_selected","entitas_selected","partner_selected"));
     }
+
+    public function partner(Request $request)
+    {
+        $query = $request->get('q');
+        $makun = DB::table("m_partner")->where('nama','like','%'.$query.'%')->orderBy('nama','asc');
+        if ($request->entitas_scope) {
+            $makun->where('entitas_id', $request->entitas_scope);
+        }else{
+            $entitas_id = $request->get("entitas_id");
+            $makun->where('entitas_id', $entitas_id);
+        }
+        $m_akun = $makun->get();
+        return response()->json($m_akun);
+    }
+
 
     public function akun_gl(Request $request)
     {
@@ -124,6 +146,9 @@ class SaldoAwalController extends Controller
             'akun_gl_id' => 'required|integer',
             'periode'    => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'], // YYYY-MM
             'entitas_id' => 'required|integer',
+            'saldo_akhir'      => 'required',
+            'total_debit'      => 'required',
+            'total_kredit'      => 'required',
             'saldo'      => 'required',
         ];
 
@@ -132,22 +157,48 @@ class SaldoAwalController extends Controller
             'periode.required'    => 'Periode wajib diisi.',
             'periode.regex'       => 'Format periode harus YYYY-MM (contoh: 2025-10).',
             'entitas_id.required' => 'Entitas wajib dipilih.',
+            'saldo_akhir.required' => 'Saldo Awal wajib diisi.',
+            'total_debit.required' => 'Total Debit  wajib diisi.',
+            'total_kredit.required' => 'Total Kredit wajib diisi.',
+            'saldo.required' => 'Saldo Akhir wajib diisi.',
         ];
         $saldo = str_replace(['.', 'Rp', ' '], '', $request->saldo);
-
-        // Jika format Indonesia (1.250.000,75)
         if (str_contains($saldo, ',')) {
             $saldo = str_replace('.', '', $saldo); // hapus pemisah ribuan
             $saldo = str_replace(',', '.', $saldo); // ubah koma ke titik desimal
+        }else {
+            $saldo = str_replace(',', '', $saldo);
         }
 
-        // Jika format US (1,250,000.75)
-        else {
-            $saldo = str_replace(',', '', $saldo);
+        $saldo_akhir = str_replace(['.', 'Rp', ' '], '', $request->saldo_akhir);
+        if (str_contains($saldo_akhir, ',')) {
+            $saldo_akhir = str_replace('.', '', $saldo_akhir); // hapus pemisah ribuan
+            $saldo_akhir = str_replace(',', '.', $saldo_akhir); // ubah koma ke titik desimal
+        }else {
+            $saldo_akhir = str_replace(',', '', $saldo_akhir);
+        }
+        
+        $total_debit = str_replace(['.', 'Rp', ' '], '', $request->total_debit);
+        if (str_contains($total_debit, ',')) {
+            $total_debit = str_replace('.', '', $total_debit); // hapus pemisah ribuan
+            $total_debit = str_replace(',', '.', $total_debit); // ubah koma ke titik desimal
+        }else {
+            $total_debit = str_replace(',', '', $total_debit);
+        }
+
+        $total_kredit = str_replace(['.', 'Rp', ' '], '', $request->total_kredit);
+        if (str_contains($total_kredit, ',')) {
+            $total_kredit = str_replace('.', '', $total_kredit); // hapus pemisah ribuan
+            $total_kredit = str_replace(',', '.', $total_kredit); // ubah koma ke titik desimal
+        }else {
+            $total_kredit = str_replace(',', '', $total_kredit);
         }
 
         // Pastikan numeric sebelum masuk DB
         $saldo = (float) $saldo;
+        $saldo_akhir = (float) $saldo_akhir;
+        $total_debit = (float) $total_debit;
+        $total_kredit = (float) $total_kredit;
 
         $validation = Validator::make($request->all(), $rules, $messages);
         if ($validation->fails()) {
@@ -163,6 +214,10 @@ class SaldoAwalController extends Controller
                 'akun_gl_id' => $request->akun_gl_id,
                 'periode'    => $request->periode,
                 'entitas_id' => $request->entitas_id,
+                'partner_id' => $request->partner_id,
+                'saldo_akhir'      => $saldo_akhir,
+                'total_debit'      => $total_debit,
+                'total_kredit'      => $total_kredit,
                 'saldo'      => $saldo,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -193,6 +248,9 @@ class SaldoAwalController extends Controller
             'akun_gl_id' => 'required|integer',
             'periode'    => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'], // YYYY-MM
             'entitas_id' => 'required|integer',
+            'saldo_akhir'      => 'required',
+            'total_debit'      => 'required',
+            'total_kredit'      => 'required',
             'saldo'      => 'required',
         ];
 
@@ -201,18 +259,48 @@ class SaldoAwalController extends Controller
             'periode.required'    => 'Periode wajib diisi.',
             'periode.regex'       => 'Format periode harus YYYY-MM (contoh: 2025-10).',
             'entitas_id.required' => 'Entitas wajib dipilih.',
+             'saldo_akhir.required' => 'Saldo Awal wajib diisi.',
+            'total_debit.required' => 'Total Debit  wajib diisi.',
+            'total_kredit.required' => 'Total Kredit wajib diisi.',
+            'saldo.required' => 'Saldo Akhir wajib diisi.',
         ];
         $saldo = str_replace(['.', 'Rp', ' '], '', $request->saldo);
-        // Jika format Indonesia (1.250.000,75)
         if (str_contains($saldo, ',')) {
             $saldo = str_replace('.', '', $saldo); // hapus pemisah ribuan
             $saldo = str_replace(',', '.', $saldo); // ubah koma ke titik desimal
-        }
-
-        // Jika format US (1,250,000.75)
-        else {
+        }else {
             $saldo = str_replace(',', '', $saldo);
         }
+
+        $saldo_akhir = str_replace(['.', 'Rp', ' '], '', $request->saldo_akhir);
+        if (str_contains($saldo_akhir, ',')) {
+            $saldo_akhir = str_replace('.', '', $saldo_akhir); // hapus pemisah ribuan
+            $saldo_akhir = str_replace(',', '.', $saldo_akhir); // ubah koma ke titik desimal
+        }else {
+            $saldo_akhir = str_replace(',', '', $saldo_akhir);
+        }
+        
+        $total_debit = str_replace(['.', 'Rp', ' '], '', $request->total_debit);
+        if (str_contains($total_debit, ',')) {
+            $total_debit = str_replace('.', '', $total_debit); // hapus pemisah ribuan
+            $total_debit = str_replace(',', '.', $total_debit); // ubah koma ke titik desimal
+        }else {
+            $total_debit = str_replace(',', '', $total_debit);
+        }
+
+        $total_kredit = str_replace(['.', 'Rp', ' '], '', $request->total_kredit);
+        if (str_contains($total_kredit, ',')) {
+            $total_kredit = str_replace('.', '', $total_kredit); // hapus pemisah ribuan
+            $total_kredit = str_replace(',', '.', $total_kredit); // ubah koma ke titik desimal
+        }else {
+            $total_kredit = str_replace(',', '', $total_kredit);
+        }
+
+        // Pastikan numeric sebelum masuk DB
+        $saldo = (float) $saldo;
+        $saldo_akhir = (float) $saldo_akhir;
+        $total_debit = (float) $total_debit;
+        $total_kredit = (float) $total_kredit;
         $validation = Validator::make($request->all(), $rules);
         if ($validation->fails()) {
             return response()->json([
@@ -230,6 +318,9 @@ class SaldoAwalController extends Controller
                     'periode'    => $request->periode,
                     'entitas_id' => $request->entitas_id,
                     'saldo'      => $saldo,
+                    'total_debit'      => $total_debit,
+                    'total_kredit'      => $total_kredit,
+                    'saldo_akhir'      => $saldo_akhir,
                     'updated_at' => now(),
                 ]);
 
