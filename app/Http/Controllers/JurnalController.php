@@ -736,23 +736,23 @@ class JurnalController extends Controller
             /* =========================================================
             4) VALIDASI UANG MUKA WAJIB ADA LEWAT TOMBOL PJ  (JN)
             ==========================================================*/
-            if ($jenis === 'JN' && $isUangMuka) {
-                if(empty($request->jurnal_id_jkk) && $request->is_multi_cabang === false){
-                     return response()->json([
-                        'status' => 'error',
-                        'message' => "Pertanggung Jawaban Uang Muka belum di piilh, terdapat akun uang muka pada detail transaksi! "
-                    ], 422);
-                }
-            }
+            // if ($jenis === 'JN' && $isUangMuka) {
+            //     if(empty($request->jurnal_id_jkk) && $request->is_multi_cabang === false){
+            //          return response()->json([
+            //             'status' => 'error',
+            //             'message' => "Pertanggung Jawaban Uang Muka belum di piilh, terdapat akun uang muka pada detail transaksi! "
+            //         ], 422);
+            //     }
+            // }
 
-            if ($jenis === 'JKM' && $isUangMuka) {
-                if(empty($request->jurnal_id_jkk)){
-                     return response()->json([
-                        'status' => 'error',
-                        'message' => "Pengembalian Uang Muka belum di piilh, terdapat akun uang muka pada detail transaksi!"
-                    ], 422);
-                }
-            }
+            // if ($jenis === 'JKM' && $isUangMuka) {
+            //     if(empty($request->jurnal_id_jkk)){
+            //          return response()->json([
+            //             'status' => 'error',
+            //             'message' => "Pengembalian Uang Muka belum di piilh, terdapat akun uang muka pada detail transaksi!"
+            //         ], 422);
+            //     }
+            // }
         }
 
         // if ($jenis === 'JP' && !$adaPiutang) {
@@ -872,9 +872,9 @@ class JurnalController extends Controller
                 
             }
 
-            if ((in_array($jenis,["JN","JKM"])) && $request->filled('jurnal_id_jkk')) {
-                UangMukaService::validateDraftPelunasan($request);
-            }
+            // if ((in_array($jenis,["JN","JKM"])) && $request->filled('jurnal_id_jkk')) {
+            //     UangMukaService::validateDraftPelunasan($request);
+            // }
 
             // detail
             foreach ($request->detail as $row) {
@@ -1349,14 +1349,14 @@ class JurnalController extends Controller
             return response()->json(['status' => false, 'message' => 'Total debit dan kredit tidak balance, tidak bisa diposting!']);
         }
 
-        // if ((in_array($jurnal->jenis,['JKM',"JN"]))) {
-        if ((in_array($jurnal->jenis,["JN","JKM"]))) {
-            UangMukaService::postingPelunasan($id);
-        }
+        // // if ((in_array($jurnal->jenis,['JKM',"JN"]))) {
+        // if ((in_array($jurnal->jenis,["JN","JKM"]))) {
+        //     UangMukaService::postingPelunasan($id);
+        // }
 
-        if ($jurnal->jenis === "JKK") {
-            HutangService::postingPelunasan($id);
-        }
+        // if ($jurnal->jenis === "JKK") {
+        //     HutangService::postingPelunasan($id);
+        // }
 
 
 
@@ -1875,9 +1875,9 @@ class JurnalController extends Controller
 
             foreach ($jurnalList as $jurnal) {
                 PeriodeHelper::cekPeriodeOpen($jurnal->tanggal);
-                if (in_array($jurnal->jenis, ['JN','JKM'])) {
-                    UangMukaService::postingPelunasan($jurnal->id);
-                }
+                // if (in_array($jurnal->jenis, ['JN','JKM'])) {
+                //     UangMukaService::postingPelunasan($jurnal->id);
+                // }
 
                 if ($jurnal->jenis === "JKK") {
                     HutangService::postingPelunasan($jurnal->id);

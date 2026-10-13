@@ -68,7 +68,10 @@
                             <th>Akun GL</th>
                             <th>Entitas</th>
                             <th>Partner<br><small>(Vendor/Pegawai)</small></th>
-                            <th>Saldo</th>
+                            <th>Saldo Awal</th>
+                            <th>Total Debit</th>
+                            <th>Total Kredit</th>
+                            <th>Saldo Akhir</th>
 
                         </tr>
                     </thead>
@@ -231,6 +234,9 @@ $(document).ready(function() {
             { data: 'akun_gl', name: 'akun_gl' },
             { data: 'entitas', name: 'entitas' },
             { data: 'partner', name: 'partner' },
+            { data: 'saldo_awal', name: 'saldo_awal' },
+            { data: 'total_debit', name: 'total_debit' },
+            { data: 'total_kredit', name: 'total_kredit' },
             { data: 'saldo', name: 'saldo' },
             
            

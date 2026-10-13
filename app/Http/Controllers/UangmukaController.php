@@ -40,6 +40,15 @@ class UangmukaController extends Controller
                 ->editColumn('saldo', function ($row) {
                     return number_format($row['saldo'], 2, ',', '.');
                 })
+                ->editColumn('saldo_awal', function ($row) {
+                    return number_format($row['saldo_awal'], 2, ',', '.');
+                })
+                ->editColumn('total_debit', function ($row) {
+                    return number_format($row['total_debit'], 2, ',', '.');
+                })
+                ->editColumn('total_kredit', function ($row) {
+                    return number_format($row['total_kredit'], 2, ',', '.');
+                })
                 ->make(true);
 
 
