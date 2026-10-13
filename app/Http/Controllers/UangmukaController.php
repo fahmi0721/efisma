@@ -131,7 +131,7 @@ class UangmukaController extends Controller
 
         // Header
         $sheet->fromArray([
-            ['No','Tanggal', 'Kode Jurnal', 'Keterangan', 'Debit', 'Kredit','Saldo']
+            ['No','Tanggal', 'Kode Jurnal','Akun GL', 'Keterangan', 'Debit', 'Kredit','Saldo']
         ]);
 
         // Data
@@ -139,7 +139,7 @@ class UangmukaController extends Controller
         $no = 1;
         foreach ($data['data'] as $d) {
             $sheet->fromArray([
-                [$no++, $d['tanggal'], $d['kode_jurnal'], $d['keterangan'], $d['debit'], $d['kredit'],$d['saldo']]
+                [$no++, $d['tanggal'], $d['kode_jurnal'],$d['akun_gl'], $d['keterangan'], $d['debit'], $d['kredit'],$d['saldo']]
             ], null, "A{$row}");
             $row++;
         }
