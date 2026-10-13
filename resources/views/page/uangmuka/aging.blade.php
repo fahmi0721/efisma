@@ -63,6 +63,7 @@
                         <tr>
                             <th>Tanggal</th>
                             <th>Kode Jurnal</th>
+                            <th>Akun  GL</th>
                             <th>Keterangan</th>
                             <th>Debit</th>
                             <th>Kredit</th>
@@ -246,6 +247,9 @@ $(document).ready(function() {
             },
             {
                 data: 'kode_jurnal'
+            },
+            {
+                data: 'akun_gl'
             },
             {
                 data: 'keterangan',
