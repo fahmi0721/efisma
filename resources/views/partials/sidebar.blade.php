@@ -262,7 +262,7 @@
                     <li class="nav-item">
                     <a href="{{ route('uangmuka.aging') }}" class="nav-link {{  setActive(['uangmuka.aging'], 'active')  }}">
                         <i class="nav-icon fa fa-chevron-right fa-reguler"></i>
-                        <p>Aging Uang Muka</p>
+                        <p>Monitor Uang Muka</p>
                     </a>
                     </li>
                     @endcanAccess
