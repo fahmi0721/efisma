@@ -50,7 +50,24 @@ class UangmukaController extends Controller
     public function akun_gl(Request $request)
     {
         $query = $request->get('q');
-        $m_akun = DB::table("view_akun_transaksi_only")->where('nama','like','%'.$query.'%')->orWhere('no_akun','like','%'.$query.'%')->get();
+        $m_akun = DB::table("view_akun_transaksi_only")
+                ->join(
+                    "m_akun_gl",
+                    "m_akun_gl.id",
+                    "=",
+                    "view_akun_transaksi_only.id"
+                )
+                ->select(
+                    "view_akun_transaksi_only.id",
+                    "view_akun_transaksi_only.nama",
+                    "view_akun_transaksi_only.no_akun"
+                )
+                ->where("m_akun_gl.kategori", "uang_muka")
+                ->where(function ($q) use ($query) {
+                    $q->where("view_akun_transaksi_only.nama", "like", "%{$query}%")
+                    ->orWhere("view_akun_transaksi_only.no_akun", "like", "%{$query}%");
+                })
+                ->get();
         return response()->json($m_akun);
     }
 
@@ -175,7 +192,6 @@ class UangmukaController extends Controller
             tgl_mulai: $request->periode_from,
             tgl_akhir: $request->periode_to
         );
-        // dd($data);
         return Excel::download(new \App\Exports\DaftarUangMukaExport($data), 'daftar_uangmuka.xlsx');
     }
 
