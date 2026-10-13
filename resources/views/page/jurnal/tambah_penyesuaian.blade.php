@@ -26,7 +26,7 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Create New Jurnal Rupa-Rupa</h5>
                     <div class="ms-auto">
-                        <button id="btnCariUangMuka" class="btn btn-outline-success btn-sm">
+                        <button id="btnCariUangMuka" class="btn btn-outline-success btn-sm d-none">
                             <i class="fas fa-file-invoice-dollar fa-regular"></i> Pertanggung Jawaban Uang Muka
                         </button>
                         <button id="btnCariInvoice" class="btn btn-outline-primary btn-sm">

@@ -29,7 +29,7 @@ class TemplateJurnalJPService
             case 'acs':
                 return Excel::download(
                     new TemplateJPAcs($entitas_id),
-                    'template_jrr_acs.xlsx'
+                    'template_jrr_acs_uang_muka.xlsx'
                 );
                 break;
             case 'uang_muka':
