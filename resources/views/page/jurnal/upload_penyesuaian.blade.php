@@ -32,15 +32,15 @@
                             </button>
 
                             <div class="dropdown-menu">
-                                <!-- <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('piutang')"> -->
+                                <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('piutang')">
                                     <!-- <i class='fa fa-file-excel'></i> Pelunasan Piutang
                                 </a>-->
 
-                                <a class="dropdown-item d-none" href="javascript:void(0)">
+                                <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('uang_muka')">
                                     <i class='fa fa-file-excel'></i> PJ Uang Muka
                                 </a> 
                                 <a class="dropdown-item" href="javascript:void(0)" onclick="get_template('acs')">
-                                    <i class='fa fa-file-excel'></i> Jurnal ACS / PJ Uang Muka
+                                    <i class='fa fa-file-excel'></i> Jurnal ACS
                                 </a>
                             </div>
                         </div>
@@ -70,8 +70,8 @@
                             <div class="col-sm-9">
                                 <select name="jenis_upload" id="jenis_upload" class="form-control jenis_upload">
                                     <option value="">-- Pilih Jenis Upload --</option>
-                                    <!-- <option value="uang_muka">Jurnal PJ Uang Muka</option> -->
-                                    <option value="acs">Jurnal ACS / PJ Uang Muka</option>
+                                    <option value="uang_muka">Jurnal PJ Uang Muka</option>
+                                    <option value="acs">Jurnal ACS</option>
                                 </select>
                             </div>
                         </div>

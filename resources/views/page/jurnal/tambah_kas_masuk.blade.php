@@ -26,7 +26,7 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Create New Jurnal Kas Masuk</h5>
                     <div class="ms-auto">
-                        <button id="btnCariUangMuka" class="btn btn-outline-success btn-sm d-none">
+                        <button id="btnCariUangMuka" class="btn btn-outline-success btn-sm">
                             <i class="fas fa-file-invoice-dollar fa-regular"></i> Pengembalian  Uang Muka
                         </button>
                         <button id="btnCariInvoice" class="btn btn-outline-primary btn-sm">

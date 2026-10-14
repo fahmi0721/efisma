@@ -17,65 +17,89 @@
 </div>
 @endsection
 @section('css')
+<style>
+.select2-container--bootstrap-5 .select2-selection--single {
+    height: calc(1.5em + .5rem + 2px); /* tinggi sama dengan btn-sm */
+    padding: .25rem .5rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    border-radius: .2rem;
+}
+
+.select2-container--bootstrap-5 .select2-selection__arrow {
+    height: 100%;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    line-height: 1.5;
+    padding-left: .25rem;
+}
+
+.select2-container {
+    min-width: 160px !important;
+}
+
+.card-header .select2 {
+    margin-bottom: 0 !important;
+}
+</style>
 
 @endsection
 @section('content')
 <div class="container-fluid">
-    <div class="row g-2 mb-4">
-        @if(auth()->user()->level != "entitas")
-        <div class="col-md-2">
-            <select id="filter_entitas" class="form-select form-select-sm entitas">
-                <option value="">Semua Entitas</option>
-            </select>
-        </div>
-        @endif
-        <div class="col-md-2">
-            <select id="filter_akun" name="akun_gl_id" class="form-select form-select-sm">
-                <option value="">..:: Pillih Akun GL</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <select id="filter_partner" class="form-select form-select-sm partner">
-                <option value="">Semua Partner</option>
-            </select>
-        </div>
-        
-        <div class="col-md-2">
-            <input type="text" id="periode_from" class="form-control form-control flatpickr-input" placeholder="Periode Awal" />
-        </div>
-        <div class="col-md-2">
-            <input type="text" id="periode_to" class="form-control form-control flatpickr-input" placeholder="Periode Akhir" />
-        </div>
+    <div class="card card-success card-outline">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+            <h5 class="mb-0">Daftar Uang Muka</h5>
 
-        <div class="col-md-2">
-            <div class='btn-group'>
-                <button id='btn-filter' class="btn btn-primary">Tampilkan</button>
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                @if(auth()->user()->level != "entitas")
+                {{-- 🔽 Filter Entitas --}}
+                <select id="filter_entitas" class="form-select form-select-sm entitas" style="width:180px">
+                    <option value="">Semua Entitas</option>
+                </select>
+                @endif
+                <select id="filter_cabang" class="form-select form-select-sm cabang" style="width:180px">
+                    <option value="">Semua Cabang</option>
+                </select>
+              
                 @canAccess('uangmuka.daftar.export')
-                <button id='btnExportExcel' data-toggle='tooltip' title='Export Excel' class="btn btn-success">
-                    <i class="fas fa-file-excel"></i> 
+                {{-- 📤 Tombol Export Excel --}}
+                <button id="btnExportExcel" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Export Excel
                 </button>
-            @endcanAccess
+                @endcanAccess
             </div>
         </div>
-    </div>
-    <div class="card card-success card-outline">
         <div class="card-body">
             <div class="table-responsive">
                 <table id="tb_data" class="table table-bordered table-striped align-middle">
                     <thead class="table-light text-center">
                         <tr>
                             <th width="5%">No</th>
-                            <th>Akun GL</th>
+                            <th>Kode</th>
                             <th>Entitas</th>
+                            <th>Cabang</th>
                             <th>Partner<br><small>(Vendor/Pegawai)</small></th>
-                            <th>Saldo Awal</th>
-                            <th>Total Debit</th>
-                            <th>Total Kredit</th>
-                            <th>Saldo Akhir</th>
+                            <th>Tanggal</th>
+                            <th>Nominal</th>
+                            <th>Terpakai/<br>Dikembalikan</br></th>
+                            <th>Sisa</th>
+                            <th>Umur</th>
+                            <th>Status</th>
 
                         </tr>
                     </thead>
                     <tbody></tbody>
+                    <tfoot class="table-light fw-bold text-end">
+                    <tr>
+                        <th colspan="6" class="text-center">TOTAL</th>
+                        <th id="total_uangmuka">0</th>
+                        <th id="total_terpakai">0</th>
+                        <th id="sisa_uangmuka">0</th>
+                        <th></th>
+                        <th></th>   
+                    </tr>
+                </tfoot>
                 </table>
             </div>
         </div>
@@ -86,9 +110,10 @@
 @section('js')
 <script>
 $(document).ready(function() {
-    $('#filter_akun').select2({
+    @if(auth()->user()->level != "entitas")
+    $('.entitas').select2({
         ajax: {
-            url: '{{ route("uangmuka.akun_gl") }}',
+            url: '{{ route("entitas.select") }}',
             dataType: 'json',
             delay: 250,
             processResults: function (data) {
@@ -101,102 +126,20 @@ $(document).ready(function() {
             cache: true
         },
         theme: 'bootstrap4',
-        width: '100%',
-        placeholder: "-- Pilih Akun GL --",
+        // width: '100%',
+         width: 'resolve',
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
+        dropdownParent: $('.card-header'), // pastikan dropdown tidak nyasar
+        // placeholder: "-- Pilih Entitas --",
         allowClear: true
     });
-
-    const now = new Date();
-    let periodeFrom = null;
-    let periodeTo = null;
-    const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-     // 🔧 Inisialisasi Flatpickr Month Picker
-    periodeFrom = flatpickr("#periode_from", {
-        altInput: true,
-        altFormat: "d F Y",      // Tampilan: 13 Oktober 2026
-        dateFormat: "Y-m-d", 
-        defaultDate: defaultDate,
-
-        static: true,
-        allowInput: false,
-        locale: "id",
-
-        onChange: function(selectedDates) {
-
-            if (selectedDates.length > 0) {
-
-                // To tidak boleh sebelum From
-                periodeTo.set("minDate", selectedDates[0]);
-
-                // Jika To saat ini lebih kecil dari From
-                if (
-                    periodeTo.selectedDates.length > 0 &&
-                    periodeTo.selectedDates[0] < selectedDates[0]
-                ) {
-                    periodeTo.clear();
-                }
-            }
-        }
-    });
-
-
-    periodeTo = flatpickr("#periode_to", {
-        altInput: true,
-        altFormat: "d F Y",      // Tampilan: 13 Oktober 2026
-        dateFormat: "Y-m-d",
-        defaultDate: defaultDate,
-        static: true,
-        allowInput: false,
-        locale: "id",
-
-        onChange: function(selectedDates) {
-
-            if (selectedDates.length > 0) {
-                // From tidak boleh setelah To
-                periodeFrom.set("maxDate", selectedDates[0]);
-                // Jika From saat ini lebih besar dari To
-                if (
-                    periodeFrom.selectedDates.length > 0 &&
-                    periodeFrom.selectedDates[0] > selectedDates[0]
-                ) {
-                    periodeFrom.clear();
-                }
-            }
-        }
-    });
-    @if(auth()->user()->level != "entitas")
-    $('#filter_entitas').select2({
-        ajax: {
-            url: '{{ route("entitas.select") }}',
-            dataType: 'json',
-            delay: 250,
-            processResults: data => ({
-                results: data.map(q => ({ id: q.id, text: q.nama }))
-            }),
-            cache: true
-        },
-        theme: 'bootstrap4',
-        width: 'resolve',
-        placeholder: "-- Pilih Entitas --",
-        allowClear: true,
-        minimumResultsForSearch: 0, // -1 = search box selalu disembunyikan
-        escapeMarkup: markup => markup
-    });
     @endif
-    $('.partner').select2({
+    @canAccess('uangmuka.aging.view')
+    $('.cabang').select2({
         ajax: {
-            url: '{{ route("partner.select") }}',
+            url: '{{ route("cabang.select") }}',
             dataType: 'json',
             delay: 250,
-            data: function (params) {
-                return {
-                    q: params.term,
-                    jenis:'vendor',
-                    @if(auth()->user()->level != "entitas")
-                    entitas_id: $('#entitas_id').val()
-                    @endif
-                };
-            },
             processResults: function (data) {
                 return {
                     results: data.map(function(q){
@@ -206,12 +149,12 @@ $(document).ready(function() {
             },
             cache: true
         },
-        allowClear: true,
         theme: 'bootstrap4',
-        placeholder: "-- Pilih Partner --",
         width: 'resolve',
         minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
-       
+        dropdownParent: $('.card-header'), // pastikan dropdown tidak nyasar
+        // placeholder: "-- Pilih Entitas --",
+        // allowClear: true
     });
     const tb = $('#tb_data').DataTable({
         processing: true,
@@ -220,28 +163,52 @@ $(document).ready(function() {
          ajax: {
             url: "{{ route('uangmuka.daftar') }}",
             data: function (d) {
-                @if(auth()->user()->level != "entitas")
                 d.entitas_id = $('#filter_entitas').val();
-                @endif
-                d.partner_id = $('#filter_partner').val();
-                d.akun_gl_id = $('#filter_akun').val();
-                d.periode_from = $('#periode_from').val();
-                d.periode_to = $('#periode_to').val();
+                d.cabang_id = $('#filter_cabang').val();
             }
         },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
-            { data: 'akun_gl', name: 'akun_gl' },
-            { data: 'entitas', name: 'entitas' },
-            { data: 'partner', name: 'partner' },
-            { data: 'saldo_awal', name: 'saldo_awal' },
-            { data: 'total_debit', name: 'total_debit' },
-            { data: 'total_kredit', name: 'total_kredit' },
-            { data: 'saldo', name: 'saldo' },
-            
-           
+            { data: 'kode_jurnal', name: 'kode_jurnal' },
+            { data: 'entitas_nama', name: 'entitas_nama' },
+            { data: 'cabang_nama', name: 'cabang_nama' },
+            { data: 'partner_nama', name: 'partner_nama' },
+            { 
+                data: 'tanggal', 
+                searchable: false,
+                className: 'text-center',
+                render: function(data) {
+                    if (!data) return '-';
+                    const tgl = new Date(data);
+                    return tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+                }
+            },
+            { data: 'nominal', name: 'nominal' },
+            { data: 'terpakai', name: 'terpakai' },
+            { data: 'sisa', name: 'sisa' },
+            { data: 'umur', name: 'umur' },
+            { data: 'status', name: 'status' },
+            // { data: 'aging_0_14', name: 'aging_0_14', className: 'text-end' },
+            // { data: 'aging_15_30', name: 'aging_15_30', className: 'text-end' },
+            // { data: 'aging_31_45', name: 'aging_31_45', className: 'text-end' },
+            // { data: 'aging_46_60', name: 'aging_46_60', className: 'text-end' },
+            // { data: 'aging_60_plus', name: 'aging_60_plus', className: 'text-end' },
+            // { data: 'total_piutang', name: 'total_piutang', className: 'text-end fw-bold' },
         ],
         order: [[1, 'asc']],
+        drawCallback: function(settings) {
+            let api = this.api();
+            let json = api.ajax.json(); // Mengambil data tambahan dari server
+            
+            if (json.totalFooter) {
+                let res = json.totalFooter;
+                let format = new Intl.NumberFormat('id-ID');
+
+                $(api.column(6).footer()).html(format.format(res.total_uangmuka));
+                $(api.column(7).footer()).html(format.format(res.total_terpakai));
+                $(api.column(8).footer()).html(format.format(res.sisa_uangmuka));
+            }
+        },
         language: {
             searchPlaceholder: 'Cari partner...',
             processing: '<i class="fa fa-spinner fa-spin"></i> Loading...'
@@ -250,28 +217,19 @@ $(document).ready(function() {
     @if(auth()->user()->level != "entitas")
     // 🔄 Reload ketika filter berubah
     $('#filter_entitas').on('change', function() {
-        $('.partner').val(null).trigger('change');
         tb.ajax.reload();
     });
     @endif
-    $('#filter_partner,#filter_akun').on('change', function() {
+     $('#filter_tipe, #filter_cabang').on('change', function() {
         tb.ajax.reload();
     });
-    $("#btn-filter").on("click", function(){
-        tb.ajax.reload();
-    })
-    
+    @endcanAccess
     @canAccess('uangmuka.daftar.export')
     // 📤 Export Excel
     $('#btnExportExcel').click(function() {
         const params = {
-            @if(auth()->user()->level != "entitas")
             entitas_id: $('#filter_entitas').val() || '',
-            @endif
-            partner_id: $('#filter_partner').val() || '',
-            akun_gl_id: $('#filter_akun').val() || '',
-            periode_from: $('#periode_from').val() || '',
-            periode_to: $('#periode_to').val() || '',
+            cabang_id: $('#filter_cabang').val() || ''
         };
         const query = new URLSearchParams(params).toString();
         window.location.href = "{{ route('uangmuka.daftar.export') }}?" + query;
