@@ -27,15 +27,20 @@
     <!-- FILTER -->
     <div class="row g-2 mb-4">
         @if(auth()->user()->level != "entitas")
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select id="filter_entitas" name="entitas" class="form-select">
                 <option value="">Semua Entitas</option>
             </select>
         </div>
         @endif
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select id="filter_akun" name="akun_gl_id" class="form-select">
                 <option value="">..:: Pillih Akun GL</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select id="filter_partner" class="form-select form-select-sm partner">
+                <option value="">Semua Partner</option>
             </select>
         </div>
         <div class="col-md-2">
@@ -84,14 +89,6 @@
                 </tr>
             </thead>
             <tbody></tbody>
-            <tfoot class="table-light fw-bold text-end">
-                <tr>
-                    <th colspan="4" class="text-center">TOTAL</th>
-                    <th id="total_debet">0</th>
-                    <th id="total_kredit">0</th>
-                    <th id="total_saldo">0</th>
-                </tr>
-            </tfoot>
         </table>
     </div>
     </div>
@@ -102,8 +99,66 @@
 
 @section('js')
 <script>
+
 let table;
 let isLoaded = false;
+const now = new Date();
+    let periodeFrom = null;
+    let periodeTo = null;
+    const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+     // 🔧 Inisialisasi Flatpickr Month Picker
+    periodeFrom = flatpickr("#tanggal_awal", {
+        altInput: true,
+        altFormat: "d F Y",      // Tampilan: 13 Oktober 2026
+        dateFormat: "Y-m-d", 
+        defaultDate: defaultDate,
+        static: true,
+        allowInput: false,
+        locale: "id",
+
+        onChange: function(selectedDates) {
+
+            if (selectedDates.length > 0) {
+
+                // To tidak boleh sebelum From
+                periodeTo.set("minDate", selectedDates[0]);
+
+                // Jika To saat ini lebih kecil dari From
+                if (
+                    periodeTo.selectedDates.length > 0 &&
+                    periodeTo.selectedDates[0] < selectedDates[0]
+                ) {
+                    periodeTo.clear();
+                }
+            }
+        }
+    });
+
+
+    periodeTo = flatpickr("#tanggal_akhir", {
+        altInput: true,
+        altFormat: "d F Y",      // Tampilan: 13 Oktober 2026
+        dateFormat: "Y-m-d",
+        defaultDate: defaultDate,
+        static: true,
+        allowInput: false,
+        locale: "id",
+
+        onChange: function(selectedDates) {
+
+            if (selectedDates.length > 0) {
+                // From tidak boleh setelah To
+                periodeFrom.set("maxDate", selectedDates[0]);
+                // Jika From saat ini lebih besar dari To
+                if (
+                    periodeFrom.selectedDates.length > 0 &&
+                    periodeFrom.selectedDates[0] > selectedDates[0]
+                ) {
+                    periodeFrom.clear();
+                }
+            }
+        }
+    });
 @canAccess('kartuakun.view')
  table =    $('#t_data').DataTable({
         processing: true,
@@ -114,18 +169,20 @@ let isLoaded = false;
             data: function (d) {
                 d.entitas_id = $('#filter_entitas').val();
                 d.akun_gl_id = $('#filter_akun').val();
-                d.tanggal_awal = $('#tanggal_awal').val();
-                d.tanggal_akhir = $('#tanggal_akhir').val();
+                d.partner_id = $('#filter_partner').val();
+                d.periode_from = $('#tanggal_awal').val();
+                d.periode_to = $('#tanggal_akhir').val();
             }
         },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable:false, searchable:false },
-            { data: 'kode_jurnal', name: 'kode_jurnal' },
-            { data: 'tanggal', name: 'tanggal' },
-            { data: 'keterangan', name: 'keterangan' },
+            { data: 'kode_jurnal', name: 'kode_jurnal',orderable:false, },
+            { data: 'tanggal', name: 'tanggal',orderable:false, },
+            { data: 'keterangan', name: 'keterangan',orderable:false, },
             { 
                 data: 'debit', 
                 name: 'debit',
+                orderable:false,
                 className: 'text-end',
                 render: function(data) {
                     if (!data) return '-';
@@ -135,6 +192,7 @@ let isLoaded = false;
             { 
                 data: 'kredit', 
                 name: 'kredit',
+                orderable:false,
                 className: 'text-end',
                 render: function(data) {
                     if (!data) return '-';
@@ -144,6 +202,7 @@ let isLoaded = false;
             { 
                 data: 'saldo', 
                 name: 'saldo',
+                orderable:false,
                 className: 'text-end',
                 render: function(data) {
                     if (!data) return '-';
@@ -151,47 +210,42 @@ let isLoaded = false;
                 },orderable:false, 
             },
         ],
-        drawCallback: function(settings) {
-            let api = this.api();
-            let json = api.ajax.json(); // Mengambil data tambahan dari server
-            
-            if (json.totalFooter) {
-                let res = json.totalFooter;
-                let format = new Intl.NumberFormat('id-ID');
-
-                $(api.column(4).footer()).html(format.format(res.total_debit));
-                $(api.column(5).footer()).html(format.format(res.total_kredit));
-                $(api.column(6).footer()).html(format.format(res.saldo_akhir));
-            }
-             // Sembunyikan pagination jika data kosong atau hanya 1 halaman
-            var rowCount = api.rows().data().length;
-            if (rowCount === 0) {
-                $('.dataTables_paginate').hide();
-                $('.dataTables_info').hide();
-            } else {
-                $('.dataTables_paginate').show();
-                $('.dataTables_info').show();
-            }
-        },
         // order: [[2, 'desc']],
     });
 @endcanAccess
 $(function() {
     $("[data-toggle='tooltip']").tooltip();
        // 🔹 Flatpickr Month Picker dengan default bulan ini
-    flatpickr("#tanggal_awal", {
-        altInput: true,
-        altFormat: "d F Y",   // tampilan di input: 10 Juli 2025
-        dateFormat: "Y-m-d",  // format yang dikirim ke backend: 2025-07-10
-        allowInput: false,
-        locale: "id"
-    });
-    flatpickr("#tanggal_akhir", {
-        altInput: true,
-        altFormat: "d F Y",   // tampilan di input: 10 Juli 2025
-        dateFormat: "Y-m-d",  // format yang dikirim ke backend: 2025-07-10
-        allowInput: false,
-        locale: "id"
+    
+    $('.partner').select2({
+        ajax: {
+            url: '{{ route("partner.select") }}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term,
+                    jenis:'vendor',
+                    @if(auth()->user()->level != "entitas")
+                    entitas_id: $('#entitas_id').val()
+                    @endif
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.map(function(q){
+                        return {id: q.id, text:q.nama};
+                    })
+                };
+            },
+            cache: true
+        },
+        allowClear: true,
+        theme: 'bootstrap4',
+        placeholder: "-- Pilih Partner --",
+        width: 'resolve',
+        minimumResultsForSearch: 0, // sembunyikan search box kalau sedikit opsi
+       
     });
     // 🔽 Select2 Akun GL
     $('#filter_akun').select2({
@@ -226,20 +280,27 @@ $(function() {
         },
         theme: 'bootstrap4',
         width: 'resolve',
-        // placeholder: "-- Pilih Entitas --",
-        // allowClear: true,
+        placeholder: "-- Pilih Entitas --",
+        allowClear: true,
         minimumResultsForSearch: 0, // -1 = search box selalu disembunyikan
         escapeMarkup: markup => markup
     });
     @endif
+
 });
+
+
 @canAccess('kartuakun.view')
 $('#filter_entitas').val('').trigger('change');
 
  // Reload saat filter berubah
 $('#btn-filter').on('click', function() {
     if (!$('#filter_akun').val()) {
-        // alert('Silakan pilih Akun GL terlebih dahulu');
+        position = "bottom-left";
+        icons = "warning";
+        pesan = "Akun GL tidak boleh kosong";
+        title = "Warning!";
+        info(title,pesan,icons,position);
         return;
     }
     isLoaded = true;
@@ -252,26 +313,23 @@ table.on('draw', function () {
 @endcanAccess
 @canAccess('kartuakun.export')
 $('#btnExportExcel').on('click', function () {
-    @if(auth()->user()->level == "admin")
-        let entitas = $('#filter_entitas').val();
-    @else
-        let entitas = "{{ auth()->user()->entitas_id }}";
-    @endif
     let akun    = $('#filter_akun').val();
-    let tanggal_awal = $('#tanggal_awal').val();
-    let tanggal_akhir = $('#tanggal_akhir').val();
-
     if (!akun) {
         alert('Pilih akun terlebih dahulu');
         return;
     }
 
-    window.location.href =
-        "{{ route('laporan.kartuakun.export') }}" +
-        "?entitas_id=" + entitas +
-        "&akun_gl_id=" + akun +
-        "&tanggal_akhir=" + tanggal_akhir +
-        "&tanggal_awal=" + tanggal_awal;
+    const params = {
+        @if(auth()->user()->level != "entitas")
+        entitas_id: $('#filter_entitas').val() || '',
+        @endif
+        partner_id: $('#filter_partner').val() || '',
+        akun_gl_id: $('#filter_akun').val() || '',
+        periode_from: $('#tanggal_awal').val() || '',
+        periode_to: $('#tanggal_akhir').val() || '',
+    };
+    const query = new URLSearchParams(params).toString();
+    window.location.href = "{{ route('laporan.kartuakun.export') }}?" + query;
 });
 @endcanAccess
 function rupiah(x) {

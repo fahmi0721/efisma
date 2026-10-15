@@ -10,6 +10,7 @@ use App\Exports\PblExport;
 use App\Exports\ArusKasExport;
 use App\Exports\BukuBesarExport;
 use App\Exports\KartuAkunExport;
+use App\Helpers\KartuAkunService;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 class LaporanKeuanganController extends Controller
@@ -524,124 +525,37 @@ class LaporanKeuanganController extends Controller
 
     public function indexKartuAkun(Request $request)
     {
-        // 🔐 Tentukan entitas
-        if (auth()->user()->level === 'entitas') {
-            $entitas_id = auth()->user()->entitas_id;
-        } else {
-            $entitas_id = $request->entitas_id;
-        }
-
-        $akun_id = $request->akun_gl_id; // WAJIB
-        $periode = date('Y-m', strtotime($request->tanggal_awal));
-
-        $tglAwal  = $request->tanggal_awal;
-        $tglAkhir = $request->tanggal_akhir;
-
-        // =========================
-        // AJAX (DataTables)
-        // =========================
         if ($request->ajax()) {
-
-            // 🚨 Validasi wajib
-            if (!$akun_id) {
-                return response()->json([
-                    'data' => [],
-                    'error' => 'Akun GL wajib dipilih'
-                ]);
+            $validated = $request->validate([
+                'entitas_id' => 'nullable|integer',
+                'partner_id' => 'nullable|integer',
+                'akun_gl_id' => 'nullable|integer',
+                'periode_from' => 'required|date',
+                'periode_to' => 'required|date|after_or_equal:periode_from',
+            ]);
+             // Tentukan entitas yang digunakan
+            if (auth()->user()->level == 'entitas') {
+                $entitas_id = $request->entitas_scope; 
+            } else {
+                $entitas_id = $validated['entitas_id']; // filter dari dropdown jika admin/pusat
             }
 
-            // 🔹 Ambil saldo awal
-            $saldoAwal = DB::table('m_saldo_awal as s')
-                ->join('m_akun_gl as a', 'a.id', '=', 's.akun_gl_id')
-                ->where('s.akun_gl_id', $akun_id)
-                ->where('s.periode', $periode)
-                ->where('s.entitas_id', $entitas_id)
-                ->select('s.saldo', 'a.saldo_normal')
-                ->first();
+            $result = KartuAkunService::getMonitoring(
+                entitas_id: $entitas_id ?? null,
+                partner_id: $validated['partner_id'] ?? null,
+                akun_gl_id: $validated['akun_gl_id'] ?? null,
+                periode_awal: $validated['periode_from'],
+                periode_akhir: $validated['periode_to']
+            );
 
-            if (!$saldoAwal) {
-                $saldo = 0;
-                $saldoNormal = DB::table('m_akun_gl')
-                ->where('id', $akun_id)
-                ->value('saldo_normal'); 
-                
-            }else{
-                $saldo = $saldoAwal->saldo;
-                $saldoNormal = $saldoAwal->saldo_normal;    
-            }
-
-            // $saldo = $saldoAwal->saldo;
-            // $saldoNormal = $saldoAwal->saldo_normal;
-
-            // 🔹 Mutasi
-            $rows = DB::table('buku_besar as b')
-                ->join('m_akun_gl as a', 'a.id', '=', 'b.akun_id')
-                ->leftJoin('m_partner as p', 'p.id', '=', 'b.partner_id')
-                ->where('b.akun_id', $akun_id)
-                ->where('b.entitas_id', $entitas_id)
-                ->whereBetween('b.tanggal', [$tglAwal, $tglAkhir])
-                ->orderBy('b.tanggal')
-                ->orderBy('b.id')
-                ->select(
-                    'b.tanggal',
-                   DB::raw("CONCAT(a.no_akun,' - ',a.nama) AS akun_gl"),
-                    'b.kode_jurnal',
-                    'b.keterangan',
-                    'b.debit',
-                    'b.kredit'
-                )
-                ->get();
-
-            // =========================
-            // 💓 Hitung saldo berjalan
-            // =========================
-            $data = [];
-
-            // Baris saldo awal
-            $data[] = [
-                'tanggal'     => date('d M Y', strtotime($tglAwal)),
-                'kode_jurnal' => 'SA',
-                'keterangan'  => 'Saldo Awal',
-                'akun_gl'  => 'Saldo Awal',
-                'debit'       => null,
-                'kredit'      => null,
-                'saldo'       => $saldo,
-            ];
-
-            foreach ($rows as $r) {
-                if ($saldoNormal === 'debet') {
-                    $saldo += ($r->debit - $r->kredit);
-                } else {
-                    $saldo += ($r->kredit - $r->debit);
-                }
-
-                $data[] = [
-                    'tanggal'     => date('d M Y', strtotime($r->tanggal)),
-                    'kode_jurnal' => $r->kode_jurnal,
-                    'akun_gl' => $r->akun_gl,
-                    'keterangan'  => $r->keterangan,
-                    'debit'       => $r->debit,
-                    'kredit'      => $r->kredit,
-                    'saldo'       => $saldo,
-                ];
-            }
-            // Hitung total manual dari array $data karena sum() tidak bisa langsung di array
-            $totalDebit = 0;
-            $totalKredit = 0;
-            foreach ($data as $item) {
-                $totalDebit += $item['debit'] ?? 0;
-                $totalKredit += $item['kredit'] ?? 0;
-            }
-            $saldoAkhir = $saldo; 
-
-
-            return DataTables::of(collect($data))
+            return DataTables::of($result['data'])
                 ->addIndexColumn()
-                ->with('totalFooter', [
-                    'total_debit'   => $totalDebit,
-                    'total_kredit'  => $totalKredit,
-                    'saldo_akhir'  => $saldoAkhir
-                ])
+                ->addColumn('DT_RowClass', function ($row) {
+                    return $row['jenis'] === 'saldo_awal'
+                        ? 'table-info fw-bold'
+                        : '';
+                })
+                ->with('summary', $result['summary'])
                 ->make(true);
         }
 
@@ -650,19 +564,30 @@ class LaporanKeuanganController extends Controller
 
     public function exportKartuAkun(Request $request)
     {
-        $akun_id   = $request->akun_gl_id;
-        $tanggal_awal   = $request->tanggal_awal;
-        $tanggal_akhir   = $request->tanggal_akhir;
-        $periode = date('Y-m', strtotime($request->tanggal_awal));
-
-        if (auth()->user()->level === 'entitas') {
-            $entitas_id = auth()->user()->entitas_id;
+        $validated = $request->validate([
+            'entitas_id' => 'nullable|integer',
+            'partner_id' => 'nullable|integer',
+            'akun_gl_id' => 'nullable|integer',
+            'periode_from' => 'required|date',
+            'periode_to' => 'required|date|after_or_equal:periode_from',
+        ]);
+            // Tentukan entitas yang digunakan
+        if (auth()->user()->level == 'entitas') {
+            $entitas_id = $request->entitas_scope; 
         } else {
-            $entitas_id = $request->entitas_id;
+            $entitas_id = $validated['entitas_id']; // filter dari dropdown jika admin/pusat
         }
 
+        $result = KartuAkunService::getMonitoring(
+            entitas_id: $entitas_id ?? null,
+            partner_id: $validated['partner_id'] ?? null,
+            akun_gl_id: $validated['akun_gl_id'] ?? null,
+            periode_awal: $validated['periode_from'],
+            periode_akhir: $validated['periode_to']
+        );
+        $periode = date("Ymd",strtotime($validated['periode_from']))."_".date("His");
         return Excel::download(
-            new KartuAkunExport($akun_id, $entitas_id, $tanggal_awal,$tanggal_akhir),
+            new KartuAkunExport($result),
             'Kartu_Akun_'.$periode.'.xlsx'
         );
     }
