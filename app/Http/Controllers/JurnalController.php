@@ -857,25 +857,28 @@ class JurnalController extends Controller
             if ((in_array($jenis,['JN','JKM'])) && $request->filled('jurnal_id_jkk')) {
                 $dataHeader['jurnal_id_jkk'] = $request->jurnal_id_jkk;
             }
+            if ((in_array($jenis,['JN','JKM'])) && $request->filled('jurnal_id_jp')) {
+                $dataHeader['jurnal_id_jkk'] = $request->jurnal_id_jp;
+            }
             // header
             $jurnalId = DB::table('jurnal_header')->insertGetId($dataHeader);
 
-            if (($jenis === 'JKM' || $jenis === 'JN') && $request->filled('jurnal_id_jp')) {
-                if($jenis === "JKM"){
-                    PelunasanPiutangService::insertPelunasan(
-                        $jurnalId,
-                        $request->jurnal_id_jp,
-                        $nominalPiutang
-                    );
-                }else{
-                    PelunasanPiutangService::insertPelunasan(
-                        $jurnalId,
-                        $request->jurnal_id_jp,
-                        $totalDebit
-                    );
-                }
+            // if (($jenis === 'JKM' || $jenis === 'JN') && $request->filled('jurnal_id_jp')) {
+            //     if($jenis === "JKM"){
+            //         PelunasanPiutangService::insertPelunasan(
+            //             $jurnalId,
+            //             $request->jurnal_id_jp,
+            //             $nominalPiutang
+            //         );
+            //     }else{
+            //         PelunasanPiutangService::insertPelunasan(
+            //             $jurnalId,
+            //             $request->jurnal_id_jp,
+            //             $totalDebit
+            //         );
+            //     }
                 
-            }
+            // }
 
             if ((in_array($jenis,["JN","JKM"])) && $request->filled('jurnal_id_jkk')) {
                 UangMukaService::validateDraftPelunasan($request);
@@ -899,13 +902,13 @@ class JurnalController extends Controller
                     $jurnal_id_secound = $request->is_multi_invoice
                     ? ($row['jurnal_id'] ?? $jurnalId)
                     : $jurnalId;
-                    if($request->is_multi_invoice){
-                         PelunasanPiutangService::insertPelunasan(
-                            $jurnalId,
-                            $jurnal_id_secound,
-                            JurnalService::parseRupiah($row['kredit'] ?? 0)
-                        );
-                    }
+                    // if($request->is_multi_invoice){
+                    //      PelunasanPiutangService::insertPelunasan(
+                    //         $jurnalId,
+                    //         $jurnal_id_secound,
+                    //         JurnalService::parseRupiah($row['kredit'] ?? 0)
+                    //     );
+                    // }
                 }elseif($jenis === "JKK"){
                     $jurnal_id_secound = $row['jurnal_id'];
                    
@@ -1353,19 +1356,14 @@ class JurnalController extends Controller
         if ($jurnal->total_debit != $jurnal->total_kredit) {
             return response()->json(['status' => false, 'message' => 'Total debit dan kredit tidak balance, tidak bisa diposting!']);
         }
-
+        DB::beginTransaction();
         // if ((in_array($jurnal->jenis,['JKM',"JN"]))) {
         if ((in_array($jurnal->jenis,["JN","JKM"]))) {
             UangMukaService::postingPelunasan($id);
         }
-
         if ($jurnal->jenis === "JKK") {
             HutangService::postingPelunasan($id);
         }
-
-
-
-        DB::beginTransaction();
         try {
             // ✅ Cek periode terbuka dulu
             PeriodeHelper::cekPeriodeOpen($jurnal->tanggal);
@@ -1408,6 +1406,9 @@ class JurnalController extends Controller
                 $debit  = floatval($row->debit);
                 $kredit = floatval($row->kredit);
                 $akun = JurnalService::getAkun($row->akun_id);
+                if (in_array($jurnal->jenis,['JKM', 'JN'],true)){
+                    PelunasanPiutangService::PostingJurnal($jurnal,$akun,$row);
+                }
                 if (($jurnal->jenis === 'JP' || $jurnal->jenis === 'JN') && JurnalService::isDepositAkun($akun)) {
                     $nominal = $debit;
 
@@ -1903,6 +1904,9 @@ class JurnalController extends Controller
                     $debit  = floatval($d->debit);
                     $kredit = floatval($d->kredit);
                     $akun = JurnalService::getAkun($d->akun_id);
+                    if (in_array($jurnal->jenis,['JKM', 'JN'],true)){
+                        PelunasanPiutangService::PostingJurnal($jurnal,$akun,$d);
+                    }
                     if ($jurnal->jenis === 'JP' && JurnalService::isDepositAkun($akun)) {
                         $nominal = $debit;
 

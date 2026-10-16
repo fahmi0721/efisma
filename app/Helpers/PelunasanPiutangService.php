@@ -86,12 +86,64 @@ class PelunasanPiutangService
      */
     public static function insertPelunasan($jurnalKasId, $jurnalPiutangId, $nominal)
     {
-        return DB::table('pelunasan_piutang')->insert([
-            'jurnal_kas_id'     => $jurnalKasId,
-            'jurnal_piutang_id' => $jurnalPiutangId,
-            'jumlah'            => $nominal,
-            'created_at'        => now(),
-            'updated_at'        => now(),
-        ]);
+        if (!$jurnalKasId || !$jurnalPiutangId) {
+            throw new \InvalidArgumentException(
+                'ID jurnal kas dan jurnal piutang wajib diisi.'
+            );
+        }
+
+        if (!is_numeric($nominal) || $nominal <= 0) {
+            throw new \InvalidArgumentException(
+                'Nominal pelunasan harus lebih besar dari 0.'
+            );
+        }
+
+        return DB::table('pelunasan_piutang')
+            ->updateOrInsert(
+                [
+                    'jurnal_kas_id'     => $jurnalKasId,
+                    'jurnal_piutang_id' => $jurnalPiutangId,
+                ],
+                [
+                    'jumlah'     => $nominal,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+        
+    }
+
+    private static function isPiutangAkun($akun){
+        return $akun !== null
+        && $akun->kategori === 'piutang';
+    }
+    
+    public static function PostingJurnal($jurnal,$akun,$detail){
+        if (!self::isPiutangAkun($akun)) {
+            return;
+        }
+
+        if ((float) $detail->kredit <= 0) {
+            return;
+        }
+        
+
+        $jurnalPiutangId = $jurnal->is_multi_cabang == '1'
+            ? $detail->jurnal_id_secound
+            : $jurnal->jurnal_id_jkk;
+
+        $jurnalKasId = $jurnal->id;
+        
+        if (!$jurnalPiutangId) {
+            throw new \InvalidArgumentException(
+                'Referensi jurnal piutang tidak ditemukan.'
+            );
+        }
+
+        return self::insertPelunasan(
+            $jurnalKasId,
+            $jurnalPiutangId,
+            $detail->kredit
+        );
     }
 }
