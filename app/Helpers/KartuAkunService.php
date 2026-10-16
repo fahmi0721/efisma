@@ -22,7 +22,7 @@ class KartuAkunService
                 '=',
                 'sa.akun_gl_id'
             )
-            ->where('a.kategori', 'uang_muka')
+            // ->where('a.kategori', 'uang_muka')
 
             ->when($entitas_id !== null, function ($q) use ($entitas_id) {
                 $q->where('sa.entitas_id', $entitas_id);
@@ -189,7 +189,7 @@ class KartuAkunService
                 'bb.partner_id'
             )
 
-            ->where('a.kategori', 'uang_muka')
+            // ->where('a.kategori', 'uang_muka')
 
             ->when($entitas_id !== null, function ($q) use ($entitas_id) {
                 $q->where('bb.entitas_id', $entitas_id);
