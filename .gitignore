@@ -6,7 +6,7 @@
 /storage/*.key
 /vendor
 /database/*
-.env
+!.env
 db.sql
 db_to.sql
 .env.backup
