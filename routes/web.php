@@ -270,6 +270,7 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
         Route::get('/penyesuaian/upload', [UploadJurnalJPController::class, 'index'])->name('jurnal.penyesuaian.upload')->middleware('permission:penyesuaian.create');
         Route::get('/penyesuaian/template', [UploadJurnalJPController::class, 'template'])->name('jurnal.penyesuaian.template')->middleware('permission:penyesuaian.create');
         Route::post('/penyesuaian/upload/save', [UploadJurnalJPController::class, 'upload'])->name('jurnal.penyesuaian.upload.save')->middleware('permission:penyesuaian.create');
+        Route::get('/penyesuaian/import-status/{id}',[UploadJurnalJPController::class, 'status'])->name('jurnal.penyesuaian.import.status');
         /**End */
         Route::get('/penyesuaian/create', [JurnalController::class, 'create'])->name('jurnal.penyesuaian.create')->defaults('jenis', 'JN')->middleware('permission:penyesuaian.create');
         Route::post('/penyesuaian/store', [JurnalController::class, 'store'])->name('jurnal.penyesuaian.save')->defaults('jenis', 'JN')->middleware('permission:penyesuaian.create');
