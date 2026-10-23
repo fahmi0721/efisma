@@ -27,7 +27,7 @@ class ProcessUploadJurnalJP implements ShouldQueue
         Queueable, SerializesModels;
 
     public $tries = 1;
-    public $timeout = 40;
+    public $timeout = 300;
 
     public function __construct(
         public int $importId
