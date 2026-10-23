@@ -10,37 +10,84 @@ use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class JurnalUangMukaProcess
 {
     
     public static function index($request){
-        DB::beginTransaction();
+        $start = microtime(true);
+        // DB::beginTransaction();
 
         try {
+
+            Log::info('JP UANG MUKA: LOAD EXCEL START');
             $file = $request->file('file');
 
             $spreadsheet = IOFactory::load($file->getRealPath());
 
+             Log::info('JP UANG MUKA: LOAD EXCEL DONE', [
+                'duration' => round(
+                    microtime(true) - $start,
+                    2
+                )
+            ]);
+
              /**
              * Ambil detail dulu dan group berdasarkan Jurnal Header ID dari kolom A
              */
+             $cleansingStart = microtime(true);
+             Log::info('JP UANG MUKA: CLEANSING START');
+
             $detailGroup = self::cleansingJurnalDetail($spreadsheet);
+              Log::info('JP UANG MUKA: CLEANSING DONE', [
+                'duration' => round(
+                    microtime(true) - $cleansingStart,
+                    2
+                ),
+                'total_header_group' => count($detailGroup),
+            ]);
             // throw new Exception(json_encode($detailGroup), 500);
 
+            $insertStart = microtime(true);
+            Log::info('JP UANG MUKA: INSERT START');
+                DB::transaction(function () use (
+                $spreadsheet,
+                $request,
+                $detailGroup
+            ) {
 
-            /**
-             * Proses cleansing dan insert jurnal header
-             */
-            self::prosesJurnalHeaderDanDetail($spreadsheet, $request, $detailGroup);
+                self::prosesJurnalHeaderDanDetail(
+                    $spreadsheet,
+                    $request,
+                    $detailGroup
+                );
 
-            DB::commit();
+            });
+            Log::info('JP UANG MUKA: INSERT DONE', [
+                'duration' => round(
+                    microtime(true) - $insertStart,
+                    2
+                ),
+            ]);
+
+            Log::info('JP UANG MUKA: FINISHED', [
+                'total_duration' => round(
+                    microtime(true) - $start,
+                    2
+                ),
+            ]);
 
             return true;
 
         } catch (\Throwable $e) {
-            DB::rollBack();
-            throw new Exception($e->getMessage(), 500);
+            Log::error('JP UANG MUKA ERROR', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            throw $e;
         }
     }
 
