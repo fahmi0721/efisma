@@ -192,6 +192,7 @@
                 <th>Entitas</th>
                 <th>Partner<br /><small>(Vendor/Pegawai)</small></th>
                 <th>Akun Hutang</th>
+                <th>Keterangan</th>
                 <th>Tanggal</th>
                 <th>Total Hutang</th>
                 <th>Pelunasan</th>
@@ -386,6 +387,7 @@ function loadHutangTable(entitas_id,partner_id) {
             { data: 'entitas_nama', name: 'm_entitas.nama' },
             { data: 'partner_nama', name: 'partner_nama' },
             { data: 'akun_hutang', name: 'm_akun_gl.nama' },
+            { data: 'keterangan', name: 'keterangan' },
             {
                 data: 'tanggal',
                 name: 'tanggal',
