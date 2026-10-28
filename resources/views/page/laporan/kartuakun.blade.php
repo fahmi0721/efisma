@@ -225,7 +225,7 @@ $(function() {
             data: function (params) {
                 return {
                     q: params.term,
-                    jenis:'vendor',
+                    jenis:'all',
                     @if(auth()->user()->level != "entitas")
                     entitas_id: $('#entitas_id').val()
                     @endif
