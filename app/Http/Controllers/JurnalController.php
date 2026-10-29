@@ -767,10 +767,10 @@ class JurnalController extends Controller
         /* =========================================================
         HITUNG TOTAL DEBIT / KREDIT
         ==========================================================*/
-        $totalDebit  = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiah($i['debit'] ?? 0));
-        $totalKredit = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiah($i['kredit'] ?? 0));
+        $totalDebitSen   = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiahToSen($i['debit'] ?? 0));
+        $totalKreditSen  = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiahToSen($i['kredit'] ?? 0));
 
-        if ($totalDebit != $totalKredit) {
+        if ($totalDebitSen !== $totalKreditSen) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Total Debit dan Kredit tidak balance.'
@@ -831,6 +831,8 @@ class JurnalController extends Controller
             }elseif($jenis == "JKK"){
                 $is_multi_cabang = $request->is_multi_cabang;
             }
+            $totalDebit  = $totalDebitSen / 100;
+            $totalKredit = $totalKreditSen / 100;
             $dataHeader = [
                 'kode_jurnal'  => $kode,
                 'is_multi_cabang' => $is_multi_cabang,
@@ -1040,10 +1042,10 @@ class JurnalController extends Controller
         /* =========================================================
         HITUNG TOTAL DEBIT / KREDIT
         ==========================================================*/
-        $totalDebit  = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiah($i['debit'] ?? 0));
-        $totalKredit = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiah($i['kredit'] ?? 0));
+        $totalDebitSen   = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiahToSen($i['debit'] ?? 0));
+        $totalKreditSen  = collect($request->detail)->sum(fn($i) => JurnalService::parseRupiahToSen($i['kredit'] ?? 0));
 
-        if ($totalDebit != $totalKredit) {
+        if ($totalDebitSen != $totalKreditSen) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Total debit dan kredit tidak balance!'
@@ -1189,7 +1191,8 @@ class JurnalController extends Controller
             
             PeriodeHelper::cekPeriodeOpen($request->tanggal);
             // $old_data =  DB::table("jurnal_header")->where("id",$id)->first();
-
+            $totalDebit = $totalDebitSen / 100;
+            $totalKredit = $totalKreditSen / 100;
             $data = [
                 'tanggal'      => $request->tanggal,
                 'entitas_id'   => $request->entitas_id,
