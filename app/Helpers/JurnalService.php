@@ -100,6 +100,54 @@ class JurnalService
         return (float) $value;
     }
 
+    /* =========================================================
+       PARSE RUPIAH
+    ==========================================================*/
+    public static function parseRupiahToSen($value): float
+    {
+        if ($value === null || $value === '') {
+        return 0;
+        }
+
+        // Nilai numerik dianggap sudah dalam satuan rupiah
+        if (is_int($value) || is_float($value)) {
+            return (int) round($value * 100);
+        }
+
+        $value = trim((string) $value);
+
+        // Format input dari form: 53.693.792,87
+        $value = str_replace(
+            ['Rp', ' ', "\u{A0}", '.'],
+            '',
+            $value
+        );
+
+        $value = str_replace(',', '.', $value);
+
+        // Hanya menerima angka dan maksimal 2 digit desimal
+        if (!preg_match('/^-?\d+(\.\d{1,2})?$/', $value)) {
+            throw new \InvalidArgumentException(
+                'Format nominal tidak valid.'
+            );
+        }
+
+        $negative = str_starts_with($value, '-');
+
+        $value = ltrim($value, '-');
+
+        [$rupiah, $sen] = array_pad(
+            explode('.', $value, 2),
+            2,
+            '0'
+        );
+
+        return ($negative ? -1 : 1) * (
+            ((int) $rupiah * 100) +
+            (int) str_pad($sen, 2, '0')
+        );
+    }
+
     
 
 
