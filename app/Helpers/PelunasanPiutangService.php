@@ -88,13 +88,13 @@ class PelunasanPiutangService
     {
         if (!$jurnalKasId || !$jurnalPiutangId) {
             throw new \InvalidArgumentException(
-                'ID jurnal kas dan jurnal piutang wajib diisi.'
+                'ID jurnal kas dan jurnal piutang wajib diisi. ' 
             );
         }
 
         if (!is_numeric($nominal) || $nominal <= 0) {
             throw new \InvalidArgumentException(
-                'Nominal pelunasan harus lebih besar dari 0.'
+                'Nominal pelunasan harus lebih besar dari 0.'. $nominal
             );
         }
 
