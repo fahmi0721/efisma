@@ -128,7 +128,8 @@
                 <p>Saldo Awal</p>
             </a>
             </li>
-            @endcanAccess  
+            @endcanAccess 
+            
             @canAccess('periode.view')
             <li class="nav-item">
             <a href="{{ route('periode_akuntansi') }}" class="nav-link {{  setActive(['periode_akuntansi', 'periode_akuntansi.create', 'periode_akuntansi.edit'], 'active')  }}">

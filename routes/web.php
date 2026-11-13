@@ -197,6 +197,7 @@ Route::group(['middleware' => 'auth'], function () {
  * Route Saldo Awal
  */
 use App\Http\Controllers\SaldoAwalController;
+
 Route::group(['middleware' => ['auth','entitas_scope']], function () {
     Route::get('/saldo_awal/akun_gl', [SaldoAwalController::class, 'akun_gl'])->name('saldo_awal.akun_gl');
     Route::get('/saldo_awal/entitas', [SaldoAwalController::class, 'entitas'])->name('saldo_awal.entitas');
@@ -345,3 +346,33 @@ Route::group(['middleware' => ['auth','entitas_scope']], function () {
         // Route::get('kartu_akun/export', [LaporanKeuanganController::class, 'exportBukuBesar'])->name('laporan.bukubesar.export')->middleware('permission:buku_besar.export');
     });
 });
+
+use App\Http\Controllers\Akuntansi\AkunSaldoSettingController;
+use App\Http\Controllers\Akuntansi\SaldoAwalGenerateController;
+use App\Http\Controllers\Akuntansi\SaldoGenerateMassalController;
+Route::group(['middleware' => ['auth','entitas_scope']], function () {
+    Route::prefix('akuntansi')
+        ->name('akuntansi.')
+        ->group(function () {
+            Route::get('/saldo-setting',[AkunSaldoSettingController::class, 'index'])->name('saldo-setting.index')->middleware('permission:saldo-setting.index');
+            Route::post('/saldo-setting',[AkunSaldoSettingController::class, 'update'])->name('saldo-setting.update')->middleware('permission:saldo-setting.update');
+            Route::get('/saldo-setting-bulk',[AkunSaldoSettingController::class, 'bulkIndex'])->name('saldo-setting-bulk.index')->middleware('permission:saldo-setting-bulk.index');
+            Route::post('/saldo-setting-bulk',[AkunSaldoSettingController::class, 'bulkStore'])->name('saldo-setting-bulk.update')->middleware('permission:saldo-setting-bulk.update');
+
+            /** Generate Saldo Awal */
+            Route::get('/saldo-generate',[SaldoAwalGenerateController::class, 'index'])->name('saldo-generate.index')->middleware('permission:saldo-generate.index');
+            Route::post('/saldo-generate/preview',[SaldoAwalGenerateController::class, 'preview'])->name('saldo-generate.preview')->middleware('permission:saldo-generate.preview');
+            Route::post('/saldo-generate/generate',[SaldoAwalGenerateController::class, 'generate'])->name('saldo-generate.generate')->middleware('permission:saldo-generate.generate');
+
+            Route::prefix('/saldo-generate-massal')
+                ->name('saldo-generate-massal.')
+                ->group(function () {
+                    Route::get('/',[SaldoGenerateMassalController::class, 'index'])->name('index')->middleware('permission:saldo-generate-massal');
+                    Route::post('/',[SaldoGenerateMassalController::class, 'store'])->name('store')->middleware('permission:saldo-generate-massal');
+                    Route::get('/status/{id}',[SaldoGenerateMassalController::class, 'status'])->name('status')->middleware('permission:saldo-generate-massal');
+                    Route::get('/detail/{id}',[SaldoGenerateMassalController::class, 'detail'])->name('detail')->middleware('permission:saldo-generate-massal.detail');;
+                });
+        });
+});
+
+
