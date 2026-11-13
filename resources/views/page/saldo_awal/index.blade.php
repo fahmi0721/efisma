@@ -26,6 +26,26 @@
                 <div class="card-header d-flex align-items-center">
                     <h5 class="mb-0">Data Saldo Awal Akun GL</h5>
                     <div class="ms-auto">
+                        @canAccess('saldo-setting.index')
+                        <a href="{{ route('akuntansi.saldo-setting.index') }}" class="btn btn-danger btn-sm">
+                            <i class="nav-icon fa fa-solid fa-cog"></i> Setting
+                        </a>
+                        @endcanAccess
+                        @canAccess('saldo-setting-bulk.index')
+                        <a href="{{ route('akuntansi.saldo-setting-bulk.index') }}" class="btn btn-info btn-sm">
+                            <i class="nav-icon fa fa-solid fa-upload"></i> Bulk Setting
+                        </a>
+                        @endcanAccess
+                        @canAccess('saldo-generate.index')
+                        <a href="{{ route('akuntansi.saldo-generate.index')  }}" class="btn btn-warning btn-sm">
+                            <i class="nav-icon fa fa-calculator mr-2"></i>  Generate Saldo
+                        </a>
+                        @endcanAccess
+                        @canAccess('saldo-generate-massal')
+                        <a href="{{ route('akuntansi.saldo-generate-massal.index')  }}" class="btn btn-warning btn-sm">
+                            <i class="nav-icon fa fa-calculator mr-2"></i>  Generate Saldo Massal
+                        </a>
+                        @endcanAccess
                         @canAccess('m_saldo_awal.import')
                         <a href="{{ route('saldo_awal.form_import') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-upload"></i> Import Excel
