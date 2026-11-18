@@ -13,6 +13,7 @@ use App\Exports\KartuAkunExport;
 use App\Helpers\KartuAkunService;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 class LaporanKeuanganController extends Controller
 {
     // ==============================
@@ -118,6 +119,50 @@ class LaporanKeuanganController extends Controller
 
             return $row;
         });
+
+        foreach ($data as $row) {
+
+    if (stripos($row->akun_nama, 'peralatan') !== false) {
+
+        $children = $akun->filter(
+            fn($a) => str_starts_with(
+                $a->sort_path,
+                $row->sort_path . '.'
+            )
+        );
+
+            Log::info('DEBUG NERACA - PERALATAN', [
+                'akun_id' => $row->akun_id,
+                'no_akun' => $row->no_akun,
+                'nama_akun' => $row->akun_nama,
+                'sort_path' => $row->sort_path,
+
+                'saldo_awal_sendiri' =>
+                    $saldo_awal[$row->akun_id]->saldo_awal ?? 0,
+
+                'mutasi_sendiri' =>
+                    $mutasi[$row->akun_id]->mutasi ?? 0,
+
+                'akun_anak' => $children->map(
+                    fn($c) => [
+                        'akun_id' => $c->akun_id,
+                        'no_akun' => $c->no_akun,
+                        'nama' => $c->akun_nama,
+                        'saldo_awal' =>
+                            $saldo_awal[$c->akun_id]->saldo_awal ?? 0,
+                        'mutasi' =>
+                            $mutasi[$c->akun_id]->mutasi ?? 0,
+                    ]
+                )->values()->all(),
+
+                'saldo_awal_final' => $row->saldo_awal,
+                'total_debit' => $row->total_debit,
+                'total_kredit' => $row->total_kredit,
+                'mutasi_final' => $row->mutasi,
+                'saldo_akhir_final' => $row->saldo_akhir,
+            ]);
+        }
+    }
 
         return response()->json(['data' => $data]);
     }
