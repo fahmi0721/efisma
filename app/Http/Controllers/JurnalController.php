@@ -1229,13 +1229,8 @@ class JurnalController extends Controller
                             $request->jurnal_piutang_id,
                             $nominalPiutang
                         );
-                    }else{
-                        PelunasanPiutangService::insertPelunasan(
-                            $id,
-                            $request->jurnal_piutang_id,
-                            $totalDebit
-                        );
                     }
+                    
                     
                 }
             }
@@ -1256,11 +1251,14 @@ class JurnalController extends Controller
                     ? ($row['jurnal_id'] ?? $id)
                     : $id;
                     if($isMultiCabang){
-                         PelunasanPiutangService::insertPelunasan(
-                            $id,
-                            $jurnal_id_secound,
-                            JurnalService::parseRupiah($row['kredit'] ?? 0)
-                        );
+                        $piut = JurnalService::detectPiutang($row);
+                        if($piut['is']){
+                            PelunasanPiutangService::insertPelunasan(
+                                $id,
+                                $jurnal_id_secound,
+                                JurnalService::parseRupiah($row['kredit'] ?? 0)
+                            );
+                        }
                     }
                 }elseif($jenis === "JKK"){
                     if($isMultiCabang){
