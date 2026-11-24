@@ -1559,7 +1559,7 @@ class JurnalController extends Controller
         if ($jurnal->jenis === 'JKK') {
             try {
                 JurnalService::validateJKKNotUsed($id);
-                HutangService::unpostingPelunasan($id);
+                HutangService::unpostingPelunasanKas($id);
             } catch (\Exception  $e) {
                 return response()->json(['status' => false, 'message' => 'Gagal unposting jurnal: '.$e->getMessage()]);
             }

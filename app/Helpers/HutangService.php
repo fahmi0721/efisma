@@ -31,6 +31,11 @@ class HutangService
     {
         HutangRepositori::deleteByJurnalHutang($jurnalId);
     }
+
+    public static function unpostingPelunasanKas($jurnalId)
+    {
+        HutangRepositori::deletePelunasanHutangByJurnalId($jurnalId);
+    }
     
 
     public static function postingPelunasan($jurnalId)
