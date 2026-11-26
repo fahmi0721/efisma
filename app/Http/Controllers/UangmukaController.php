@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;    
 use Yajra\DataTables\Facades\DataTables;
+use App\Exports\UangMukaExport;
 use Carbon\Carbon;
 use Validator;
 class UangmukaController extends Controller
@@ -175,107 +176,29 @@ class UangmukaController extends Controller
         return response()->download($path)->deleteFileAfterSend(true);
     }
 
-    public function daftar(Request $request)
-    {
-        $filter = $request->input('filter', 'all');
-        $entitas_id = $request->input('entitas_id');
-        $cabang_id = $request->input('cabang_id');
-        if ($request->ajax()) {
-            $query = DB::table('view_daftar_piutang');
-
-            if ($filter === 'customer') {
-                $query->where('is_customer', 'active');
-            } elseif ($filter === 'vendor') {
-                $query->where('is_vendor', 'active');
-            }
-
-            if (!empty($entitas_id)) {
-                $query->where('entitas_id', $entitas_id);
-            }
-
-            if (!empty($cabang_id)) {
-                $query->where('cabang_id', $cabang_id);
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
-            |--------------------------------------------------------------------------
-            */
-            if ($request->entitas_scope) {
-                $query->where('entitas_id', $request->entitas_scope);
-            }
-
-            return DataTables::of($query)
-                ->addIndexColumn()
-                // Search untuk kode_jurnal
-                ->filterColumn('no_invoice', function($q, $keyword) {
-                    $q->where(function($query) use ($keyword) {
-                        $query->where('no_invoice', 'LIKE', "%$keyword%")
-                            ->orWhere('kode_jurnal', 'LIKE', "%$keyword%");
-                    });
-                })
-
-                // Search untuk partner_nama
-                ->filterColumn('partner_nama', function($q, $kw) {
-                    $q->where('partner_nama', 'LIKE', "%$kw%");
-                })
-
-                // Search untuk total_tagihan
-                ->filterColumn('total_tagihan', function($q, $kw) {
-                    $q->havingRaw("total_tagihan LIKE ?", ["%$kw%"]);
-                })
-
-                // Search untuk sisa_piutang
-                ->filterColumn('sisa_piutang', function($q, $kw) {
-                    $q->havingRaw("sisa_piutang LIKE ?", ["%$kw%"]);
-                })
-
-                // Search untuk total_pelunasan
-                ->filterColumn('total_pelunasan', function($q, $kw) {
-                    $q->havingRaw("total_pelunasan LIKE ?", ["%$kw%"]);
-                })
-                ->editColumn('total_tagihan', fn($r) => number_format($r->total_tagihan, 0, ',', '.'))
-                ->editColumn('total_pelunasan', fn($r) => number_format($r->total_pelunasan, 0, ',', '.'))
-                ->editColumn('sisa_piutang', fn($r) => number_format($r->sisa_piutang, 0, ',', '.'))
-                ->make(true);
-        }
-        
-        return view('page.piutang.daftar');
-    }
-
+    
+    
     public function exportExcel(Request $request)
     {
-        $filter = $request->input('filter', 'all');
-        $entitas_id = $request->input('entitas_id');
-        $cabang_id = $request->input('cabang_id');
+        $entitasId = $request->get('entitas_id');
+        $cabangId = $request->get('cabang_id');
 
-        $data = DB::table('view_daftar_piutang');
+        // Scope wajib dari middleware
+        $entitasScope = $request->entitas_scope;
 
-        if ($filter === 'customer') {
-            $data->where('is_customer', 'active');
-        } elseif ($filter === 'vendor') {
-            $data->where('is_vendor', 'active');
-        }
+        $namaFile = 'Monitoring_Uang_Muka_'
+            . date('Ymd_His')
+            . '.xlsx';
 
-        if (!empty($entitas_id)) {
-            $data->where('entitas_id', $entitas_id);
-        }
-        if (!empty($cabang_id)) {
-            $data->where('cabang_id', $cabang_id);
-        }
-        /*
-        |--------------------------------------------------------------------------
-        | 1. FILTER WAJIB UNTUK USER LEVEL ENTITAS
-        |--------------------------------------------------------------------------
-        */
-        if ($request->entitas_scope) {
-            $data->where('entitas_id', $request->entitas_scope);
-        }
-
-        $data = $data->get();
-
-        return Excel::download(new \App\Exports\DaftarPiutangExport($data), 'daftar_piutang.xlsx');
+        return Excel::download(
+            new UangMukaExport(
+                $entitasId,
+                $cabangId,
+                $entitasScope
+            ),
+            $namaFile
+        );
     }
+
 
 }
